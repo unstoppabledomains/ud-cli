@@ -63,7 +63,7 @@ function formatTable(data: unknown, options: FormatOptions): string {
   }
 
   const table = new Table({
-    head: columns.map((c) => chalk.bold(c)),
+    head: columns.map((c) => chalk.bold(formatHeaderName(c))),
     style: { head: [], border: [] },
   });
 
@@ -82,7 +82,7 @@ function formatCsv(data: unknown, options: FormatOptions): string {
 
   if (rows.length === 0) return '';
 
-  const lines: string[] = [columns.join(',')];
+  const lines: string[] = [columns.map(formatHeaderName).join(',')];
   for (const row of rows) {
     // useColor=false: ANSI escape codes break CSV consumers (cut, awk, spreadsheets)
     lines.push(columns.map((col) => csvEscape(formatCellValue(getNestedValue(row, col), false))).join(','));
@@ -274,6 +274,24 @@ function formatCellValue(value: unknown, useColor = true): string {
   if (typeof value === 'object') return JSON.stringify(value);
 
   return String(value);
+}
+
+/**
+ * Convert a column key (e.g., "autoRenewal.status", "expiresAt") into a
+ * human-readable header: "Auto Renewal Status", "Expires At".
+ * Splits on dots, expands camelCase, and title-cases each word.
+ */
+function formatHeaderName(key: string): string {
+  return key
+    .split('.')
+    .map((segment) =>
+      segment
+        // Insert space before uppercase letters in camelCase
+        .replace(/([a-z])([A-Z])/g, '$1 $2')
+        // Capitalize first letter of each word
+        .replace(/\b\w/g, (c) => c.toUpperCase()),
+    )
+    .join(' ');
 }
 
 /**
