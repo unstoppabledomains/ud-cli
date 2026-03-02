@@ -542,12 +542,18 @@ function formatCellValue(value: unknown, useColor = true): string {
   return String(value);
 }
 
+/** Explicit header overrides for column keys where the auto-generated name is awkward. */
+const HEADER_OVERRIDES: Record<string, string> = {
+  'pricing.formatted': 'Price',
+};
+
 /**
  * Convert a column key (e.g., "autoRenewal.status", "expiresAt") into a
  * human-readable header: "Auto Renewal Status", "Expires At".
  * Splits on dots, expands camelCase, and title-cases each word.
  */
 function formatHeaderName(key: string): string {
+  if (HEADER_OVERRIDES[key]) return HEADER_OVERRIDES[key];
   return key
     .split('.')
     .map((segment) =>
