@@ -241,6 +241,47 @@ describe('dns commands', () => {
     expect(capturedBody!.subName).toBe('www');
   });
 
+  // --- dns hosting lander ---
+
+  it('dns hosting lander generate passes variadic domains', async () => {
+    let capturedBody: Record<string, unknown> | null = null;
+    mockFetchRoute('actions/ud_domain_generate_lander', (_url, init) => {
+      capturedBody = JSON.parse(init?.body as string);
+      return jsonResponse({ results: [{ domain: 'test.com', success: true, jobId: 'j123' }] });
+    });
+
+    await program.parseAsync(['node', 'ud', 'dns', 'hosting', 'lander', 'generate', 'test.com']);
+
+    expect(capturedBody).toBeTruthy();
+    expect(capturedBody!.domains).toEqual([{ name: 'test.com' }]);
+  });
+
+  it('dns hosting lander status passes variadic domains', async () => {
+    let capturedBody: Record<string, unknown> | null = null;
+    mockFetchRoute('actions/ud_domain_lander_status', (_url, init) => {
+      capturedBody = JSON.parse(init?.body as string);
+      return jsonResponse({ results: [{ domain: 'test.com', status: 'active', hostingType: 'ai' }] });
+    });
+
+    await program.parseAsync(['node', 'ud', 'dns', 'hosting', 'lander', 'status', 'test.com']);
+
+    expect(capturedBody).toBeTruthy();
+    expect(capturedBody!.domains).toEqual([{ name: 'test.com' }]);
+  });
+
+  it('dns hosting lander remove passes variadic domains with --confirm', async () => {
+    let capturedBody: Record<string, unknown> | null = null;
+    mockFetchRoute('actions/ud_domain_remove_lander', (_url, init) => {
+      capturedBody = JSON.parse(init?.body as string);
+      return jsonResponse({ results: [{ domain: 'test.com', success: true }] });
+    });
+
+    await program.parseAsync(['node', 'ud', 'dns', 'hosting', 'lander', 'remove', 'test.com', '--confirm']);
+
+    expect(capturedBody).toBeTruthy();
+    expect(capturedBody!.domains).toEqual([{ name: 'test.com' }]);
+  });
+
   // --- operation hint display ---
 
   it('shows operation hint after dns record add', async () => {

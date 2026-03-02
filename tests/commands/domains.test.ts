@@ -243,44 +243,4 @@ describe('domain commands', () => {
     expect(capturedBody!.targetAccountId).toBe('brave-tiger-k7m');
   });
 
-  // --- domains lander ---
-
-  it('domains lander generate passes variadic domains', async () => {
-    let capturedBody: Record<string, unknown> | null = null;
-    mockFetchRoute('actions/ud_domain_generate_lander', (_url, init) => {
-      capturedBody = JSON.parse(init?.body as string);
-      return jsonResponse({ results: [{ domain: 'test.com', success: true, jobId: 'j123' }] });
-    });
-
-    await program.parseAsync(['node', 'ud', 'domains', 'lander', 'generate', 'test.com']);
-
-    expect(capturedBody).toBeTruthy();
-    expect(capturedBody!.domains).toEqual([{ name: 'test.com' }]);
-  });
-
-  it('domains lander status passes variadic domains', async () => {
-    let capturedBody: Record<string, unknown> | null = null;
-    mockFetchRoute('actions/ud_domain_lander_status', (_url, init) => {
-      capturedBody = JSON.parse(init?.body as string);
-      return jsonResponse({ results: [{ domain: 'test.com', status: 'active', hostingType: 'ai' }] });
-    });
-
-    await program.parseAsync(['node', 'ud', 'domains', 'lander', 'status', 'test.com']);
-
-    expect(capturedBody).toBeTruthy();
-    expect(capturedBody!.domains).toEqual([{ name: 'test.com' }]);
-  });
-
-  it('domains lander remove passes variadic domains with --confirm', async () => {
-    let capturedBody: Record<string, unknown> | null = null;
-    mockFetchRoute('actions/ud_domain_remove_lander', (_url, init) => {
-      capturedBody = JSON.parse(init?.body as string);
-      return jsonResponse({ results: [{ domain: 'test.com', success: true }] });
-    });
-
-    await program.parseAsync(['node', 'ud', 'domains', 'lander', 'remove', 'test.com', '--confirm']);
-
-    expect(capturedBody).toBeTruthy();
-    expect(capturedBody!.domains).toEqual([{ name: 'test.com' }]);
-  });
 });
