@@ -24,10 +24,36 @@ export interface CommandHooks {
     /** Regex to validate user input. */
     validate?: RegExp;
   };
+  /** Transform the request body before sending (e.g., price conversion). */
+  transformBody?: (body: Record<string, unknown>, opts: Record<string, unknown>) => Record<string, unknown>;
+  /** Register a --price <dollars> option for this command. */
+  priceOption?: boolean;
   /** Show an operation-tracking hint after the API call completes. */
   showOperationHint?: boolean;
   /** Show a cart-add hint using the first available result from search. */
   showCartHint?: boolean;
+}
+
+/**
+ * Create a transformBody hook that converts --price (dollars) to priceInCents on each item.
+ */
+function makePriceTransformer(arrayKey: string): CommandHooks['transformBody'] {
+  return (body, opts) => {
+    const price = opts.price as string | undefined;
+    if (price !== undefined) {
+      const num = Number(price);
+      if (Number.isNaN(num) || num < 0) {
+        throw new Error(`Invalid --price value: "${price}". Must be a non-negative number (e.g., 99.99).`);
+      }
+      const cents = Math.round(num * 100);
+      if (Array.isArray(body[arrayKey])) {
+        for (const item of body[arrayKey] as Record<string, unknown>[]) {
+          if (item.priceInCents === undefined) item.priceInCents = cents;
+        }
+      }
+    }
+    return body;
+  };
 }
 
 const HOOKS: Record<string, CommandHooks> = {
@@ -51,6 +77,24 @@ const HOOKS: Record<string, CommandHooks> = {
       prompt: 'Enter 6-digit OTP code: ',
       validate: /^\d{6}$/,
     },
+  },
+  ud_cart_checkout: {
+    requireConfirm: {
+      message: 'Are you sure you want to complete this purchase? Review your cart with: ud cart get',
+    },
+  },
+  ud_listing_cancel: {
+    requireConfirm: {
+      message: 'This will cancel the specified listing(s). Are you sure?',
+    },
+  },
+  ud_listing_create: {
+    priceOption: true,
+    transformBody: makePriceTransformer('domains'),
+  },
+  ud_listing_update: {
+    priceOption: true,
+    transformBody: makePriceTransformer('listings'),
   },
   ud_domains_search: { showCartHint: true },
   ud_dns_record_add: { showOperationHint: true },
@@ -103,7 +147,7 @@ export function formatOperationHint(result: unknown): string {
 }
 
 /** Map marketplace source to the corresponding cart add subcommand. */
-const SOURCE_TO_CART_CMD: Record<string, string> = {
+export const SOURCE_TO_CART_CMD: Record<string, string> = {
   unstoppable_domains: 'registration',
   aftermarket: 'listed',
   afternic: 'afternic',
@@ -112,7 +156,7 @@ const SOURCE_TO_CART_CMD: Record<string, string> = {
 
 /**
  * Format a cart-add hint from domain search results.
- * Uses the first available domain to build a copy/paste command.
+ * Shows one example per marketplace source type found in the results.
  */
 export function formatCartHint(result: unknown): string {
   if (!result || typeof result !== 'object') return '';
@@ -121,16 +165,24 @@ export function formatCartHint(result: unknown): string {
   const results = (obj.results ?? obj.domains) as Record<string, unknown>[] | undefined;
   if (!Array.isArray(results) || results.length === 0) return '';
 
-  // Find the first available domain
-  const available = results.find((item) => item.available === true);
-  if (!available) return '';
+  // Collect one example per marketplace source type
+  const seenSources = new Map<string, { name: string; subCmd: string }>();
+  for (const item of results) {
+    if (item.available !== true) continue;
+    const name = item.name as string | undefined;
+    if (!name) continue;
+    const marketplace = item.marketplace as Record<string, unknown> | undefined;
+    const source = marketplace?.source as string | undefined;
+    const subCmd = SOURCE_TO_CART_CMD[source ?? ''] ?? 'registration';
+    if (!seenSources.has(subCmd)) {
+      seenSources.set(subCmd, { name, subCmd });
+    }
+  }
 
-  const name = available.name as string | undefined;
-  if (!name) return '';
+  if (seenSources.size === 0) return '';
 
-  const marketplace = available.marketplace as Record<string, unknown> | undefined;
-  const source = marketplace?.source as string | undefined;
-  const subCmd = SOURCE_TO_CART_CMD[source ?? ''] ?? 'registration';
-
-  return chalk.dim(`\nTo add to cart: ud cart add ${subCmd} ${name}`);
+  const lines = [...seenSources.values()].map(
+    ({ name, subCmd }) => `  ud cart add ${subCmd} ${name}`,
+  );
+  return chalk.dim(`\nTo add to cart:\n${lines.join('\n')}`);
 }

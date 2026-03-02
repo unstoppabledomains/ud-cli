@@ -128,10 +128,11 @@ ud dns hosting lander remove <domains...>    Remove AI landing page
 ```
 ud cart get                           Get shopping cart with pricing
 ud cart remove                        Remove items from cart
-ud cart checkout                      Complete cart checkout
+ud cart checkout                      Complete cart checkout (requires --confirm)
 ud cart url                           Get checkout URL
 ud cart payment-methods               Get available payment methods
 ud cart add-payment-method            Get URL to add payment method
+ud cart add [domain...]               Smart add — auto-detects source and routes
 ud cart add registration <domains...> Add domains for registration
 ud cart add listed <domains...>       Add marketplace-listed domains
 ud cart add afternic <domains...>     Add Afternic marketplace domains
@@ -150,8 +151,10 @@ ud contacts create                    Create ICANN contact
 
 ```
 ud listings create <domains...>       Create marketplace listings
+ud listings create <domains...> --price 99.99  Set listing price in dollars
 ud listings update                    Update marketplace listings
-ud listings cancel                    Cancel marketplace listings
+ud listings update --price 50.00      Update listing price in dollars
+ud listings cancel                    Cancel marketplace listings (requires --confirm)
 ```
 
 ### Offers
@@ -213,9 +216,16 @@ When you pass `--fields` explicitly, the CLI shows a tip with the command to sav
 # Search for domains
 ud domains search mybusiness --tlds com,org,io --limit 10
 
-# Add to cart and checkout
+# Smart cart add — auto-detects the source type
+ud cart add mybusiness.com mybusiness.io
+
+# Or specify the type explicitly
 ud cart add registration mybusiness.com mybusiness.io
-ud cart checkout --payment-method-id 12345
+ud cart add --type renewal mysite.com
+
+# Review cart and checkout
+ud cart get
+ud cart checkout --confirm
 ```
 
 ### Manage DNS records
@@ -234,6 +244,29 @@ ud dns records add example.com --data '{
     {"domain": "example.com", "type": "CNAME", "subName": "www", "values": ["example.com"]}
   ]
 }'
+```
+
+### Marketplace listings
+
+```bash
+# List a domain for sale at $99.99
+ud listings create mydomain.com --price 99.99
+
+# Update listing price
+ud listings update --price 50.00 --data '{"listings":[{"listingId":"l123"}]}'
+
+# Cancel a listing
+ud listings cancel --confirm --data '{"listingIds":["l123"]}'
+
+# View and respond to offers
+ud offers list
+ud offers respond --data '{"offers":[{"offerId":"o123","action":"accept"}]}'
+
+# Manage leads
+ud leads list
+ud leads get mydomain.com
+ud leads messages --conversation-id 42
+ud leads send --conversation-id 42 --content "Thanks for your interest!"
 ```
 
 ### Advanced usage

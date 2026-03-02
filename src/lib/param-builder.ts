@@ -61,11 +61,9 @@ export function buildParams(
     if (specParam.type === 'array') {
       const values = Array.isArray(value) ? value : [value];
       if (specParam.items?.type === 'object') {
-        // Array of objects — wrap each value: [{name: "x"}, {name: "y"}]
-        // TODO: Currently hardcodes "name" as the wrapping key, which works for all current
-        // endpoints (domain arrays). If future endpoints use a different key field, derive it
-        // from specParam.items.properties (e.g., use the first required string property).
-        body[arg.name] = values.map((v) => ({ name: v }));
+        // Array of objects — wrap each value using the primary key from the spec
+        const wrapKey = deriveWrapKey(specParam);
+        body[arg.name] = values.map((v) => ({ [wrapKey]: v }));
       } else {
         body[arg.name] = values;
       }
@@ -122,6 +120,18 @@ export function buildParams(
   }
 
   return body;
+}
+
+/**
+ * Derive the wrapping key for array-of-objects positional args.
+ * Uses the first required string property from the spec, falling back to "name".
+ */
+export function deriveWrapKey(spec: ParamSpec): string {
+  if (spec.items?.properties) {
+    const reqStr = spec.items.properties.find((p) => p.required && p.type === 'string');
+    if (reqStr) return reqStr.name;
+  }
+  return 'name';
 }
 
 /**

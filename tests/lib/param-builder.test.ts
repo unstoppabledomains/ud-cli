@@ -1,4 +1,4 @@
-import { buildParams, specParamToOption } from '../../src/lib/param-builder.js';
+import { buildParams, specParamToOption, deriveWrapKey } from '../../src/lib/param-builder.js';
 import type { CommandRoute } from '../../src/lib/command-registry.js';
 import type { ParamSpec } from '../../src/lib/spec-parser.js';
 
@@ -23,6 +23,14 @@ const DNS_ADD_ROUTE: CommandRoute = {
   path: ['dns', 'records', 'add'],
   positionalArgs: [
     { name: 'domain', description: 'Domain', required: true, variadic: false },
+  ],
+};
+
+const LISTING_CREATE_ROUTE: CommandRoute = {
+  toolName: 'ud_listing_create',
+  path: ['listings', 'create'],
+  positionalArgs: [
+    { name: 'domains', description: 'Domains to list', required: true, variadic: true },
   ],
 };
 
@@ -67,6 +75,23 @@ const dnsAddParams: ParamSpec[] = [
         { name: 'type', type: 'string', required: true, enum: ['A', 'AAAA', 'CNAME', 'MX', 'TXT'] },
         { name: 'values', type: 'array', required: true, items: { name: 'values[]', type: 'string', required: false } },
         { name: 'ttl', type: 'number', required: false, default: 3600 },
+      ],
+    },
+  },
+];
+
+const listingCreateParams: ParamSpec[] = [
+  {
+    name: 'domains',
+    type: 'array',
+    required: true,
+    items: {
+      name: 'domains[]',
+      type: 'object',
+      required: false,
+      properties: [
+        { name: 'domainName', type: 'string', required: true, description: 'Domain name to list' },
+        { name: 'priceInCents', type: 'number', required: false, description: 'Price in cents' },
       ],
     },
   },
@@ -159,6 +184,18 @@ describe('param-builder', () => {
       expect(result2).toEqual({ includeDisabled: false });
     });
 
+    it('uses domainName wrapping key for listing create', () => {
+      const result = buildParams(
+        LISTING_CREATE_ROUTE,
+        listingCreateParams,
+        { domains: ['sell.com', 'buy.com'] },
+        {},
+      );
+      expect(result).toEqual({
+        domains: [{ domainName: 'sell.com' }, { domainName: 'buy.com' }],
+      });
+    });
+
     it('reads --file as JSON body', async () => {
       const fs = await import('node:fs');
       const tmpPath = '/tmp/ud-test-params.json';
@@ -241,6 +278,52 @@ describe('param-builder', () => {
         new Set(),
       );
       expect(opt).toBeNull();
+    });
+  });
+
+  describe('deriveWrapKey', () => {
+    it('returns first required string property name', () => {
+      const spec: ParamSpec = {
+        name: 'domains',
+        type: 'array',
+        required: true,
+        items: {
+          name: 'domains[]',
+          type: 'object',
+          required: false,
+          properties: [
+            { name: 'domainName', type: 'string', required: true },
+            { name: 'priceInCents', type: 'number', required: false },
+          ],
+        },
+      };
+      expect(deriveWrapKey(spec)).toBe('domainName');
+    });
+
+    it('falls back to "name" when no required string property exists', () => {
+      const spec: ParamSpec = {
+        name: 'items',
+        type: 'array',
+        required: true,
+        items: {
+          name: 'items[]',
+          type: 'object',
+          required: false,
+          properties: [
+            { name: 'count', type: 'number', required: true },
+          ],
+        },
+      };
+      expect(deriveWrapKey(spec)).toBe('name');
+    });
+
+    it('falls back to "name" when items have no properties', () => {
+      const spec: ParamSpec = {
+        name: 'domains',
+        type: 'array',
+        required: true,
+      };
+      expect(deriveWrapKey(spec)).toBe('name');
     });
   });
 });

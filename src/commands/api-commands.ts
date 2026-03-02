@@ -165,6 +165,10 @@ function registerRoute(
 
   // Hook-driven options
   const hooks = getHooks(route.toolName);
+
+  if (hooks?.priceOption) {
+    cmd.option('--price <dollars>', 'Listing price in dollars (e.g., 99.99)');
+  }
   if (hooks?.requireConfirm) {
     cmd.option('--confirm', 'Confirm the destructive operation without interactive prompt');
   }
@@ -257,7 +261,18 @@ function registerRoute(
     }
 
     // Build request body
-    const body = buildParams(route, spec?.params ?? [], positionalValues, opts);
+    let body = buildParams(route, spec?.params ?? [], positionalValues, opts);
+
+    // Pre-call hooks: transformBody (e.g., price conversion)
+    if (hooks?.transformBody) {
+      try {
+        body = hooks.transformBody(body, opts);
+      } catch (err) {
+        console.error(formatError(err));
+        process.exitCode = 1;
+        return;
+      }
+    }
 
     // Pre-call hooks: requireConfirm
     if (hooks?.requireConfirm && !opts.confirm) {
