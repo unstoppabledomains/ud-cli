@@ -3,10 +3,10 @@ import { setEnvOverride } from './lib/config.js';
 import { registerAuthCommands } from './commands/auth.js';
 import { registerEnvCommands } from './commands/env.js';
 import { registerApiCommands } from './commands/api-commands.js';
-import type { Environment } from './lib/types.js';
+import type { Environment, OutputFormat } from './lib/types.js';
 
 const VALID_ENVS = ['production', 'staging'];
-const VALID_FORMATS = ['table', 'json', 'csv'];
+const VALID_FORMATS: OutputFormat[] = ['table', 'json', 'csv'];
 
 export const program = new Command();
 
@@ -27,7 +27,7 @@ program
       }
       setEnvOverride(opts.env as Environment);
     }
-    if (opts.format && !VALID_FORMATS.includes(opts.format)) {
+    if (opts.format && !(VALID_FORMATS as string[]).includes(opts.format)) {
       thisCommand.error(`Invalid format: ${opts.format}. Must be one of: ${VALID_FORMATS.join(', ')}`);
     }
   });

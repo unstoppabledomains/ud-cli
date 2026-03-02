@@ -13,6 +13,12 @@ import { formatOutput, formatError } from '../lib/formatter.js';
 import { createSpinner } from '../lib/spinner.js';
 import type { OutputFormat } from '../lib/types.js';
 
+function getRootOpts(cmd: Command): Record<string, unknown> {
+  let current: Command = cmd;
+  while (current.parent) current = current.parent;
+  return current.opts<Record<string, unknown>>();
+}
+
 // Spec JSON is inlined by esbuild in bundled mode, but loaded from disk in dev mode
 import specJson from '../generated/openapi-spec.json' with { type: 'json' };
 
@@ -118,9 +124,7 @@ function registerRoute(
   // Action handler
   cmd.action(async (...args: unknown[]) => {
     const opts = cmd.opts<Record<string, unknown>>();
-    const globalOpts = cmd.parent?.parent?.parent?.opts<Record<string, unknown>>()
-      ?? cmd.parent?.parent?.opts<Record<string, unknown>>()
-      ?? {};
+    const globalOpts = getRootOpts(cmd);
 
     const format = (globalOpts.format as OutputFormat) ?? 'table';
     const quiet = !!globalOpts.quiet;

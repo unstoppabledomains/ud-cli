@@ -26,12 +26,6 @@ export function formatOutput(data: unknown, options: FormatOptions): string {
 
   const obj = data as Record<string, unknown>;
 
-  // Print bulk result summary
-  const bulkSummary = formatBulkSummary(obj);
-
-  // Print pagination hint
-  const paginationHint = formatPaginationHint(obj, options.responsePattern);
-
   let main: string;
   if (format === 'csv') {
     main = formatCsv(data, options);
@@ -39,8 +33,15 @@ export function formatOutput(data: unknown, options: FormatOptions): string {
     main = formatTable(data, options);
   }
 
-  const parts = [main, bulkSummary, paginationHint].filter(Boolean);
-  return parts.join('\n');
+  // Only append annotations for table format — they break CSV/JSON machine parsing
+  if (format === 'table') {
+    const bulkSummary = formatBulkSummary(obj);
+    const paginationHint = formatPaginationHint(obj, options.responsePattern);
+    const parts = [main, bulkSummary, paginationHint].filter(Boolean);
+    return parts.join('\n');
+  }
+
+  return main;
 }
 
 // --- JSON ---
@@ -150,8 +151,8 @@ const TABLE_CONFIGS: Record<string, string[]> = {
   ud_portfolio_list: ['name', 'status', 'expiresAt', 'autoRenewal'],
   // Domain get
   ud_domain_get: ['name', 'status', 'registryType', 'expiresAt'],
-  // TLD list
-  ud_tld_list: ['tld', 'type', 'registrationPrice'],
+  // TLD list (spec returns string[], so extractTableData wraps them)
+  ud_tld_list: ['tld'],
   // DNS records
   ud_dns_records_list: ['type', 'subName', 'values', 'ttl'],
   // Cart
@@ -164,8 +165,8 @@ const TABLE_CONFIGS: Record<string, string[]> = {
   ud_leads_list: ['domain', 'status', 'lastMessage', 'createdAt'],
   // Listings
   ud_listing_create: ['domain', 'success', 'listingId'],
-  // Payment methods
-  ud_cart_get_payment_methods: ['id', 'type', 'label'],
+  // Payment methods (spec returns savedCards array)
+  ud_cart_get_payment_methods: ['id', 'brand', 'last4', 'expMonth', 'expYear', 'isDefault'],
 };
 
 function extractTableData(
@@ -173,12 +174,18 @@ function extractTableData(
   options: FormatOptions,
 ): { rows: Record<string, unknown>[]; columns: string[] } {
   // Find the primary array — common keys: results, domains, tlds, records, items, contacts, offers, leads
-  const arrayKeys = ['results', 'domains', 'tlds', 'records', 'items', 'contacts', 'offers', 'leads', 'messages', 'listings', 'paymentMethods'];
+  const arrayKeys = ['results', 'domains', 'tlds', 'records', 'items', 'contacts', 'offers', 'leads', 'messages', 'listings', 'savedCards'];
   let rows: Record<string, unknown>[] = [];
 
   for (const key of arrayKeys) {
     if (Array.isArray(obj[key]) && (obj[key] as unknown[]).length > 0) {
-      rows = obj[key] as Record<string, unknown>[];
+      const arr = obj[key] as unknown[];
+      // Handle arrays of primitives (e.g., string[]) by wrapping them as objects
+      if (typeof arr[0] !== 'object' || arr[0] === null) {
+        rows = arr.map((v) => ({ [key.replace(/s$/, '')]: v }));
+      } else {
+        rows = arr as Record<string, unknown>[];
+      }
       break;
     }
   }

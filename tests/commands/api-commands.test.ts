@@ -119,7 +119,7 @@ describe('api-commands integration', () => {
     expect(called).toBe(true);
   });
 
-  it('domains get passes variadic domains wrapped as objects', async () => {
+  it('domains get passes variadic domains as string array', async () => {
     let capturedBody: Record<string, unknown> | null = null;
     mockFetchRoute('actions/ud_domain_get', (_url, init) => {
       capturedBody = JSON.parse(init?.body as string);
