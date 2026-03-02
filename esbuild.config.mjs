@@ -8,6 +8,7 @@ await esbuild.build({
   format: 'cjs',
   outfile: 'dist/ud-cli.cjs',
   external: ['keytar'],
+  loader: { '.json': 'json' },
   banner: {
     js: '#!/usr/bin/env node',
   },

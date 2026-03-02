@@ -18,7 +18,8 @@
     "lint:fix": "eslint src/ tests/ --fix",
     "format": "prettier --write 'src/**/*.ts' 'tests/**/*.ts'",
     "test": "node --experimental-vm-modules node_modules/.bin/jest",
-    "dev": "tsx src/index.ts"
+    "dev": "tsx src/index.ts",
+    "fetch-spec": "tsx scripts/fetch-spec.ts"
   },
   "pkg": {
     "targets": [
@@ -32,10 +33,12 @@
   },
   "dependencies": {
     "chalk": "^5.4.1",
+    "cli-table3": "^0.6.5",
     "commander": "^13.1.0",
     "conf": "^13.1.0",
     "keytar": "^7.9.0",
-    "open": "^10.1.0"
+    "open": "^10.1.0",
+    "ora": "^9.3.0"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
@@ -43,12 +46,12 @@
     "@yao-pkg/pkg": "^6.3.0",
     "esbuild": "^0.25.0",
     "eslint": "^9.21.0",
+    "eslint-config-prettier": "^10.0.1",
     "jest": "^29.7.0",
     "prettier": "^3.5.3",
     "ts-jest": "^29.2.6",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0",
-    "typescript-eslint": "^8.25.0",
-    "eslint-config-prettier": "^10.0.1"
+    "typescript-eslint": "^8.25.0"
   }
 }

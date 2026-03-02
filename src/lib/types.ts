@@ -1,5 +1,7 @@
 export type Environment = 'production' | 'staging';
 
+export type OutputFormat = 'table' | 'json' | 'csv';
+
 export interface TokenData {
   accessToken: string;
   refreshToken: string;
