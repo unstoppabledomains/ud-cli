@@ -8,34 +8,34 @@ CLI tool for managing Unstoppable Domains — domain portfolio, DNS records, mar
 # Install dependencies
 npm install
 
-# Authenticate with an API key
-npx tsx src/index.ts auth login --key ud_mcp_<your-key>
+# Authenticate (opens browser for OAuth)
+npx tsx src/index.ts auth login
 
 # Check auth status
 npx tsx src/index.ts auth whoami
 
 # Switch environments
 npx tsx src/index.ts env set staging
-npx tsx src/index.ts --env staging auth login --key ud_mcp_<your-staging-key>
+npx tsx src/index.ts --env staging auth login
 ```
 
 ## Authentication
 
-### API Key (default)
+### OAuth (default, browser-based)
+
+```bash
+ud auth login
+```
+
+Opens a browser for authorization using OAuth 2.0 with PKCE. Tokens are automatically refreshed.
+
+### API Key
 
 ```bash
 ud auth login --key ud_mcp_<64-hex-chars>
 ```
 
-API keys have the format `ud_mcp_` followed by 64 hex characters. Generate one from the Unstoppable Domains dashboard.
-
-### OAuth (browser-based)
-
-```bash
-ud auth login --method oauth
-```
-
-Opens a browser for authorization using OAuth 2.0 with PKCE. Tokens are automatically refreshed.
+API keys have the format `ud_mcp_` followed by 64 hex characters. Generate one from the Unstoppable Domains dashboard. Passing `--key` automatically selects the api-key method.
 
 ### Managing credentials
 

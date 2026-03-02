@@ -13,15 +13,16 @@ export function registerAuthCommands(program: Command): void {
   auth
     .command('login')
     .description('Authenticate with Unstoppable Domains')
-    .option('-m, --method <method>', 'auth method (api-key or oauth)', 'api-key')
+    .option('-m, --method <method>', 'auth method (oauth or api-key)', 'oauth')
     .option('-k, --key <key>', 'API key (for api-key method)')
     .action(async (options: { method: string; key?: string }) => {
       const env = getActiveEnv();
 
-      if (options.method === 'oauth') {
-        await loginOAuth(env);
-      } else {
+      // --key implies api-key method even without explicit --method
+      if (options.key || options.method === 'api-key') {
         await loginApiKey(env, options.key);
+      } else {
+        await loginOAuth(env);
       }
     });
 
