@@ -3,6 +3,7 @@ import { setEnvOverride } from './lib/config.js';
 import { registerAuthCommands } from './commands/auth.js';
 import { registerEnvCommands } from './commands/env.js';
 import { registerApiCommands } from './commands/api-commands.js';
+import { registerSmartCartAdd } from './commands/cart.js';
 import { registerConfigCommands } from './commands/config.js';
 import type { Environment, OutputFormat } from './lib/types.js';
 
@@ -39,3 +40,4 @@ registerAuthCommands(program);
 registerEnvCommands(program);
 registerConfigCommands(program);
 registerApiCommands(program);
+registerSmartCartAdd(program);

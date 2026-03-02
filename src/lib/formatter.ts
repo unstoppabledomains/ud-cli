@@ -212,10 +212,23 @@ const TABLE_CONFIGS: Record<string, string[]> = {
   ud_contacts_list: ['id', 'firstName', 'lastName', 'email'],
   // Offers
   ud_offers_list: ['domainName', 'amount', 'status', 'createdAt'],
+  ud_offer_respond: ['offerId', 'domainName', 'action', 'success', 'priceFormatted', 'newStatus', 'error'],
   // Leads
   ud_leads_list: ['domain', 'status', 'lastMessage', 'createdAt'],
+  ud_lead_messages_list: ['id', 'content', 'senderUserId', 'createdAt'],
+  ud_lead_message_send: ['id', 'content', 'createdAt'],
   // Listings
   ud_listing_create: ['domain', 'success', 'listingId'],
+  ud_listing_update: ['listingId', 'domainName', 'success', 'status', 'error'],
+  ud_listing_cancel: ['listingId', 'domainName', 'success', 'error'],
+  // Cart add responses (registration, listed, afternic, sedo, renewal all share same shape)
+  ud_cart_add_domain_registration: ['domain', 'success', 'productId', 'error'],
+  ud_cart_add_domain_listed: ['domain', 'success', 'productId', 'error'],
+  ud_cart_add_domain_afternic: ['domain', 'success', 'productId', 'error'],
+  ud_cart_add_domain_sedo: ['domain', 'success', 'productId', 'error'],
+  ud_cart_add_domain_renewal: ['domain', 'success', 'productId', 'error'],
+  // Cart remove
+  ud_cart_remove: ['removedCount'],
   // Payment methods (spec returns savedCards array)
   ud_cart_get_payment_methods: ['id', 'brand', 'last4', 'expMonth', 'expYear', 'isDefault'],
 
@@ -384,6 +397,76 @@ const DETAIL_CONFIGS: Record<string, DetailConfig> = {
     ],
   },
 
+  ud_cart_checkout: {
+    source: 'response',
+    sections: [
+      {
+        title: 'Order',
+        fields: [
+          { label: 'Order ID', path: 'orderId' },
+          { label: 'Success', path: 'success' },
+          { label: 'Note', path: 'note' },
+        ],
+      },
+      {
+        title: 'Summary',
+        fields: [
+          { label: 'Items', path: 'summary.itemCount' },
+          { label: 'Subtotal', path: 'summary.subtotalFormatted' },
+          { label: 'Discounts', path: 'summary.discountsFormatted' },
+          { label: 'Credits Used', path: 'summary.creditsUsedFormatted' },
+          { label: 'Sales Tax', path: 'summary.salesTaxFormatted' },
+          { label: 'Total Charged', path: 'summary.totalChargedFormatted' },
+          { label: 'Payment Method', path: 'summary.paymentMethod' },
+        ],
+      },
+    ],
+  },
+
+  ud_lead_get: {
+    source: 'response',
+    sections: [
+      {
+        title: 'Conversation',
+        fields: [
+          { label: 'ID', path: 'conversation.id' },
+          { label: 'Domain', path: 'conversation.domainName' },
+          { label: 'Created', path: 'conversation.createdAt' },
+          { label: 'Existing', path: 'conversation.isExisting' },
+          { label: 'Message', path: 'message' },
+        ],
+      },
+    ],
+  },
+
+  ud_cart_get_url: {
+    source: 'response',
+    sections: [
+      {
+        title: 'Checkout URL',
+        fields: [
+          { label: 'URL', path: 'checkoutUrl' },
+          { label: 'Items', path: 'cartSummary.itemCount' },
+          { label: 'Subtotal', path: 'cartSummary.subtotalFormatted' },
+          { label: 'Instructions', path: 'instructions' },
+        ],
+      },
+    ],
+  },
+
+  ud_cart_add_payment_method_url: {
+    source: 'response',
+    sections: [
+      {
+        title: 'Payment Method',
+        fields: [
+          { label: 'URL', path: 'url' },
+          { label: 'Instructions', path: 'instructions' },
+        ],
+      },
+    ],
+  },
+
   ud_domain_pending_operations: {
     sections: [
       {
@@ -464,7 +547,7 @@ function extractTableData(
 ): { rows: Record<string, unknown>[]; columns: string[] } {
   const isTable = options.format === 'table';
   // Find the primary array — common keys: results, domains, tlds, records, items, contacts, offers, leads
-  const arrayKeys = ['results', 'domains', 'tlds', 'records', 'items', 'contacts', 'offers', 'leads', 'messages', 'listings', 'savedCards', 'configs', 'pushedDomains', 'failedDomains'];
+  const arrayKeys = ['results', 'domains', 'tlds', 'records', 'items', 'contacts', 'offers', 'leads', 'messages', 'listings', 'savedCards', 'configs', 'pushedDomains', 'failedDomains', 'addedProducts'];
   let rows: Record<string, unknown>[] = [];
 
   for (const key of arrayKeys) {
@@ -561,6 +644,7 @@ function formatCellValue(value: unknown, useColor = true): string {
  * auto-humanized (they'd collide with identifiers like "www" or "mail").
  */
 const VALUE_OVERRIDES: Record<string, string> = {
+  accepted: 'Accepted',
   available: 'Available',
   active: 'Active',
   cancelled: 'Cancelled',
@@ -591,6 +675,15 @@ const HEADER_OVERRIDES: Record<string, string> = {
   'lifecycle.autoRenewal.status': 'Auto-Renewal',
   'lifecycle.expiresAt': 'Expires At',
   'listingId': 'Listing ID',
+  'offerId': 'Offer ID',
+  'productId': 'Product ID',
+  'priceFormatted': 'Price',
+  'newStatus': 'New Status',
+  'senderUserId': 'Sender',
+  'removedCount': 'Removed',
+  'orderId': 'Order ID',
+  'conversationId': 'Conversation ID',
+  'domainName': 'Domain',
   'marketplace.status': 'Status',
   'operationId': 'Operation ID',
   'pricing.formatted': 'Price',

@@ -165,6 +165,13 @@ function registerRoute(
 
   // Hook-driven options
   const hooks = getHooks(route.toolName);
+
+  // --price for listing commands with transformBody hook
+  if (hooks?.transformBody) {
+    if (route.toolName === 'ud_listing_create' || route.toolName === 'ud_listing_update') {
+      cmd.option('--price <dollars>', 'Listing price in dollars (e.g., 99.99)');
+    }
+  }
   if (hooks?.requireConfirm) {
     cmd.option('--confirm', 'Confirm the destructive operation without interactive prompt');
   }
@@ -257,7 +264,12 @@ function registerRoute(
     }
 
     // Build request body
-    const body = buildParams(route, spec?.params ?? [], positionalValues, opts);
+    let body = buildParams(route, spec?.params ?? [], positionalValues, opts);
+
+    // Pre-call hooks: transformBody (e.g., price conversion)
+    if (hooks?.transformBody) {
+      body = hooks.transformBody(body, opts);
+    }
 
     // Pre-call hooks: requireConfirm
     if (hooks?.requireConfirm && !opts.confirm) {

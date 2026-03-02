@@ -203,7 +203,7 @@ function detectResponsePattern(spec: OpenAPISpec, operation: OperationObject): R
 // --- Response field extraction ---
 
 /** Keys that typically hold the primary data array in API responses. */
-const DATA_ARRAY_KEYS = ['results', 'domains', 'tlds', 'records', 'items', 'contacts', 'offers', 'leads', 'messages', 'listings', 'savedCards', 'configs', 'pushedDomains', 'failedDomains'];
+const DATA_ARRAY_KEYS = ['results', 'domains', 'tlds', 'records', 'items', 'contacts', 'offers', 'leads', 'messages', 'listings', 'savedCards', 'configs', 'pushedDomains', 'failedDomains', 'addedProducts'];
 
 /**
  * Extract dotted field paths from the response schema.
