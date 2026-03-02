@@ -3,7 +3,7 @@ import { setEnvOverride } from './lib/config.js';
 import { registerAuthCommands } from './commands/auth.js';
 import { registerEnvCommands } from './commands/env.js';
 import { registerApiCommands } from './commands/api-commands.js';
-import type { Environment, OutputFormat } from './lib/types.js';
+import type { Environment } from './lib/types.js';
 
 const VALID_ENVS = ['production', 'staging'];
 const VALID_FORMATS = ['table', 'json', 'csv'];

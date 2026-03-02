@@ -1,5 +1,5 @@
 import { parseSpec } from '../../src/lib/spec-parser.js';
-import type { CommandSpec, ParamSpec } from '../../src/lib/spec-parser.js';
+import type { CommandSpec } from '../../src/lib/spec-parser.js';
 
 function makeSpec(paths: Record<string, unknown>, schemas: Record<string, unknown> = {}) {
   return {

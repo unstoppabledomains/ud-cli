@@ -1,4 +1,3 @@
-import { jest } from '@jest/globals';
 import { buildParams, specParamToOption } from '../../src/lib/param-builder.js';
 import type { CommandRoute } from '../../src/lib/command-registry.js';
 import type { ParamSpec } from '../../src/lib/spec-parser.js';

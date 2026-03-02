@@ -2,9 +2,6 @@
  * Dynamically registers CLI commands from the OpenAPI spec + command registry.
  */
 
-import { readFileSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { Command } from 'commander';
 import { parseSpec } from '../lib/spec-parser.js';
 import type { CommandSpec } from '../lib/spec-parser.js';

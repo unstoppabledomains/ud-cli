@@ -167,11 +167,6 @@ export function specParamToOption(
   if (spec.type === 'array' && spec.items?.type === 'object') return null;
 
   const flagName = specParamToFlagName(spec.name);
-  const valuePlaceholder = spec.enum
-    ? spec.enum.join('|')
-    : spec.type === 'boolean'
-      ? ''
-      : `<${spec.name}>`;
 
   const flags = spec.type === 'boolean' ? `--${flagName}` : `--${flagName} <${spec.name}>`;
 
