@@ -8,6 +8,8 @@
   - This applies to both table and CSV output formats.
 - **Date values** use a fixed `en-US` locale format (`Mar 2, 2026`) via `toLocaleDateString('en-US', ...)` to ensure deterministic output across environments.
 - **TABLE_CONFIGS** in `src/lib/formatter.ts` define curated column selections per API endpoint. When adding a new endpoint, add its config entry.
+- **DETAIL_CONFIGS** in `src/lib/formatter.ts` define vertical key-value detail views for single-item responses. When a response has exactly 1 row and a detail config exists, the detail view is used instead of the table. Use this for commands like `domains get` where a single item has many nested fields.
+- **Flag statuses** (`ENABLED`/`DISABLED`) are automatically color-formatted in detail views via `formatDetailValue()`.
 
 ## Testing
 
