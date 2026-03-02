@@ -265,7 +265,13 @@ function registerRoute(
 
     // Pre-call hooks: transformBody (e.g., price conversion)
     if (hooks?.transformBody) {
-      body = hooks.transformBody(body, opts);
+      try {
+        body = hooks.transformBody(body, opts);
+      } catch (err) {
+        console.error(formatError(err));
+        process.exitCode = 1;
+        return;
+      }
     }
 
     // Pre-call hooks: requireConfirm

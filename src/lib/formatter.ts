@@ -195,6 +195,8 @@ function formatPaginationContext(pagination: Record<string, unknown>): string {
  * Known column configs for specific response types.
  * Falls back to auto-detection if no specific config is found.
  */
+const CART_ADD_COLUMNS = ['domain', 'success', 'productId', 'error'];
+
 const TABLE_CONFIGS: Record<string, string[]> = {
   // Domain search results
   ud_domains_search: ['name', 'available', 'marketplace.status', 'pricing.formatted'],
@@ -222,11 +224,11 @@ const TABLE_CONFIGS: Record<string, string[]> = {
   ud_listing_update: ['listingId', 'domainName', 'success', 'status', 'error'],
   ud_listing_cancel: ['listingId', 'domainName', 'success', 'error'],
   // Cart add responses (registration, listed, afternic, sedo, renewal all share same shape)
-  ud_cart_add_domain_registration: ['domain', 'success', 'productId', 'error'],
-  ud_cart_add_domain_listed: ['domain', 'success', 'productId', 'error'],
-  ud_cart_add_domain_afternic: ['domain', 'success', 'productId', 'error'],
-  ud_cart_add_domain_sedo: ['domain', 'success', 'productId', 'error'],
-  ud_cart_add_domain_renewal: ['domain', 'success', 'productId', 'error'],
+  ...Object.fromEntries(
+    ['registration', 'listed', 'afternic', 'sedo', 'renewal'].map(
+      (t) => [`ud_cart_add_domain_${t}`, CART_ADD_COLUMNS],
+    ),
+  ),
   // Cart remove
   ud_cart_remove: ['removedCount'],
   // Payment methods (spec returns savedCards array)

@@ -39,7 +39,7 @@ export interface CommandHooks {
  */
 function makePriceTransformer(arrayKey: string): CommandHooks['transformBody'] {
   return (body, opts) => {
-    const price = opts.price as number | undefined;
+    const price = opts.price as string | undefined;
     if (price !== undefined) {
       const num = Number(price);
       if (Number.isNaN(num) || num < 0) {

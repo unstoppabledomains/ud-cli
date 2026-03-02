@@ -51,6 +51,18 @@ export function registerSmartCartAdd(program: Command): void {
       const format = (globalOpts.format as OutputFormat) ?? 'table';
       const quiet = !!globalOpts.quiet;
 
+      // Validate --years before the loop to avoid wasting search API calls
+      let yearsQuantity: number | undefined;
+      if (opts.years !== undefined) {
+        const yearsNum = Number(opts.years);
+        if (!Number.isInteger(yearsNum) || yearsNum < 1 || yearsNum > 10) {
+          console.error(formatError(new Error('Invalid --years value: must be an integer between 1 and 10.')));
+          process.exitCode = 1;
+          return;
+        }
+        yearsQuantity = yearsNum;
+      }
+
       for (const domain of domains) {
         let toolName: string;
 
@@ -106,14 +118,8 @@ export function registerSmartCartAdd(program: Command): void {
         const body: Record<string, unknown> = {
           domains: [{ name: domain }],
         };
-        if (opts.years !== undefined) {
-          const yearsNum = Number(opts.years);
-          if (!Number.isInteger(yearsNum) || yearsNum < 1 || yearsNum > 10) {
-            console.error(formatError(new Error('Invalid --years value: must be an integer between 1 and 10.')));
-            process.exitCode = 1;
-            continue;
-          }
-          (body.domains as Record<string, unknown>[])[0].quantity = yearsNum;
+        if (yearsQuantity !== undefined) {
+          (body.domains as Record<string, unknown>[])[0].quantity = yearsQuantity;
         }
 
         const spinner = await createSpinner(`Adding ${domain} to cart...`, { quiet, format });
