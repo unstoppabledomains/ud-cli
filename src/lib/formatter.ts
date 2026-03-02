@@ -58,11 +58,16 @@ function formatTable(data: unknown, options: FormatOptions): string {
   // Check for detail view (single-item response with detail config)
   const detailConfig = DETAIL_CONFIGS[options.toolName ?? ''];
   if (detailConfig) {
+    if (detailConfig.source === 'response') {
+      // Response-level detail: render the top-level response object directly
+      return formatDetail(obj, detailConfig);
+    }
+    // Item-level detail: only for single-item responses
     const { rows } = extractTableData(obj, options);
     if (rows.length === 1) {
       return formatDetail(rows[0], detailConfig);
     }
-    // Multiple items — fall through to normal table with the multi-row table config
+    // Multiple items — fall through to normal table
   }
 
   // Find the primary data array in the response
@@ -207,8 +212,10 @@ const TABLE_CONFIGS: Record<string, string[]> = {
 };
 
 /**
- * Detail view configs for single-item responses.
- * Each entry defines labeled sections with field paths into the response object.
+ * Detail view configs for rich responses.
+ * - source 'item' (default): detail view for a single item from the primary array
+ * - source 'response': detail view of the entire top-level response object
+ * Sub-tables render nested arrays as horizontal tables below the key-value sections.
  */
 interface DetailField {
   label: string;
@@ -220,70 +227,151 @@ interface DetailSection {
   fields: DetailField[];
 }
 
-const DETAIL_CONFIGS: Record<string, DetailSection[]> = {
-  ud_domain_get: [
-    {
-      title: 'General',
-      fields: [
-        { label: 'Domain', path: 'domain' },
-        { label: 'Extension', path: 'extension' },
-        { label: 'Purchased', path: 'lifecycle.purchasedAt' },
-        { label: 'Expires', path: 'lifecycle.expiresAt' },
-        { label: 'Transfer Status', path: 'lifecycle.transferStatus' },
-        { label: 'Externally Owned', path: 'lifecycle.isExternallyOwned' },
-        { label: 'Reverse Resolution', path: 'lifecycle.reverse' },
-        { label: 'Tags', path: 'tags' },
-      ],
-    },
-    {
-      title: 'Renewal',
-      fields: [
-        { label: 'Auto-Renewal', path: 'lifecycle.autoRenewal.status' },
-        { label: 'Next Renewal', path: 'lifecycle.autoRenewal.expiresAt' },
-        { label: 'Eligible', path: 'lifecycle.renewal.isEligible' },
-        { label: 'Price Per Year', path: 'lifecycle.renewal.pricePerYearFormatted' },
-      ],
-    },
-    {
-      title: 'Flags',
-      fields: [
-        { label: 'Transfer Lock', path: 'flags.DNS_TRANSFER_OUT.status' },
-        { label: 'WHOIS Privacy', path: 'flags.DNS_WHOIS_PROXY.status' },
-        { label: 'DNS Resolution', path: 'flags.DNS_RESOLUTION.status' },
-        { label: 'DNS Updates', path: 'flags.DNS_UPDATE.status' },
-        { label: 'Tokenization', path: 'flags.DNS_UNS_TOKENIZATION.status' },
-      ],
-    },
-    {
-      title: 'DNS',
-      fields: [
-        { label: 'Nameserver Mode', path: 'dns.nameservers.status' },
-        { label: 'Nameservers', path: 'dns.nameservers.nameservers' },
-        { label: 'DNSSEC Enabled', path: 'dns.dnssec.enabled' },
-        { label: 'DNSSEC Valid', path: 'dns.dnssec.valid' },
-      ],
-    },
-    {
-      title: 'Marketplace',
-      fields: [
-        { label: 'Listing Status', path: 'marketplace.listing.status' },
-        { label: 'Listing Price', path: 'marketplace.listing.price' },
-        { label: 'Listing Views', path: 'marketplace.listing.views' },
-        { label: 'Offers', path: 'marketplace.offersCount' },
-        { label: 'Leads', path: 'marketplace.leadsCount' },
-        { label: 'Watchlist', path: 'marketplace.watchlistCount' },
-      ],
-    },
-  ],
+interface SubTableConfig {
+  title: string;
+  arrayPath: string;
+  columns: string[];
+}
+
+interface DetailConfig {
+  source?: 'item' | 'response';
+  sections: DetailSection[];
+  subTables?: SubTableConfig[];
+}
+
+const DETAIL_CONFIGS: Record<string, DetailConfig> = {
+  ud_domain_get: {
+    sections: [
+      {
+        title: 'General',
+        fields: [
+          { label: 'Domain', path: 'domain' },
+          { label: 'Extension', path: 'extension' },
+          { label: 'Purchased', path: 'lifecycle.purchasedAt' },
+          { label: 'Expires', path: 'lifecycle.expiresAt' },
+          { label: 'Transfer Status', path: 'lifecycle.transferStatus' },
+          { label: 'Externally Owned', path: 'lifecycle.isExternallyOwned' },
+          { label: 'Reverse Resolution', path: 'lifecycle.reverse' },
+          { label: 'Tags', path: 'tags' },
+        ],
+      },
+      {
+        title: 'Renewal',
+        fields: [
+          { label: 'Auto-Renewal', path: 'lifecycle.autoRenewal.status' },
+          { label: 'Next Renewal', path: 'lifecycle.autoRenewal.expiresAt' },
+          { label: 'Eligible', path: 'lifecycle.renewal.isEligible' },
+          { label: 'Price Per Year', path: 'lifecycle.renewal.pricePerYearFormatted' },
+        ],
+      },
+      {
+        title: 'Flags',
+        fields: [
+          { label: 'Transfer Lock', path: 'flags.DNS_TRANSFER_OUT.status' },
+          { label: 'WHOIS Privacy', path: 'flags.DNS_WHOIS_PROXY.status' },
+          { label: 'DNS Resolution', path: 'flags.DNS_RESOLUTION.status' },
+          { label: 'DNS Updates', path: 'flags.DNS_UPDATE.status' },
+          { label: 'Tokenization', path: 'flags.DNS_UNS_TOKENIZATION.status' },
+        ],
+      },
+      {
+        title: 'DNS',
+        fields: [
+          { label: 'Nameserver Mode', path: 'dns.nameservers.status' },
+          { label: 'Nameservers', path: 'dns.nameservers.nameservers' },
+          { label: 'DNSSEC Enabled', path: 'dns.dnssec.enabled' },
+          { label: 'DNSSEC Valid', path: 'dns.dnssec.valid' },
+        ],
+      },
+      {
+        title: 'Marketplace',
+        fields: [
+          { label: 'Listing Status', path: 'marketplace.listing.status' },
+          { label: 'Listing Price', path: 'marketplace.listing.price' },
+          { label: 'Listing Views', path: 'marketplace.listing.views' },
+          { label: 'Offers', path: 'marketplace.offersCount' },
+          { label: 'Leads', path: 'marketplace.leadsCount' },
+          { label: 'Watchlist', path: 'marketplace.watchlistCount' },
+        ],
+      },
+    ],
+    subTables: [
+      { title: 'Pending Operations', arrayPath: 'pendingOperations', columns: ['id', 'type', 'status', 'createdAt'] },
+    ],
+  },
+
+  ud_cart_get: {
+    source: 'response',
+    sections: [
+      {
+        title: 'Summary',
+        fields: [
+          { label: 'Items', path: 'itemCount' },
+          { label: 'Total Value', path: 'pricing.totalOrderValueFormatted' },
+          { label: 'Total Discounts', path: 'totalDiscountsFormatted' },
+          { label: 'Amount Due', path: 'pricing.totalAmountDueFormatted' },
+        ],
+      },
+      {
+        title: 'Pricing',
+        fields: [
+          { label: 'Subtotal', path: 'pricing.preTaxAmountDueFormatted' },
+          { label: 'Sales Tax', path: 'pricing.salesTaxFormatted' },
+          { label: 'Tax Rate', path: 'pricing.taxRate' },
+          { label: 'Promo Credits', path: 'pricing.promoCreditsUsedFormatted' },
+          { label: 'Store Credits', path: 'pricing.storeCreditsUsedFormatted' },
+          { label: 'Account Balance', path: 'pricing.accountBalanceUsedFormatted' },
+          { label: 'Total Due', path: 'pricing.totalAmountDueFormatted' },
+        ],
+      },
+    ],
+    subTables: [
+      { title: 'Items', arrayPath: 'items', columns: ['domain', 'productType', 'originalPriceFormatted', 'discountAmountFormatted'] },
+      { title: 'Discounts', arrayPath: 'discounts', columns: ['title', 'type', 'amountFormatted', 'code'] },
+    ],
+  },
+
+  ud_dns_records_list: {
+    source: 'response',
+    sections: [
+      {
+        title: 'DNS Status',
+        fields: [
+          { label: 'Domain', path: 'domain' },
+          { label: 'Provider', path: 'dnsStatus.provider' },
+          { label: 'Configured', path: 'dnsStatus.configured' },
+          { label: 'Status', path: 'dnsStatus.message' },
+        ],
+      },
+    ],
+    subTables: [
+      { title: 'Records', arrayPath: 'records', columns: ['type', 'subName', 'values', 'ttl', 'readonly'] },
+    ],
+  },
+
+  ud_domain_pending_operations: {
+    sections: [
+      {
+        title: 'Domain',
+        fields: [
+          { label: 'Domain', path: 'domain' },
+          { label: 'Has Pending Operations', path: 'hasPendingOperations' },
+        ],
+      },
+    ],
+    subTables: [
+      { title: 'Operations', arrayPath: 'operations', columns: ['id', 'type', 'status', 'createdAt', 'updatedAt', 'errorCode'] },
+    ],
+  },
 };
 
-function formatDetail(row: Record<string, unknown>, sections: DetailSection[]): string {
+function formatDetail(obj: Record<string, unknown>, config: DetailConfig): string {
   const parts: string[] = [];
 
-  for (const section of sections) {
+  for (const section of config.sections) {
     const rows: [string, string][] = [];
     for (const field of section.fields) {
-      const value = getNestedValue(row, field.path);
+      const value = getNestedValue(obj, field.path);
       if (value === null || value === undefined) continue;
       rows.push([field.label, formatDetailValue(value)]);
     }
@@ -300,24 +388,23 @@ function formatDetail(row: Record<string, unknown>, sections: DetailSection[]): 
     parts.push(table.toString());
   }
 
-  // Pending operations sub-table
-  const ops = getNestedValue(row, 'pendingOperations') as Record<string, unknown>[] | undefined;
-  if (Array.isArray(ops) && ops.length > 0) {
-    parts.push('');
-    parts.push(chalk.bold.underline('Pending Operations'));
-    const opsTable = new Table({
-      head: ['ID', 'Type', 'Status', 'Created'].map((h) => chalk.bold(h)),
-      style: { head: [], border: [] },
-    });
-    for (const op of ops) {
-      opsTable.push([
-        formatCellValue(op.id, true),
-        formatCellValue(op.type, true),
-        formatCellValue(op.status, true),
-        formatCellValue(op.createdAt, true),
-      ]);
+  // Render sub-tables
+  if (config.subTables) {
+    for (const sub of config.subTables) {
+      const arr = getNestedValue(obj, sub.arrayPath) as Record<string, unknown>[] | undefined;
+      if (!Array.isArray(arr) || arr.length === 0) continue;
+
+      parts.push('');
+      parts.push(chalk.bold.underline(sub.title));
+      const subTable = new Table({
+        head: sub.columns.map((c) => chalk.bold(formatHeaderName(c))),
+        style: { head: [], border: [] },
+      });
+      for (const item of arr) {
+        subTable.push(sub.columns.map((col) => formatCellValue(getNestedValue(item, col), true)));
+      }
+      parts.push(subTable.toString());
     }
-    parts.push(opsTable.toString());
   }
 
   return parts.join('\n');
