@@ -77,7 +77,13 @@ export function registerSmartCartAdd(program: Command): void {
             const results = searchResult.results as Record<string, unknown>[] | undefined;
             const match = results?.find((r) => r.name === domain);
 
-            if (!match || match.available !== true) {
+            const marketplace = match?.marketplace as Record<string, unknown> | undefined;
+            const source = marketplace?.source as string | undefined;
+
+            // Marketplace domains (afternic, sedo) may have available=false for registration
+            // but are still purchasable via their marketplace route.
+            const hasMarketplaceRoute = source != null && source in SOURCE_TO_CART_CMD;
+            if (!match || (match.available !== true && !hasMarketplaceRoute)) {
               console.error(formatError(new Error(
                 `Domain not available: ${domain}`,
               )));
@@ -85,8 +91,6 @@ export function registerSmartCartAdd(program: Command): void {
               continue;
             }
 
-            const marketplace = match.marketplace as Record<string, unknown> | undefined;
-            const source = marketplace?.source as string | undefined;
             const subCmd = SOURCE_TO_CART_CMD[source ?? ''] ?? 'registration';
             toolName = CART_CMD_TO_TOOL[subCmd];
           } catch (err) {
@@ -98,11 +102,18 @@ export function registerSmartCartAdd(program: Command): void {
         }
 
         // Call the resolved cart-add endpoint
+        // All cart-add endpoints use "name" as the domain key in their request body.
         const body: Record<string, unknown> = {
           domains: [{ name: domain }],
         };
-        if (opts.years) {
-          (body.domains as Record<string, unknown>[])[0].years = Number(opts.years);
+        if (opts.years !== undefined) {
+          const yearsNum = Number(opts.years);
+          if (!Number.isInteger(yearsNum) || yearsNum < 1 || yearsNum > 10) {
+            console.error(formatError(new Error('Invalid --years value: must be an integer between 1 and 10.')));
+            process.exitCode = 1;
+            continue;
+          }
+          (body.domains as Record<string, unknown>[])[0].quantity = yearsNum;
         }
 
         const spinner = await createSpinner(`Adding ${domain} to cart...`, { quiet, format });

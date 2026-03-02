@@ -105,6 +105,14 @@ describe('marketplace commands', () => {
       expect(capturedBody!.domains).toEqual([{ name: 'mysite.com' }]);
     });
 
+    it('smart cart add --type invalid shows error', async () => {
+      await program.parseAsync(['node', 'ud', 'cart', 'add', '--type', 'invalid', 'test.com']);
+
+      expect(process.exitCode).toBe(1);
+      const output = errorSpy.mock.calls.map((c: unknown[]) => String(c[0])).join('\n');
+      expect(output).toContain('Unknown cart type: invalid');
+    });
+
     it('cart checkout --confirm calls ud_cart_checkout', async () => {
       let called = false;
       mockFetchRoute('actions/ud_cart_checkout', () => {
@@ -250,7 +258,7 @@ describe('marketplace commands', () => {
       ]);
 
       expect(capturedBody).toBeTruthy();
-      expect(capturedBody!.offers).toBeDefined();
+      expect(capturedBody!.offers).toEqual([{ offerId: 'o1', action: 'accept' }]);
     });
   });
 

@@ -166,11 +166,8 @@ function registerRoute(
   // Hook-driven options
   const hooks = getHooks(route.toolName);
 
-  // --price for listing commands with transformBody hook
-  if (hooks?.transformBody) {
-    if (route.toolName === 'ud_listing_create' || route.toolName === 'ud_listing_update') {
-      cmd.option('--price <dollars>', 'Listing price in dollars (e.g., 99.99)');
-    }
+  if (hooks?.priceOption) {
+    cmd.option('--price <dollars>', 'Listing price in dollars (e.g., 99.99)');
   }
   if (hooks?.requireConfirm) {
     cmd.option('--confirm', 'Confirm the destructive operation without interactive prompt');

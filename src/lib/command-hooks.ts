@@ -26,10 +26,34 @@ export interface CommandHooks {
   };
   /** Transform the request body before sending (e.g., price conversion). */
   transformBody?: (body: Record<string, unknown>, opts: Record<string, unknown>) => Record<string, unknown>;
+  /** Register a --price <dollars> option for this command. */
+  priceOption?: boolean;
   /** Show an operation-tracking hint after the API call completes. */
   showOperationHint?: boolean;
   /** Show a cart-add hint using the first available result from search. */
   showCartHint?: boolean;
+}
+
+/**
+ * Create a transformBody hook that converts --price (dollars) to priceInCents on each item.
+ */
+function makePriceTransformer(arrayKey: string): CommandHooks['transformBody'] {
+  return (body, opts) => {
+    const price = opts.price as number | undefined;
+    if (price !== undefined) {
+      const num = Number(price);
+      if (Number.isNaN(num) || num < 0) {
+        throw new Error(`Invalid --price value: "${price}". Must be a non-negative number (e.g., 99.99).`);
+      }
+      const cents = Math.round(num * 100);
+      if (Array.isArray(body[arrayKey])) {
+        for (const item of body[arrayKey] as Record<string, unknown>[]) {
+          if (item.priceInCents === undefined) item.priceInCents = cents;
+        }
+      }
+    }
+    return body;
+  };
 }
 
 const HOOKS: Record<string, CommandHooks> = {
@@ -65,32 +89,12 @@ const HOOKS: Record<string, CommandHooks> = {
     },
   },
   ud_listing_create: {
-    transformBody: (body, opts) => {
-      const price = opts.price as number | undefined;
-      if (price !== undefined) {
-        const cents = Math.round(Number(price) * 100);
-        if (Array.isArray(body.domains)) {
-          for (const item of body.domains as Record<string, unknown>[]) {
-            if (item.priceInCents === undefined) item.priceInCents = cents;
-          }
-        }
-      }
-      return body;
-    },
+    priceOption: true,
+    transformBody: makePriceTransformer('domains'),
   },
   ud_listing_update: {
-    transformBody: (body, opts) => {
-      const price = opts.price as number | undefined;
-      if (price !== undefined) {
-        const cents = Math.round(Number(price) * 100);
-        if (Array.isArray(body.listings)) {
-          for (const item of body.listings as Record<string, unknown>[]) {
-            if (item.priceInCents === undefined) item.priceInCents = cents;
-          }
-        }
-      }
-      return body;
-    },
+    priceOption: true,
+    transformBody: makePriceTransformer('listings'),
   },
   ud_domains_search: { showCartHint: true },
   ud_dns_record_add: { showOperationHint: true },
