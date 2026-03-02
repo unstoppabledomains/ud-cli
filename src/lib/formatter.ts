@@ -544,7 +544,26 @@ function formatCellValue(value: unknown, useColor = true): string {
 
 /** Explicit header overrides for column keys where the auto-generated name is awkward. */
 const HEADER_OVERRIDES: Record<string, string> = {
+  'autoRenewal.status': 'Auto-Renewal',
+  'config.type': 'Type',
+  'expMonth': 'Exp. Month',
+  'expYear': 'Exp. Year',
+  'hasPendingOperations': 'Pending Ops',
+  'id': 'ID',
+  'isDefault': 'Default',
+  'isUsingDefaultNameservers': 'Default NS',
+  'jobId': 'Job ID',
+  'last4': 'Last 4',
+  'lifecycle.autoRenewal.status': 'Auto-Renewal',
+  'lifecycle.expiresAt': 'Expires At',
+  'listingId': 'Listing ID',
+  'marketplace.status': 'Status',
+  'operationId': 'Operation ID',
   'pricing.formatted': 'Price',
+  'subName': 'Record',
+  'targetUrl': 'Target URL',
+  'tld': 'TLD',
+  'ttl': 'TTL',
 };
 
 /**

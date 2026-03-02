@@ -135,7 +135,7 @@ describe('api-commands integration', () => {
     await program.parseAsync(['node', 'ud', '--format', 'csv', 'domains', 'tlds']);
 
     const output = consoleSpy.mock.calls.map((c: unknown[]) => String(c[0])).join('\n');
-    expect(output).toContain('Tld');
+    expect(output).toContain('TLD');
     expect(output).toContain('com');
   });
 

@@ -79,7 +79,7 @@ describe('formatter', () => {
         ],
       };
       const result = stripAnsi(formatOutput(data, { format: 'table' }));
-      expect(result).toContain('Id');
+      expect(result).toContain('ID');
       expect(result).toContain('Label');
       expect(result).toContain('Item A');
     });
