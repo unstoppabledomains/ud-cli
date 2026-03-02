@@ -31,7 +31,7 @@ describe('formatter', () => {
       const result = stripAnsi(formatOutput(data, { format: 'table' }));
       expect(result).toContain('test.com');
       expect(result).toContain('foo.com');
-      expect(result).toContain('name');
+      expect(result).toContain('Name');
     });
 
     it('renders "No results." for empty data', () => {
@@ -79,15 +79,15 @@ describe('formatter', () => {
         ],
       };
       const result = stripAnsi(formatOutput(data, { format: 'table' }));
-      expect(result).toContain('id');
-      expect(result).toContain('label');
+      expect(result).toContain('Id');
+      expect(result).toContain('Label');
       expect(result).toContain('Item A');
     });
 
     it('treats scalar response as single-row table', () => {
       const data = { success: true, orderId: 123 };
       const result = stripAnsi(formatOutput(data, { format: 'table' }));
-      expect(result).toContain('success');
+      expect(result).toContain('Success');
       expect(result).toContain('123');
     });
   });
@@ -102,7 +102,7 @@ describe('formatter', () => {
       };
       const result = stripAnsi(formatOutput(data, { format: 'csv' }));
       const lines = result.split('\n');
-      expect(lines[0]).toBe('name,available');
+      expect(lines[0]).toBe('Name,Available');
       expect(lines[1]).toContain('test.com');
     });
 
