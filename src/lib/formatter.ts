@@ -12,6 +12,8 @@ interface FormatOptions {
   format: OutputFormat;
   responsePattern?: ResponsePattern;
   toolName?: string;
+  /** User-specified columns via --fields flag. Overrides TABLE_CONFIGS. */
+  fields?: string[];
 }
 
 /**
@@ -56,7 +58,8 @@ function formatTable(data: unknown, options: FormatOptions): string {
   const obj = data as Record<string, unknown>;
 
   // Check for detail view (single-item response with detail config)
-  const detailConfig = DETAIL_CONFIGS[options.toolName ?? ''];
+  // Skip detail view when --fields is specified — user wants explicit columns
+  const detailConfig = !options.fields ? DETAIL_CONFIGS[options.toolName ?? ''] : undefined;
   if (detailConfig) {
     if (detailConfig.source === 'response') {
       // Response-level detail: render the top-level response object directly
@@ -490,7 +493,11 @@ function extractTableData(
 
   if (rows.length === 0) return { rows: [], columns: [] };
 
-  // Get column config
+  // Priority: user --fields > TABLE_CONFIGS > auto-detect
+  if (options.fields && options.fields.length > 0) {
+    return { rows, columns: options.fields };
+  }
+
   const toolName = options.toolName ?? '';
   const configuredCols = TABLE_CONFIGS[toolName];
 

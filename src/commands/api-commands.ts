@@ -187,6 +187,9 @@ function registerRoute(
 
     const format = (globalOpts.format as OutputFormat) ?? 'table';
     const quiet = !!globalOpts.quiet;
+    const fields = typeof globalOpts.fields === 'string'
+      ? globalOpts.fields.split(',').map((f: string) => f.trim()).filter(Boolean)
+      : undefined;
 
     // Collect positional values
     const positionalValues: Record<string, string | string[]> = {};
@@ -257,6 +260,7 @@ function registerRoute(
           format,
           responsePattern: spec?.responsePattern,
           toolName: route.toolName,
+          fields,
         });
         console.log(output);
 

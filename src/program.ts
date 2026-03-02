@@ -18,6 +18,7 @@ program
   .option('--format <format>', 'output format (table, json, csv)', 'table')
   .option('--quiet', 'suppress output except errors')
   .option('--verbose', 'show detailed output')
+  .option('--fields <columns>', 'comma-separated list of fields to display (e.g., name,expiresAt,listing.price)')
   .option('--profile <name>', 'configuration profile to use')
   .hook('preAction', (thisCommand) => {
     const opts = thisCommand.opts<{ env?: string; format?: string }>();

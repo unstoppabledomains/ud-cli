@@ -90,6 +90,50 @@ describe('formatter', () => {
       expect(result).toContain('Success');
       expect(result).toContain('123');
     });
+
+    it('--fields overrides default columns', () => {
+      const data = {
+        results: [
+          { name: 'test.com', available: true, extra: 'hidden' },
+          { name: 'foo.com', available: false, extra: 'also hidden' },
+        ],
+      };
+      const result = stripAnsi(
+        formatOutput(data, { format: 'table', fields: ['name', 'extra'] }),
+      );
+      expect(result).toContain('Name');
+      expect(result).toContain('Extra');
+      expect(result).toContain('hidden');
+      expect(result).not.toContain('Available');
+    });
+
+    it('--fields works with nested dotted paths', () => {
+      const data = {
+        results: [
+          { name: 'test.com', pricing: { formatted: '$9.99' }, marketplace: { status: 'listed' } },
+        ],
+      };
+      const result = stripAnsi(
+        formatOutput(data, { format: 'table', fields: ['name', 'pricing.formatted'] }),
+      );
+      expect(result).toContain('$9.99');
+      expect(result).not.toContain('listed');
+    });
+
+    it('--fields applies to CSV output', () => {
+      const data = {
+        results: [
+          { name: 'test.com', available: true, extra: 'val' },
+        ],
+      };
+      const result = stripAnsi(
+        formatOutput(data, { format: 'csv', fields: ['extra', 'name'] }),
+      );
+      const lines = result.split('\n');
+      expect(lines[0]).toBe('Extra,Name');
+      expect(lines[1]).toContain('val');
+      expect(lines[1]).toContain('test.com');
+    });
   });
 
   describe('CSV output', () => {
