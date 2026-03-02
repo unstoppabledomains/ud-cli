@@ -17,12 +17,13 @@ export async function promptInput(
 
   const rl = createInterface({ input: process.stdin, output: process.stdout });
   try {
-    const answer = await rl.question(message);
+    const rawAnswer = await rl.question(message);
+    const answer = rawAnswer.trim();
     if (opts?.validate && !opts.validate.test(answer)) {
       console.error(`Invalid input: expected format ${opts.validate}`);
       return '';
     }
-    return answer.trim();
+    return answer;
   } finally {
     rl.close();
   }

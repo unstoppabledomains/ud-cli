@@ -135,7 +135,7 @@ function registerRoute(
   // Hook-driven options
   const hooks = getHooks(route.toolName);
   if (hooks?.requireConfirm) {
-    cmd.option('--confirm', 'Skip interactive confirmation');
+    cmd.option('--confirm', 'Confirm the destructive operation without interactive prompt');
   }
   if (hooks?.promptInput) {
     // Only add the flag if the spec didn't already generate it
@@ -195,9 +195,6 @@ function registerRoute(
         return;
       }
     }
-    if (hooks?.requireConfirm?.paramName && (opts.confirm || !hooks.requireConfirm)) {
-      body[hooks.requireConfirm.paramName] = true;
-    }
     // Set the API param if confirmation was given (via flag or prompt)
     if (hooks?.requireConfirm?.paramName) {
       body[hooks.requireConfirm.paramName] = true;
@@ -212,7 +209,7 @@ function registerRoute(
           validate: hooks.promptInput.validate,
         });
         if (!value) {
-          console.log('Aborted — no input provided.');
+          console.log(`Aborted — use --${hooks.promptInput.flagName} <value> to provide input non-interactively.`);
           return;
         }
       }
