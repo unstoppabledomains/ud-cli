@@ -1,4 +1,4 @@
-import { getHooks, formatOperationHint } from '../../src/lib/command-hooks.js';
+import { getHooks, formatOperationHint, formatCartHint } from '../../src/lib/command-hooks.js';
 
 // Strip ANSI codes for easier assertion
 function stripAnsi(str: string): string {
@@ -47,8 +47,13 @@ describe('command-hooks', () => {
       }
     });
 
+    it('returns showCartHint for ud_domains_search', () => {
+      const hooks = getHooks('ud_domains_search');
+      expect(hooks).toBeDefined();
+      expect(hooks!.showCartHint).toBe(true);
+    });
+
     it('returns undefined for tools without hooks', () => {
-      expect(getHooks('ud_domains_search')).toBeUndefined();
       expect(getHooks('ud_portfolio_list')).toBeUndefined();
       expect(getHooks('ud_dns_records_list')).toBeUndefined();
     });
@@ -106,6 +111,64 @@ describe('command-hooks', () => {
       };
       const hint = stripAnsi(formatOperationHint(result));
       expect(hint).toContain('ud domains operations <domain>');
+    });
+  });
+
+  describe('formatCartHint', () => {
+    it('shows cart add command for first available domain', () => {
+      const result = {
+        results: [
+          { name: 'taken.com', available: false, marketplace: { status: 'registered-not-for-sale' } },
+          { name: 'free.com', available: true, marketplace: { status: 'available', source: 'unstoppable_domains' } },
+        ],
+      };
+      const hint = stripAnsi(formatCartHint(result));
+      expect(hint).toContain('ud cart add registration free.com');
+    });
+
+    it('maps afternic source to afternic subcommand', () => {
+      const result = {
+        results: [
+          { name: 'afternic-domain.com', available: true, marketplace: { status: 'afternic', source: 'afternic' } },
+        ],
+      };
+      const hint = stripAnsi(formatCartHint(result));
+      expect(hint).toContain('ud cart add afternic afternic-domain.com');
+    });
+
+    it('maps sedo source to sedo subcommand', () => {
+      const result = {
+        results: [
+          { name: 'sedo-domain.com', available: true, marketplace: { status: 'sedo', source: 'sedo' } },
+        ],
+      };
+      const hint = stripAnsi(formatCartHint(result));
+      expect(hint).toContain('ud cart add sedo sedo-domain.com');
+    });
+
+    it('maps aftermarket source to listed subcommand', () => {
+      const result = {
+        results: [
+          { name: 'listed.com', available: true, marketplace: { status: 'for-sale', source: 'aftermarket' } },
+        ],
+      };
+      const hint = stripAnsi(formatCartHint(result));
+      expect(hint).toContain('ud cart add listed listed.com');
+    });
+
+    it('returns empty string when no results are available', () => {
+      const result = {
+        results: [
+          { name: 'taken.com', available: false },
+        ],
+      };
+      expect(formatCartHint(result)).toBe('');
+    });
+
+    it('returns empty string for empty results', () => {
+      expect(formatCartHint({ results: [] })).toBe('');
+      expect(formatCartHint(null)).toBe('');
+      expect(formatCartHint({})).toBe('');
     });
   });
 });

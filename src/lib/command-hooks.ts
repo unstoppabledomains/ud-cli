@@ -26,6 +26,8 @@ export interface CommandHooks {
   };
   /** Show an operation-tracking hint after the API call completes. */
   showOperationHint?: boolean;
+  /** Show a cart-add hint using the first available result from search. */
+  showCartHint?: boolean;
 }
 
 const HOOKS: Record<string, CommandHooks> = {
@@ -50,6 +52,7 @@ const HOOKS: Record<string, CommandHooks> = {
       validate: /^\d{6}$/,
     },
   },
+  ud_domains_search: { showCartHint: true },
   ud_dns_record_add: { showOperationHint: true },
   ud_dns_record_update: { showOperationHint: true },
   ud_dns_record_remove: { showOperationHint: true },
@@ -97,4 +100,37 @@ export function formatOperationHint(result: unknown): string {
     : 'ud domains operations <domain>';
 
   return chalk.dim(`Tip: DNS changes are async. Track with: ${trackCmd}`);
+}
+
+/** Map marketplace source to the corresponding cart add subcommand. */
+const SOURCE_TO_CART_CMD: Record<string, string> = {
+  unstoppable_domains: 'registration',
+  aftermarket: 'listed',
+  afternic: 'afternic',
+  sedo: 'sedo',
+};
+
+/**
+ * Format a cart-add hint from domain search results.
+ * Uses the first available domain to build a copy/paste command.
+ */
+export function formatCartHint(result: unknown): string {
+  if (!result || typeof result !== 'object') return '';
+
+  const obj = result as Record<string, unknown>;
+  const results = (obj.results ?? obj.domains) as Record<string, unknown>[] | undefined;
+  if (!Array.isArray(results) || results.length === 0) return '';
+
+  // Find the first available domain
+  const available = results.find((item) => item.available === true);
+  if (!available) return '';
+
+  const name = available.name as string | undefined;
+  if (!name) return '';
+
+  const marketplace = available.marketplace as Record<string, unknown> | undefined;
+  const source = marketplace?.source as string | undefined;
+  const subCmd = SOURCE_TO_CART_CMD[source ?? ''] ?? 'registration';
+
+  return chalk.dim(`\nTo add to cart: ud cart add ${subCmd} ${name}`);
 }
