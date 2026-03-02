@@ -1,5 +1,6 @@
 import * as crypto from 'node:crypto';
 import * as http from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { apiBaseUrl, getEnvConfig, setEnvConfig } from './config.js';
 import { saveTokens } from './credentials.js';
 import type { OAuthServerMetadata, OAuthTokenResponse, OAuthClientRegistration, TokenData } from './types.js';
@@ -130,7 +131,7 @@ export async function performOAuthLogin(): Promise<TokenData> {
   }
 
   // 2. Start local callback server to get a port
-  const { server, port, waitForCallback } = createCallbackServer();
+  const { server, port, waitForCallback } = await createCallbackServer();
 
   const redirectUri = `http://127.0.0.1:${port}/callback`;
 
@@ -201,11 +202,11 @@ export async function performOAuthLogin(): Promise<TokenData> {
 
 // --- Local callback server ---
 
-function createCallbackServer(): {
+async function createCallbackServer(): Promise<{
   server: http.Server;
   port: number;
   waitForCallback: () => Promise<{ code: string; returnedState: string }>;
-} {
+}> {
   let resolveCallback: (value: { code: string; returnedState: string }) => void;
   let rejectCallback: (reason: Error) => void;
 
@@ -217,7 +218,7 @@ function createCallbackServer(): {
   );
 
   const server = http.createServer((req, res) => {
-    const url = new URL(req.url ?? '/', `http://${req.headers.host}`);
+    const url = new URL(req.url ?? '/', 'http://127.0.0.1');
 
     if (url.pathname === '/callback') {
       const code = url.searchParams.get('code');
@@ -248,8 +249,17 @@ function createCallbackServer(): {
     }
   });
 
-  server.listen(0, '127.0.0.1');
-  const address = server.address() as { port: number };
+  const address = await new Promise<AddressInfo>((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', () => {
+      const addr = server.address();
+      if (!addr || typeof addr === 'string') {
+        reject(new Error('Failed to obtain callback server address'));
+        return;
+      }
+      resolve(addr as AddressInfo);
+    });
+  });
 
   const timeout = setTimeout(() => {
     rejectCallback(new Error('OAuth login timed out after 120 seconds'));

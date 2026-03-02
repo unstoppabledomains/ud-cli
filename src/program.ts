@@ -17,8 +17,7 @@ program
     const opts = thisCommand.opts<{ env?: string }>();
     if (opts.env) {
       if (!VALID_ENVS.includes(opts.env)) {
-        console.error(`Invalid environment: ${opts.env}. Must be one of: ${VALID_ENVS.join(', ')}`);
-        process.exit(1);
+        thisCommand.error(`Invalid environment: ${opts.env}. Must be one of: ${VALID_ENVS.join(', ')}`);
       }
       setEnvOverride(opts.env as Environment);
     }

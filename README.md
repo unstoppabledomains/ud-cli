@@ -83,4 +83,4 @@ Binary targets: macOS (arm64, x64), Linux (x64), Windows (x64).
 
 Credentials are stored securely:
 - **Primary:** System keychain via `keytar` (macOS Keychain, Windows Credential Vault, Linux Secret Service)
-- **Fallback:** Encrypted file at `~/.ud-cli/credentials-{env}.json` (permissions `0600`) when native keychain is unavailable
+- **Fallback:** Plaintext JSON file at `~/.ud-cli/credentials-{env}.json` with permissions `0600` when native keychain is unavailable

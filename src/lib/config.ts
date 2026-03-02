@@ -22,7 +22,7 @@ const schema = {
 };
 
 const config = new Conf<AppConfig>({
-  projectName: 'ud-cli',
+  projectName: process.env.NODE_ENV === 'test' ? 'ud-cli-test' : 'ud-cli',
   schema,
 });
 
