@@ -149,9 +149,9 @@ const TABLE_CONFIGS: Record<string, string[]> = {
   // Domain search results
   ud_domains_search: ['name', 'available', 'marketplace.status', 'pricing.formatted'],
   // Portfolio list
-  ud_portfolio_list: ['name', 'status', 'expiresAt', 'autoRenewal'],
+  ud_portfolio_list: ['name', 'expiresAt', 'autoRenewal.status', 'tags'],
   // Domain get
-  ud_domain_get: ['name', 'status', 'registryType', 'expiresAt'],
+  ud_domain_get: ['domain', 'extension', 'lifecycle.expiresAt', 'lifecycle.transferStatus', 'tags'],
   // TLD list (spec returns string[], so extractTableData wraps them)
   ud_tld_list: ['tld'],
   // DNS records
@@ -168,6 +168,32 @@ const TABLE_CONFIGS: Record<string, string[]> = {
   ud_listing_create: ['domain', 'success', 'listingId'],
   // Payment methods (spec returns savedCards array)
   ud_cart_get_payment_methods: ['id', 'brand', 'last4', 'expMonth', 'expYear', 'isDefault'],
+
+  // --- DNS mutation responses ---
+  ud_dns_record_add: ['domain', 'success', 'operationId', 'error'],
+  ud_dns_record_update: ['domain', 'success', 'operationId', 'error'],
+  ud_dns_record_remove: ['domain', 'success', 'operationId', 'error'],
+  ud_dns_records_remove_all: ['domain', 'success', 'operationId', 'error'],
+  ud_dns_nameservers_set_custom: ['domain', 'success', 'nameservers', 'error'],
+  ud_dns_nameservers_set_default: ['domain', 'success', 'nameservers', 'error'],
+  ud_dns_hosting_add: ['domain', 'success', 'config.type', 'error'],
+  ud_dns_hosting_remove: ['domain', 'success', 'subName', 'deletedAll', 'error'],
+
+  // Nameserver list (single-object response — rendered as single row)
+  ud_dns_nameservers_list: ['domain', 'nameservers', 'isUsingDefaultNameservers'],
+  // Hosting list (array in "configs" key)
+  ud_dns_hosting_list: ['type', 'subName', 'targetUrl', 'status'],
+
+  // --- Domain lifecycle ---
+  ud_domain_pending_operations: ['domain', 'hasPendingOperations'],
+  ud_domain_auto_renewal_update: ['domain', 'success', 'error'],
+  ud_domain_tags_add: ['domain', 'success', 'tagsApplied', 'error'],
+  ud_domain_tags_remove: ['domain', 'success', 'tagsRemoved', 'error'],
+  ud_domain_flags_update: ['domain', 'success', 'updatedFlags', 'error'],
+  ud_domain_generate_lander: ['domain', 'success', 'jobId', 'error'],
+  ud_domain_lander_status: ['domain', 'status', 'hostingType'],
+  ud_domain_remove_lander: ['domain', 'success', 'operationId', 'error'],
+  ud_domain_push: ['success', 'message'],
 };
 
 function extractTableData(
@@ -176,7 +202,7 @@ function extractTableData(
 ): { rows: Record<string, unknown>[]; columns: string[] } {
   const isTable = options.format === 'table';
   // Find the primary array — common keys: results, domains, tlds, records, items, contacts, offers, leads
-  const arrayKeys = ['results', 'domains', 'tlds', 'records', 'items', 'contacts', 'offers', 'leads', 'messages', 'listings', 'savedCards'];
+  const arrayKeys = ['results', 'domains', 'tlds', 'records', 'items', 'contacts', 'offers', 'leads', 'messages', 'listings', 'savedCards', 'configs', 'pushedDomains', 'failedDomains'];
   let rows: Record<string, unknown>[] = [];
 
   for (const key of arrayKeys) {
@@ -238,6 +264,15 @@ function formatCellValue(value: unknown, useColor = true): string {
   }
   if (Array.isArray(value)) return value.join(', ');
   if (typeof value === 'object') return JSON.stringify(value);
+
+  // Detect ISO date strings and format to machine locale
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value)) {
+    const d = new Date(value);
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleString();
+    }
+  }
+
   return String(value);
 }
 

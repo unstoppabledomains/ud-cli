@@ -11,6 +11,9 @@ import { buildParams, specParamToOption } from '../lib/param-builder.js';
 import { callAction } from '../lib/api.js';
 import { formatOutput, formatError } from '../lib/formatter.js';
 import { createSpinner } from '../lib/spinner.js';
+import { getHooks, formatOperationHint } from '../lib/command-hooks.js';
+import { promptInput, promptConfirm } from '../lib/prompt.js';
+import { readFileSync } from 'node:fs';
 import type { OutputFormat } from '../lib/types.js';
 
 function getRootOpts(cmd: Command): Record<string, unknown> {
@@ -129,6 +132,25 @@ function registerRoute(
   cmd.option('--data <json>', 'Raw JSON request body (overrides all other params)');
   cmd.option('--file <path>', 'Read JSON request body from file');
 
+  // Hook-driven options
+  const hooks = getHooks(route.toolName);
+  if (hooks?.requireConfirm) {
+    cmd.option('--confirm', 'Skip interactive confirmation');
+  }
+  if (hooks?.promptInput) {
+    // Only add the flag if the spec didn't already generate it
+    const existingFlags = cmd.options.map((o) => o.long);
+    if (!existingFlags.includes(`--${hooks.promptInput.flagName}`)) {
+      cmd.option(`--${hooks.promptInput.flagName} <value>`, hooks.promptInput.prompt);
+    }
+  }
+
+  // --domains-file for commands with variadic domains positional arg
+  const hasVariadicDomains = route.positionalArgs.some((a) => a.name === 'domains' && a.variadic);
+  if (hasVariadicDomains) {
+    cmd.option('--domains-file <path>', 'Read domain names from a file (one per line)');
+  }
+
   // Action handler
   cmd.action(async (...args: unknown[]) => {
     const opts = cmd.opts<Record<string, unknown>>();
@@ -147,8 +169,55 @@ function registerRoute(
       }
     }
 
+    // --domains-file: merge file contents with positional domains
+    if (hasVariadicDomains && opts.domainsFile) {
+      try {
+        const fileContent = readFileSync(opts.domainsFile as string, 'utf-8');
+        const fileDomains = fileContent.split('\n').map((l) => l.trim()).filter(Boolean);
+        const existing = positionalValues.domains;
+        const arr = Array.isArray(existing) ? existing : existing ? [existing] : [];
+        positionalValues.domains = [...arr, ...fileDomains];
+      } catch (err) {
+        console.error(formatError(new Error(`Failed to read --domains-file: ${err instanceof Error ? err.message : String(err)}`)));
+        process.exitCode = 1;
+        return;
+      }
+    }
+
     // Build request body
     const body = buildParams(route, spec?.params ?? [], positionalValues, opts);
+
+    // Pre-call hooks: requireConfirm
+    if (hooks?.requireConfirm && !opts.confirm) {
+      const confirmed = await promptConfirm(hooks.requireConfirm.message);
+      if (!confirmed) {
+        console.log('Aborted.');
+        return;
+      }
+    }
+    if (hooks?.requireConfirm?.paramName && (opts.confirm || !hooks.requireConfirm)) {
+      body[hooks.requireConfirm.paramName] = true;
+    }
+    // Set the API param if confirmation was given (via flag or prompt)
+    if (hooks?.requireConfirm?.paramName) {
+      body[hooks.requireConfirm.paramName] = true;
+    }
+
+    // Pre-call hooks: promptInput (e.g., OTP code)
+    if (hooks?.promptInput) {
+      const flagCamel = hooks.promptInput.flagName.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase());
+      let value = opts[flagCamel] as string | undefined;
+      if (!value) {
+        value = await promptInput(hooks.promptInput.prompt, {
+          validate: hooks.promptInput.validate,
+        });
+        if (!value) {
+          console.log('Aborted — no input provided.');
+          return;
+        }
+      }
+      body[hooks.promptInput.paramName] = value;
+    }
 
     const spinner = await createSpinner(`Running ${route.toolName}...`, { quiet, format });
     spinner.start();
@@ -164,6 +233,12 @@ function registerRoute(
           toolName: route.toolName,
         });
         console.log(output);
+
+        // Post-call hook: show operation hint
+        if (hooks?.showOperationHint) {
+          const hint = formatOperationHint(result);
+          if (hint) console.log(hint);
+        }
       }
     } catch (err) {
       spinner.fail('Failed');
