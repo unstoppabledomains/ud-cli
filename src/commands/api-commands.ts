@@ -9,11 +9,13 @@ import { COMMAND_ROUTES } from '../lib/command-registry.js';
 import type { CommandRoute } from '../lib/command-registry.js';
 import { buildParams, specParamToOption } from '../lib/param-builder.js';
 import { callAction } from '../lib/api.js';
-import { formatOutput, formatError } from '../lib/formatter.js';
+import { getCommandDefaults } from '../lib/config.js';
+import { formatOutput, formatError, formatFieldsList, getKnownFields } from '../lib/formatter.js';
 import { createSpinner } from '../lib/spinner.js';
 import { getHooks, formatOperationHint } from '../lib/command-hooks.js';
 import { promptInput, promptConfirm } from '../lib/prompt.js';
 import { readFile } from 'node:fs/promises';
+import chalk from 'chalk';
 import type { OutputFormat } from '../lib/types.js';
 
 /**
@@ -180,16 +182,54 @@ function registerRoute(
     cmd.option('--domains-file <path>', 'Read domain names from a file (one per line)');
   }
 
+  // Add known default fields to --help text
+  const knownFields = getKnownFields(route.toolName, spec?.responseFields);
+  if (knownFields && knownFields.defaults.length > 0) {
+    cmd.addHelpText('after', `\nDefault Fields:\n  ${knownFields.defaults.join(', ')}\n\nUse --fields to see all available fields.`);
+  }
+
   // Action handler
   cmd.action(async (...args: unknown[]) => {
     const opts = cmd.opts<Record<string, unknown>>();
     const globalOpts = getRootOpts(cmd);
 
-    const format = (globalOpts.format as OutputFormat) ?? 'table';
-    const quiet = !!globalOpts.quiet;
-    const fields = typeof globalOpts.fields === 'string'
+    // --fields with no value (boolean true) → show available fields and exit
+    if (globalOpts.fields === true) {
+      const commandPath = route.path.join(' ');
+      console.log(formatFieldsList(route.toolName, commandPath, spec?.responseFields));
+      return;
+    }
+
+    // Merge: CLI flag > saved config default > hard-coded default
+    const commandConfigPath = route.path.join('.');
+    const savedDefaults = getCommandDefaults(commandConfigPath);
+
+    const cliFormat = globalOpts.format as OutputFormat | undefined;
+    const format: OutputFormat = cliFormat ?? savedDefaults.format ?? 'table';
+    const quiet = globalOpts.quiet !== undefined ? !!globalOpts.quiet : savedDefaults.quiet ?? false;
+
+    const cliFields = typeof globalOpts.fields === 'string'
       ? globalOpts.fields.split(',').map((f: string) => f.trim()).filter(Boolean)
       : undefined;
+    const fields = cliFields
+      ?? (savedDefaults.fields
+        ? savedDefaults.fields.split(',').map((f: string) => f.trim()).filter(Boolean)
+        : undefined);
+
+    // Validate --fields values against known fields
+    if (fields && fields.length > 0) {
+      const known = getKnownFields(route.toolName, spec?.responseFields);
+      if (known) {
+        const invalid = fields.filter((f) => !known.all.includes(f));
+        if (invalid.length > 0) {
+          console.error(formatError(new Error(
+            `Unknown field${invalid.length > 1 ? 's' : ''}: ${invalid.join(', ')}\n\nRun with --fields to see available fields.`,
+          )));
+          process.exitCode = 1;
+          return;
+        }
+      }
+    }
 
     // Collect positional values
     const positionalValues: Record<string, string | string[]> = {};
@@ -268,6 +308,15 @@ function registerRoute(
         if (hooks?.showOperationHint) {
           const hint = formatOperationHint(result);
           if (hint) console.log(hint);
+        }
+
+        // Show save hint when user explicitly passed --fields that differ from saved default
+        if (cliFields && format === 'table') {
+          const cliFieldsStr = cliFields.join(',');
+          if (cliFieldsStr !== (savedDefaults.fields ?? '')) {
+            const displayPath = route.path.join(' ');
+            console.log(chalk.dim(`\nTip: To save these fields as default, run:\n  ud config set "${displayPath}" fields ${cliFieldsStr}`));
+          }
         }
       }
     } catch (err) {

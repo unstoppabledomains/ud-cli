@@ -1,5 +1,5 @@
 import Conf from 'conf';
-import type { AppConfig, Environment, EnvironmentConfig } from './types.js';
+import type { AppConfig, CommandDefaults, Environment, EnvironmentConfig } from './types.js';
 
 const BASE_URLS: Record<Environment, string> = {
   production: 'https://api.unstoppabledomains.com',
@@ -18,6 +18,10 @@ const schema = {
       production: {},
       staging: {},
     },
+  },
+  defaults: {
+    type: 'object' as const,
+    default: {},
   },
 };
 
@@ -71,6 +75,40 @@ export function setEnvConfig(envConfig: Partial<EnvironmentConfig>, env?: Enviro
 export function clearEnvConfig(env?: Environment): void {
   const e = env ?? getActiveEnv();
   config.set(`environments.${e}`, {});
+}
+
+// --- Per-command defaults ---
+// Note: Always read/write the entire `defaults` object to avoid conf's
+// dot-prop interpretation turning "domains.list" into nested { domains: { list: ... } }.
+
+export function getAllDefaults(): Record<string, CommandDefaults> {
+  return (config.get('defaults') as Record<string, CommandDefaults>) ?? {};
+}
+
+export function getCommandDefaults(commandPath: string): CommandDefaults {
+  return getAllDefaults()[commandPath] ?? {};
+}
+
+export function setCommandDefault(commandPath: string, key: keyof CommandDefaults, value: string | boolean): void {
+  const all = getAllDefaults();
+  all[commandPath] = { ...all[commandPath], [key]: value };
+  config.set('defaults', all);
+}
+
+export function clearCommandDefault(commandPath: string, key?: keyof CommandDefaults): void {
+  const all = getAllDefaults();
+  if (key) {
+    const current = all[commandPath];
+    if (current) {
+      delete current[key];
+      if (Object.keys(current).length === 0) {
+        delete all[commandPath];
+      }
+    }
+  } else {
+    delete all[commandPath];
+  }
+  config.set('defaults', all);
 }
 
 export { config };

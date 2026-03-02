@@ -10,6 +10,8 @@
 - **TABLE_CONFIGS** in `src/lib/formatter.ts` define curated column selections per API endpoint. When adding a new endpoint, add its config entry.
 - **DETAIL_CONFIGS** in `src/lib/formatter.ts` define vertical key-value detail views for single-item responses. When a response has exactly 1 row and a detail config exists, the detail view is used instead of the table. Use this for commands like `domains get` where a single item has many nested fields.
 - **Flag statuses** (`ENABLED`/`DISABLED`) are automatically color-formatted in detail views via `formatDetailValue()`.
+- **Field discovery**: `--fields` (no argument) shows all available fields for a command. `--fields col1,col2` selects specific columns. Field values are validated against known fields — invalid names produce an error with a hint to run `--fields` for the list. Fields come from three sources merged together: `TABLE_CONFIGS` (defaults), `DETAIL_CONFIGS` (detail view paths), and `responseFields` (auto-extracted from the OpenAPI response schema in `spec-parser.ts`). When adding a new endpoint, adding its `TABLE_CONFIGS` entry is sufficient — the OpenAPI spec fields are extracted automatically.
+- **`DATA_ARRAY_KEYS`** in `spec-parser.ts` lists the response keys that hold primary data arrays (e.g., `results`, `domains`, `items`). If a new endpoint uses a different key for its data array, add it to both `DATA_ARRAY_KEYS` in `spec-parser.ts` and `arrayKeys` in `extractTableData()` in `formatter.ts`.
 
 ## Testing
 

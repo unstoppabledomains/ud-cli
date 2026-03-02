@@ -574,6 +574,79 @@ function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
   return current;
 }
 
+/**
+ * Return known field paths for a given tool.
+ * `defaults` are the TABLE_CONFIGS columns; `all` merges DETAIL_CONFIGS and spec response fields.
+ * Pass `responseFields` from the parsed OpenAPI spec for complete discovery.
+ */
+export function getKnownFields(
+  toolName: string,
+  responseFields?: string[],
+): { defaults: string[]; all: string[] } | null {
+  const tableColumns = TABLE_CONFIGS[toolName];
+  if (!tableColumns && (!responseFields || responseFields.length === 0)) return null;
+
+  const defaults = tableColumns ?? [];
+  const allFields = new Set(defaults);
+
+  // Merge detail config paths
+  const detailConfig = DETAIL_CONFIGS[toolName];
+  if (detailConfig) {
+    for (const section of detailConfig.sections) {
+      for (const field of section.fields) {
+        allFields.add(field.path);
+      }
+    }
+  }
+
+  // Merge spec response fields
+  if (responseFields) {
+    for (const field of responseFields) {
+      allFields.add(field);
+    }
+  }
+
+  return { defaults, all: [...allFields] };
+}
+
+/**
+ * Format the --fields list output for a command.
+ * Pass `responseFields` from the parsed OpenAPI spec for complete discovery.
+ */
+export function formatFieldsList(
+  toolName: string,
+  commandName: string,
+  responseFields?: string[],
+): string {
+  const known = getKnownFields(toolName, responseFields);
+  const lines: string[] = [];
+
+  if (known && known.all.length > 0) {
+    lines.push(chalk.bold(`Available fields for ${commandName}:`));
+    if (known.defaults.length > 0) {
+      lines.push('');
+      lines.push(chalk.dim('  Default columns (shown without --fields):'));
+      for (const col of known.defaults) {
+        lines.push(`    ${col}`);
+      }
+    }
+    const extra = known.all.filter((f) => !known.defaults.includes(f));
+    if (extra.length > 0) {
+      lines.push('');
+      lines.push(chalk.dim('  Additional fields:'));
+      for (const field of extra) {
+        lines.push(`    ${field}`);
+      }
+    }
+  } else {
+    lines.push(chalk.dim(`No pre-configured fields for ${commandName}.`));
+    lines.push('');
+    lines.push(chalk.dim('  Tip: Use --format json to see all available response fields.'));
+  }
+
+  return lines.join('\n');
+}
+
 export function formatError(error: unknown): string {
   if (error instanceof Error) {
     return chalk.red(`Error: ${error.message}`);
