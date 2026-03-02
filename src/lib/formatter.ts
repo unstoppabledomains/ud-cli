@@ -137,18 +137,50 @@ function formatPaginationHint(
   const pagination = obj.pagination as Record<string, unknown> | undefined;
   if (!pagination) return '';
 
-  if (!pagination.hasMore) return '';
+  // Build context line: "Page 1 of 3 (150 total)" or "Showing 20 of 150"
+  const parts: string[] = [];
+  const context = formatPaginationContext(pagination);
+  if (context) parts.push(chalk.dim(context));
 
-  if (pattern === 'paginated-page' && typeof pagination.nextPage === 'number') {
-    return chalk.dim(`Use --page ${pagination.nextPage} to see more`);
+  if (!pagination.hasMore) return parts.join('\n');
+
+  // Compute next page/offset for the actionable hint
+  if (pattern === 'paginated-page') {
+    const nextPage = typeof pagination.nextPage === 'number'
+      ? pagination.nextPage
+      : typeof pagination.page === 'number' ? pagination.page + 1 : undefined;
+    if (nextPage !== undefined) {
+      parts.push(chalk.dim(`Next page: --page ${nextPage}`));
+      return parts.join('\n');
+    }
   }
 
-  if (pattern === 'paginated-offset' && typeof pagination.nextOffset === 'number') {
-    return chalk.dim(`Use --offset ${pagination.nextOffset} to see more`);
+  if (pattern === 'paginated-offset') {
+    const nextOffset = typeof pagination.nextOffset === 'number'
+      ? pagination.nextOffset
+      : undefined;
+    if (nextOffset !== undefined) {
+      parts.push(chalk.dim(`Next page: --offset ${nextOffset}`));
+      return parts.join('\n');
+    }
   }
 
-  if (pagination.hasMore) {
-    return chalk.dim('More results available.');
+  parts.push(chalk.dim('More results available.'));
+  return parts.join('\n');
+}
+
+function formatPaginationContext(pagination: Record<string, unknown>): string {
+  const page = pagination.page as number | undefined;
+  const totalPages = pagination.totalPages as number | undefined;
+  const total = pagination.total as number | undefined;
+
+  if (typeof page === 'number' && typeof totalPages === 'number') {
+    const suffix = typeof total === 'number' ? ` (${total} total)` : '';
+    return `Page ${page} of ${totalPages}${suffix}`;
+  }
+
+  if (typeof page === 'number' && typeof total === 'number') {
+    return `Page ${page} (${total} total)`;
   }
 
   return '';

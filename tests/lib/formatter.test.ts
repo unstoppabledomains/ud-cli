@@ -139,15 +139,28 @@ describe('formatter', () => {
   });
 
   describe('pagination hints', () => {
-    it('shows page-based pagination hint', () => {
+    it('shows page-based pagination hint with context', () => {
       const data = {
         domains: [{ name: 'test.com' }],
-        pagination: { page: 1, hasMore: true, nextPage: 2 },
+        pagination: { page: 1, totalPages: 3, total: 150, hasMore: true, nextPage: 2 },
       };
       const result = stripAnsi(
         formatOutput(data, { format: 'table', responsePattern: 'paginated-page' }),
       );
-      expect(result).toContain('Use --page 2 to see more');
+      expect(result).toContain('Page 1 of 3 (150 total)');
+      expect(result).toContain('Next page: --page 2');
+    });
+
+    it('computes next page from current page when nextPage is absent', () => {
+      const data = {
+        domains: [{ name: 'test.com' }],
+        pagination: { page: 2, totalPages: 5, total: 250, hasMore: true },
+      };
+      const result = stripAnsi(
+        formatOutput(data, { format: 'table', responsePattern: 'paginated-page' }),
+      );
+      expect(result).toContain('Page 2 of 5 (250 total)');
+      expect(result).toContain('Next page: --page 3');
     });
 
     it('shows offset-based pagination hint', () => {
@@ -158,10 +171,22 @@ describe('formatter', () => {
       const result = stripAnsi(
         formatOutput(data, { format: 'table', responsePattern: 'paginated-offset' }),
       );
-      expect(result).toContain('Use --offset 20 to see more');
+      expect(result).toContain('Next page: --offset 20');
     });
 
-    it('omits hint when hasMore is false', () => {
+    it('shows context without next-page hint when hasMore is false', () => {
+      const data = {
+        results: [{ name: 'test.com' }],
+        pagination: { page: 3, totalPages: 3, total: 150, hasMore: false },
+      };
+      const result = stripAnsi(
+        formatOutput(data, { format: 'table', responsePattern: 'paginated-page' }),
+      );
+      expect(result).toContain('Page 3 of 3 (150 total)');
+      expect(result).not.toContain('Next page');
+    });
+
+    it('omits everything when no pagination data', () => {
       const data = {
         results: [{ name: 'test.com' }],
         pagination: { hasMore: false },
@@ -169,7 +194,8 @@ describe('formatter', () => {
       const result = stripAnsi(
         formatOutput(data, { format: 'table', responsePattern: 'paginated-page' }),
       );
-      expect(result).not.toContain('to see more');
+      expect(result).not.toContain('Page');
+      expect(result).not.toContain('Next page');
     });
   });
 
