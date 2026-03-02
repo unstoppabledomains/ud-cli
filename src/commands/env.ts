@@ -1,0 +1,35 @@
+import { Command } from 'commander';
+import chalk from 'chalk';
+import { getDefaultEnv, setDefaultEnv, apiBaseUrl } from '../lib/config.js';
+import type { Environment } from '../lib/types.js';
+
+const VALID_ENVS: Environment[] = ['production', 'staging'];
+
+export function registerEnvCommands(program: Command): void {
+  const env = program.command('env').description('Manage environment settings');
+
+  env
+    .command('show')
+    .description('Show current environment')
+    .action(() => {
+      const current = getDefaultEnv();
+      const url = apiBaseUrl(current);
+      console.log(`Environment: ${chalk.bold(current)}`);
+      console.log(`Base URL:    ${chalk.dim(url)}`);
+    });
+
+  env
+    .command('set <environment>')
+    .description('Set the default environment (production or staging)')
+    .action((environment: string) => {
+      if (!VALID_ENVS.includes(environment as Environment)) {
+        console.error(chalk.red(`Invalid environment: ${environment}. Must be one of: ${VALID_ENVS.join(', ')}`));
+        process.exitCode = 1;
+        return;
+      }
+
+      setDefaultEnv(environment as Environment);
+      console.log(chalk.green(`Default environment set to ${chalk.bold(environment)}.`));
+      console.log(`Base URL: ${chalk.dim(apiBaseUrl(environment as Environment))}`);
+    });
+}
