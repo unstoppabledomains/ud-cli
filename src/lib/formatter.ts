@@ -536,11 +536,45 @@ function formatCellValue(value: unknown, useColor = true): string {
     }
   }
 
+  // Humanize kebab-case/snake_case enum values (e.g., "registered-not-for-sale" → "Registered Not For Sale")
+  // Also capitalizes known single-word API enums via VALUE_OVERRIDES.
+  if (typeof value === 'string') {
+    if (VALUE_OVERRIDES[value]) return VALUE_OVERRIDES[value];
+    // Multi-word enums: require at least one hyphen or underscore to avoid
+    // false positives on single words like "www" or "mail".
+    if (/^[a-z]+([_-][a-z]+)+$/.test(value)) {
+      return value
+        .split(/[-_]/)
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(' ');
+    }
+  }
+
   if (Array.isArray(value)) return value.join(', ');
   if (typeof value === 'object') return JSON.stringify(value);
 
   return String(value);
 }
+
+/**
+ * Explicit value overrides for single-word API enum strings that can't be
+ * auto-humanized (they'd collide with identifiers like "www" or "mail").
+ */
+const VALUE_OVERRIDES: Record<string, string> = {
+  available: 'Available',
+  active: 'Active',
+  cancelled: 'Cancelled',
+  completed: 'Completed',
+  expired: 'Expired',
+  failed: 'Failed',
+  inactive: 'Inactive',
+  listed: 'Listed',
+  pending: 'Pending',
+  processing: 'Processing',
+  registered: 'Registered',
+  rejected: 'Rejected',
+  unlisted: 'Unlisted',
+};
 
 /** Explicit header overrides for column keys where the auto-generated name is awkward. */
 const HEADER_OVERRIDES: Record<string, string> = {

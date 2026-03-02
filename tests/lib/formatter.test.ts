@@ -55,7 +55,7 @@ describe('formatter', () => {
         formatOutput(data, { format: 'table', toolName: 'ud_domains_search' }),
       );
       expect(result).toContain('test.com');
-      expect(result).toContain('available');
+      expect(result).toContain('Available');
       expect(result).toContain('$9.99');
     });
 
