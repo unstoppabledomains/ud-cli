@@ -4,10 +4,10 @@
  * Renames pkg output binaries from `ud-cli-<target>` to `ud-<platform>-<arch>`.
  *
  * pkg produces names like:
- *   ud-cli-macos-arm64, ud-cli-macos-x64, ud-cli-linux-x64, ud-cli-win-x64.exe
+ *   ud-cli-macos-arm64, ud-cli-macos-x64, ud-cli-linux-x64, ud-cli-linux-arm64, ud-cli-win-x64.exe
  *
  * This script renames them to:
- *   ud-macos-arm64, ud-macos-x64, ud-linux-x64, ud-win-x64.exe
+ *   ud-macos-arm64, ud-macos-x64, ud-linux-x64, ud-linux-arm64, ud-win-x64.exe
  */
 
 import { readdir, rename } from 'node:fs/promises';
@@ -19,6 +19,7 @@ const RENAME_MAP = {
   'ud-cli-macos-arm64': 'ud-macos-arm64',
   'ud-cli-macos-x64': 'ud-macos-x64',
   'ud-cli-linux-x64': 'ud-linux-x64',
+  'ud-cli-linux-arm64': 'ud-linux-arm64',
   'ud-cli-win-x64.exe': 'ud-win-x64.exe',
 };
 

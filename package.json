@@ -20,7 +20,7 @@
     "build": "tsc",
     "bundle": "node esbuild.config.mjs",
     "build:binaries": "npm run bundle && pkg dist/ud-cli.cjs --out-path bin/ && node scripts/rename-binaries.mjs",
-    "prepublishOnly": "npm run build && cp -r src/generated dist/generated",
+    "prepublishOnly": "npm run build",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/ tests/",
     "lint:fix": "eslint src/ tests/ --fix",
@@ -34,6 +34,7 @@
       "node22-macos-arm64",
       "node22-macos-x64",
       "node22-linux-x64",
+      "node22-linux-arm64",
       "node22-win-x64"
     ],
     "outputPath": "bin",

@@ -13,6 +13,7 @@ import type { Environment, OutputFormat } from './lib/types.js';
 declare const __PKG_VERSION__: string | undefined;
 
 function getVersion(): string {
+  // typeof avoids ReferenceError when __PKG_VERSION__ is not injected (ESM/dev)
   if (typeof __PKG_VERSION__ === 'string') return __PKG_VERSION__;
   const req = createRequire(import.meta.url);
   return (req('../package.json') as { version: string }).version;
