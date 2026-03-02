@@ -55,6 +55,16 @@ function formatJson(data: unknown): string {
 function formatTable(data: unknown, options: FormatOptions): string {
   const obj = data as Record<string, unknown>;
 
+  // Check for detail view (single-item response with detail config)
+  const detailConfig = DETAIL_CONFIGS[options.toolName ?? ''];
+  if (detailConfig) {
+    const { rows } = extractTableData(obj, options);
+    if (rows.length === 1) {
+      return formatDetail(rows[0], detailConfig);
+    }
+    // Multiple items — fall through to normal table with the multi-row table config
+  }
+
   // Find the primary data array in the response
   const { rows, columns } = extractTableData(obj, options);
 
@@ -150,8 +160,8 @@ const TABLE_CONFIGS: Record<string, string[]> = {
   ud_domains_search: ['name', 'available', 'marketplace.status', 'pricing.formatted'],
   // Portfolio list
   ud_portfolio_list: ['name', 'expiresAt', 'autoRenewal.status', 'tags'],
-  // Domain get
-  ud_domain_get: ['domain', 'extension', 'lifecycle.expiresAt', 'lifecycle.transferStatus', 'tags'],
+  // Domain get (multi-domain fallback; single domain uses DETAIL_CONFIGS)
+  ud_domain_get: ['domain', 'extension', 'lifecycle.expiresAt', 'lifecycle.autoRenewal.status', 'tags'],
   // TLD list (spec returns string[], so extractTableData wraps them)
   ud_tld_list: ['tld'],
   // DNS records
@@ -195,6 +205,136 @@ const TABLE_CONFIGS: Record<string, string[]> = {
   ud_domain_remove_lander: ['domain', 'success', 'operationId', 'error'],
   ud_domain_push: ['success', 'message'],
 };
+
+/**
+ * Detail view configs for single-item responses.
+ * Each entry defines labeled sections with field paths into the response object.
+ */
+interface DetailField {
+  label: string;
+  path: string;
+}
+
+interface DetailSection {
+  title: string;
+  fields: DetailField[];
+}
+
+const DETAIL_CONFIGS: Record<string, DetailSection[]> = {
+  ud_domain_get: [
+    {
+      title: 'General',
+      fields: [
+        { label: 'Domain', path: 'domain' },
+        { label: 'Extension', path: 'extension' },
+        { label: 'Purchased', path: 'lifecycle.purchasedAt' },
+        { label: 'Expires', path: 'lifecycle.expiresAt' },
+        { label: 'Transfer Status', path: 'lifecycle.transferStatus' },
+        { label: 'Externally Owned', path: 'lifecycle.isExternallyOwned' },
+        { label: 'Reverse Resolution', path: 'lifecycle.reverse' },
+        { label: 'Tags', path: 'tags' },
+      ],
+    },
+    {
+      title: 'Renewal',
+      fields: [
+        { label: 'Auto-Renewal', path: 'lifecycle.autoRenewal.status' },
+        { label: 'Next Renewal', path: 'lifecycle.autoRenewal.expiresAt' },
+        { label: 'Eligible', path: 'lifecycle.renewal.isEligible' },
+        { label: 'Price Per Year', path: 'lifecycle.renewal.pricePerYearFormatted' },
+      ],
+    },
+    {
+      title: 'Flags',
+      fields: [
+        { label: 'Transfer Lock', path: 'flags.DNS_TRANSFER_OUT.status' },
+        { label: 'WHOIS Privacy', path: 'flags.DNS_WHOIS_PROXY.status' },
+        { label: 'DNS Resolution', path: 'flags.DNS_RESOLUTION.status' },
+        { label: 'DNS Updates', path: 'flags.DNS_UPDATE.status' },
+        { label: 'Tokenization', path: 'flags.DNS_UNS_TOKENIZATION.status' },
+      ],
+    },
+    {
+      title: 'DNS',
+      fields: [
+        { label: 'Nameserver Mode', path: 'dns.nameservers.status' },
+        { label: 'Nameservers', path: 'dns.nameservers.nameservers' },
+        { label: 'DNSSEC Enabled', path: 'dns.dnssec.enabled' },
+        { label: 'DNSSEC Valid', path: 'dns.dnssec.valid' },
+      ],
+    },
+    {
+      title: 'Marketplace',
+      fields: [
+        { label: 'Listing Status', path: 'marketplace.listing.status' },
+        { label: 'Listing Price', path: 'marketplace.listing.price' },
+        { label: 'Listing Views', path: 'marketplace.listing.views' },
+        { label: 'Offers', path: 'marketplace.offersCount' },
+        { label: 'Leads', path: 'marketplace.leadsCount' },
+        { label: 'Watchlist', path: 'marketplace.watchlistCount' },
+      ],
+    },
+  ],
+};
+
+function formatDetail(row: Record<string, unknown>, sections: DetailSection[]): string {
+  const parts: string[] = [];
+
+  for (const section of sections) {
+    const rows: [string, string][] = [];
+    for (const field of section.fields) {
+      const value = getNestedValue(row, field.path);
+      if (value === null || value === undefined) continue;
+      rows.push([field.label, formatDetailValue(value)]);
+    }
+    if (rows.length === 0) continue;
+
+    parts.push('');
+    parts.push(chalk.bold.underline(section.title));
+    const table = new Table({
+      style: { head: [], border: [], 'padding-left': 1, 'padding-right': 1 },
+    });
+    for (const [label, val] of rows) {
+      table.push({ [chalk.dim(label)]: val });
+    }
+    parts.push(table.toString());
+  }
+
+  // Pending operations sub-table
+  const ops = getNestedValue(row, 'pendingOperations') as Record<string, unknown>[] | undefined;
+  if (Array.isArray(ops) && ops.length > 0) {
+    parts.push('');
+    parts.push(chalk.bold.underline('Pending Operations'));
+    const opsTable = new Table({
+      head: ['ID', 'Type', 'Status', 'Created'].map((h) => chalk.bold(h)),
+      style: { head: [], border: [] },
+    });
+    for (const op of ops) {
+      opsTable.push([
+        formatCellValue(op.id, true),
+        formatCellValue(op.type, true),
+        formatCellValue(op.status, true),
+        formatCellValue(op.createdAt, true),
+      ]);
+    }
+    parts.push(opsTable.toString());
+  }
+
+  return parts.join('\n');
+}
+
+/**
+ * Format a value for the detail view with enhanced readability.
+ */
+function formatDetailValue(value: unknown): string {
+  if (value === null || value === undefined) return '';
+
+  // Flag statuses: ENABLED/DISABLED → colored
+  if (value === 'ENABLED') return chalk.green('Enabled');
+  if (value === 'DISABLED') return chalk.dim('Disabled');
+
+  return formatCellValue(value, true);
+}
 
 function extractTableData(
   obj: Record<string, unknown>,
