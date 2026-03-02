@@ -15,15 +15,24 @@ export async function promptInput(
 ): Promise<string> {
   if (!process.stdin.isTTY) return '';
 
+  const maxAttempts = 3;
   const rl = createInterface({ input: process.stdin, output: process.stdout });
   try {
-    const rawAnswer = await rl.question(message);
-    const answer = rawAnswer.trim();
-    if (opts?.validate && !opts.validate.test(answer)) {
-      console.error(`Invalid input: expected format ${opts.validate}`);
-      return '';
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      const rawAnswer = await rl.question(message);
+      const answer = rawAnswer.trim();
+      if (opts?.validate && !opts.validate.test(answer)) {
+        const remaining = maxAttempts - attempt;
+        if (remaining > 0) {
+          console.error(`Invalid input: expected format ${opts.validate} (${remaining} attempt${remaining > 1 ? 's' : ''} remaining)`);
+        } else {
+          console.error(`Invalid input: expected format ${opts.validate}`);
+        }
+        continue;
+      }
+      return answer;
     }
-    return answer;
+    return '';
   } finally {
     rl.close();
   }

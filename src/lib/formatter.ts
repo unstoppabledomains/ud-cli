@@ -262,16 +262,16 @@ function formatCellValue(value: unknown, useColor = true): string {
       ? (value ? chalk.green('Yes') : chalk.dim('No'))
       : (value ? 'true' : 'false');
   }
-  if (Array.isArray(value)) return value.join(', ');
-  if (typeof value === 'object') return JSON.stringify(value);
-
-  // Detect ISO date strings and format to machine locale
+  // Detect ISO date strings and format consistently
   if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value)) {
     const d = new Date(value);
     if (!isNaN(d.getTime())) {
-      return d.toLocaleString();
+      return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
     }
   }
+
+  if (Array.isArray(value)) return value.join(', ');
+  if (typeof value === 'object') return JSON.stringify(value);
 
   return String(value);
 }

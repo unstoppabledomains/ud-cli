@@ -13,7 +13,7 @@ import { formatOutput, formatError } from '../lib/formatter.js';
 import { createSpinner } from '../lib/spinner.js';
 import { getHooks, formatOperationHint } from '../lib/command-hooks.js';
 import { promptInput, promptConfirm } from '../lib/prompt.js';
-import { readFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import type { OutputFormat } from '../lib/types.js';
 
 function getRootOpts(cmd: Command): Record<string, unknown> {
@@ -172,7 +172,7 @@ function registerRoute(
     // --domains-file: merge file contents with positional domains
     if (hasVariadicDomains && opts.domainsFile) {
       try {
-        const fileContent = readFileSync(opts.domainsFile as string, 'utf-8');
+        const fileContent = await readFile(opts.domainsFile as string, 'utf-8');
         const fileDomains = fileContent.split('\n').map((l) => l.trim()).filter(Boolean);
         const existing = positionalValues.domains;
         const arr = Array.isArray(existing) ? existing : existing ? [existing] : [];

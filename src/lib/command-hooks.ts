@@ -81,7 +81,7 @@ export function formatOperationHint(result: unknown): string {
   let hasOps = false;
 
   for (const item of results) {
-    if (item.operationId) {
+    if (item.operationId !== undefined) {
       hasOps = true;
       if (typeof item.domain === 'string') {
         domains.add(item.domain);
