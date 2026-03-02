@@ -1,7 +1,7 @@
 {
   "name": "@unstoppabledomains/ud-cli",
   "version": "0.1.0",
-  "description": "CLI tool for Unstoppable Domains",
+  "description": "CLI tool for managing Unstoppable Domains — domain portfolio, DNS records, marketplace listings, and more.",
   "type": "module",
   "bin": {
     "ud": "./dist/index.js"
