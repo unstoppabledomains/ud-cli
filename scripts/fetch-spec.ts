@@ -2,6 +2,9 @@
 /**
  * Downloads the OpenAPI spec from the MCP API and writes it to src/generated/openapi-spec.json.
  * Run via: npm run fetch-spec
+ *
+ * TODO: Add a CI check that runs this script in dry-run mode and fails if the fetched spec
+ * differs from the committed version, to detect spec drift from the live API.
  */
 
 import { writeFileSync, mkdirSync } from 'node:fs';

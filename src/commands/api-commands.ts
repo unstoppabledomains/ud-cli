@@ -19,7 +19,9 @@ function getRootOpts(cmd: Command): Record<string, unknown> {
   return current.opts<Record<string, unknown>>();
 }
 
-// Spec JSON is inlined by esbuild in bundled mode, but loaded from disk in dev mode
+// Spec JSON is inlined by esbuild in bundled mode (via .json loader), loaded from disk in dev mode.
+// Note: `with { type: 'json' }` import attributes require Node.js 21+ or tsx for unbundled dev.
+// Production builds go through esbuild which handles this regardless of Node version.
 import specJson from '../generated/openapi-spec.json' with { type: 'json' };
 
 function loadSpec(): Map<string, CommandSpec> {
@@ -41,8 +43,9 @@ export function registerApiCommands(program: Command): void {
   const groups = new Map<string, CommandRoute[]>();
   for (const route of COMMAND_ROUTES) {
     const groupName = route.path[0];
-    if (!groups.has(groupName)) groups.set(groupName, []);
-    groups.get(groupName)!.push(route);
+    const list = groups.get(groupName) ?? [];
+    if (!groups.has(groupName)) groups.set(groupName, list);
+    list.push(route);
   }
 
   // Create group commands and register routes
@@ -62,6 +65,11 @@ function registerRoute(
   specMap: Map<string, CommandSpec>,
 ): void {
   const spec = specMap.get(route.toolName);
+  if (!spec) {
+    // Route references a tool not in the OpenAPI spec — registers with no flags/empty body.
+    // This can happen if the spec is stale or if a route was added for a not-yet-deployed endpoint.
+    console.warn(`[warn] No spec found for tool: ${route.toolName}`);
+  }
   const pathParts = route.path.slice(1); // remove the group prefix
 
   // Navigate/create subgroups

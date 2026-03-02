@@ -68,7 +68,7 @@ function formatTable(data: unknown, options: FormatOptions): string {
   });
 
   for (const row of rows) {
-    table.push(columns.map((col) => formatCellValue(getNestedValue(row, col))));
+    table.push(columns.map((col) => formatCellValue(getNestedValue(row, col), true)));
   }
 
   return table.toString();
@@ -84,7 +84,8 @@ function formatCsv(data: unknown, options: FormatOptions): string {
 
   const lines: string[] = [columns.join(',')];
   for (const row of rows) {
-    lines.push(columns.map((col) => csvEscape(formatCellValue(getNestedValue(row, col)))).join(','));
+    // useColor=false: ANSI escape codes break CSV consumers (cut, awk, spreadsheets)
+    lines.push(columns.map((col) => csvEscape(formatCellValue(getNestedValue(row, col), false))).join(','));
   }
   return lines.join('\n');
 }
@@ -173,6 +174,7 @@ function extractTableData(
   obj: Record<string, unknown>,
   options: FormatOptions,
 ): { rows: Record<string, unknown>[]; columns: string[] } {
+  const isTable = options.format === 'table';
   // Find the primary array — common keys: results, domains, tlds, records, items, contacts, offers, leads
   const arrayKeys = ['results', 'domains', 'tlds', 'records', 'items', 'contacts', 'offers', 'leads', 'messages', 'listings', 'savedCards'];
   let rows: Record<string, unknown>[] = [];
@@ -211,25 +213,29 @@ function extractTableData(
     return { rows, columns: configuredCols };
   }
 
-  // Auto-detect columns from first row
-  const columns = autoDetectColumns(rows[0]);
+  // Auto-detect columns from first row (cap at 8 only for table readability)
+  const columns = autoDetectColumns(rows[0], isTable ? 8 : Infinity);
   return { rows, columns };
 }
 
-function autoDetectColumns(row: Record<string, unknown>): string[] {
+function autoDetectColumns(row: Record<string, unknown>, maxCols: number): string[] {
   const cols: string[] = [];
   for (const [key, value] of Object.entries(row)) {
     if (value === null || value === undefined) continue;
     if (typeof value === 'object' && !Array.isArray(value)) continue; // skip nested objects
-    if (cols.length >= 8) break; // cap at 8 columns for readability
+    if (cols.length >= maxCols) break;
     cols.push(key);
   }
   return cols;
 }
 
-function formatCellValue(value: unknown): string {
+function formatCellValue(value: unknown, useColor = true): string {
   if (value === null || value === undefined) return '';
-  if (typeof value === 'boolean') return value ? chalk.green('Yes') : chalk.dim('No');
+  if (typeof value === 'boolean') {
+    return useColor
+      ? (value ? chalk.green('Yes') : chalk.dim('No'))
+      : (value ? 'true' : 'false');
+  }
   if (Array.isArray(value)) return value.join(', ');
   if (typeof value === 'object') return JSON.stringify(value);
   return String(value);

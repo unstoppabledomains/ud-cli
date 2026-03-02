@@ -27,9 +27,11 @@ function createMemoryStore(): CredentialStore & { data: Map<string, Map<string, 
 
 /**
  * Create a fresh program instance for each test to avoid Commander state pollution.
+ * jest.resetModules() clears the ESM module cache so Commander doesn't accumulate
+ * commands across tests (dynamic import alone returns the cached singleton).
  */
 async function createTestProgram() {
-  // Use dynamic import to re-import and get fresh state
+  jest.resetModules();
   const { program } = await import('../../src/program.js');
   return program;
 }

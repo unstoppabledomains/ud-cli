@@ -29,7 +29,10 @@ export function buildParams(
     }
   }
 
-  // --file reads a JSON file
+  // --file reads a JSON file.
+  // Security note: this is a local CLI tool run by the authenticated user, so path traversal
+  // and file size are not concerns here (the user already has filesystem access). If this
+  // ever runs in a shared/server context, add path validation and size limits.
   if (flags.file) {
     try {
       const content = readFileSync(flags.file as string, 'utf-8');
@@ -59,6 +62,9 @@ export function buildParams(
       const values = Array.isArray(value) ? value : [value];
       if (specParam.items?.type === 'object') {
         // Array of objects — wrap each value: [{name: "x"}, {name: "y"}]
+        // TODO: Currently hardcodes "name" as the wrapping key, which works for all current
+        // endpoints (domain arrays). If future endpoints use a different key field, derive it
+        // from specParam.items.properties (e.g., use the first required string property).
         body[arg.name] = values.map((v) => ({ name: v }));
       } else {
         body[arg.name] = values;
