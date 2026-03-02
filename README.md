@@ -14,9 +14,11 @@ npx tsx src/index.ts auth login
 # Check auth status
 npx tsx src/index.ts auth whoami
 
-# Switch environments
-npx tsx src/index.ts env set staging
-npx tsx src/index.ts --env staging auth login
+# Search for domains
+npx tsx src/index.ts domains search mybusiness
+
+# List your portfolio
+npx tsx src/index.ts domains list
 ```
 
 ## Authentication
@@ -44,6 +46,166 @@ ud auth whoami    # Check current auth status
 ud auth logout    # Clear stored credentials
 ```
 
+## Global Options
+
+| Option | Description |
+|--------|-------------|
+| `--env <environment>` | Override active environment (`production` or `staging`) |
+| `--format <format>` | Output format: `table` (default), `json`, or `csv` |
+| `--quiet` | Suppress output except errors |
+| `--verbose` | Show detailed output |
+| `--profile <name>` | Configuration profile to use (reserved) |
+
+### Output Formats
+
+```bash
+# Table output (default) — human-readable
+ud domains search mybusiness
+
+# JSON output — for scripting and piping
+ud domains search mybusiness --format json
+
+# CSV output — for spreadsheets and data processing
+ud domains tlds --format csv > tlds.csv
+```
+
+## Command Reference
+
+### Domains
+
+```
+ud domains search <query>             Search for available domains
+ud domains tlds                       List available TLDs
+ud domains list                       List portfolio domains
+ud domains get <domains...>           Get detailed domain info
+ud domains push <domains...>          Push domains to another user
+ud domains operations <domains...>    Get pending operations
+ud domains tags add <domains...>      Add tags to domains
+ud domains tags remove <domains...>   Remove tags from domains
+ud domains flags update <domains...>  Update domain flags
+ud domains auto-renewal update <domains...>  Toggle auto-renewal
+ud domains lander generate <domains...>      Generate AI landing page
+ud domains lander status <domains...>        Check lander generation status
+ud domains lander remove <domains...>        Remove AI landing page
+```
+
+### DNS
+
+```
+ud dns records list <domain>          List DNS records
+ud dns records add <domain>           Add DNS records
+ud dns records update                 Update DNS records
+ud dns records remove                 Remove DNS records
+ud dns records remove-all <domains...>  Remove all DNS records
+ud dns nameservers list <domain>      List nameservers
+ud dns nameservers set-custom         Set custom nameservers
+ud dns nameservers set-default        Reset to default nameservers
+ud dns hosting list <domain>          List hosting configurations
+ud dns hosting add                    Add hosting configuration
+ud dns hosting remove                 Remove hosting configuration
+```
+
+### Cart
+
+```
+ud cart get                           Get shopping cart with pricing
+ud cart remove                        Remove items from cart
+ud cart checkout                      Complete cart checkout
+ud cart url                           Get checkout URL
+ud cart payment-methods               Get available payment methods
+ud cart add-payment-method            Get URL to add payment method
+ud cart add registration <domains...> Add domains for registration
+ud cart add listed <domains...>       Add marketplace-listed domains
+ud cart add afternic <domains...>     Add Afternic marketplace domains
+ud cart add sedo <domains...>         Add Sedo marketplace domains
+ud cart add renewal <domains...>      Add domain renewals
+```
+
+### Contacts
+
+```
+ud contacts list                      List ICANN contacts
+ud contacts create                    Create ICANN contact
+```
+
+### Listings
+
+```
+ud listings create <domains...>       Create marketplace listings
+ud listings update                    Update marketplace listings
+ud listings cancel                    Cancel marketplace listings
+```
+
+### Offers
+
+```
+ud offers list                        List marketplace offers
+ud offers respond                     Respond to marketplace offers
+```
+
+### Leads
+
+```
+ud leads list                         List domain conversation leads
+ud leads get <domain>                 Get or create domain conversation
+ud leads messages                     List messages in a conversation
+ud leads send                         Send a message in a conversation
+```
+
+## Usage Examples
+
+### Search and register domains
+
+```bash
+# Search for domains
+ud domains search mybusiness --tlds com,org,io --limit 10
+
+# Add to cart and checkout
+ud cart add registration mybusiness.com mybusiness.io
+ud cart checkout --payment-method-id 12345
+```
+
+### Manage DNS records
+
+```bash
+# List current records
+ud dns records list example.com --format json
+
+# Add an A record (single-item shorthand)
+ud dns records add example.com --type A --values 1.2.3.4
+
+# Bulk operations with --data
+ud dns records add example.com --data '{
+  "records": [
+    {"domain": "example.com", "type": "A", "values": ["1.2.3.4"]},
+    {"domain": "example.com", "type": "CNAME", "subName": "www", "values": ["example.com"]}
+  ]
+}'
+```
+
+### Advanced usage
+
+```bash
+# Use --data for complex request bodies
+ud contacts create --data '{
+  "firstName": "Jane",
+  "lastName": "Doe",
+  "email": "jane@example.com",
+  "phone": {"dialingPrefix": "+1", "number": "5551234567"},
+  "street": "123 Main St",
+  "city": "Austin",
+  "stateProvince": "TX",
+  "postalCode": "78701",
+  "countryCode": "US"
+}'
+
+# Read request body from a file
+ud dns records add example.com --file records.json
+
+# Pipe JSON output for scripting
+ud domains list --format json | jq '.domains[].name'
+```
+
 ## Environments
 
 | Environment | Base URL |
@@ -68,6 +230,16 @@ npm run lint           # Run ESLint
 npm run format         # Format with Prettier
 npm test               # Run tests
 npm run dev -- --help  # Run CLI in development mode
+npm run fetch-spec     # Re-download OpenAPI spec from production API
+```
+
+### Updating the API Spec
+
+The CLI commands are auto-generated from the OpenAPI spec at `src/generated/openapi-spec.json`. To update after API changes:
+
+```bash
+npm run fetch-spec     # Downloads latest spec
+npm test               # Verify everything still works
 ```
 
 ## Building Binaries
