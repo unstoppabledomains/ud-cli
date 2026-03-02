@@ -1,4 +1,7 @@
+import { readFileSync } from 'node:fs';
 import * as esbuild from 'esbuild';
+
+const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
 
 await esbuild.build({
   entryPoints: ['src/index.ts'],
@@ -9,8 +12,8 @@ await esbuild.build({
   outfile: 'dist/ud-cli.cjs',
   external: ['keytar'],
   loader: { '.json': 'json' },
-  banner: {
-    js: '#!/usr/bin/env node',
+  define: {
+    __PKG_VERSION__: JSON.stringify(pkg.version),
   },
 });
 

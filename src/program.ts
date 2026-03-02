@@ -1,3 +1,4 @@
+import { createRequire } from 'node:module';
 import { Command } from 'commander';
 import { setEnvOverride } from './lib/config.js';
 import { registerAuthCommands } from './commands/auth.js';
@@ -6,6 +7,16 @@ import { registerApiCommands } from './commands/api-commands.js';
 import { registerSmartCartAdd } from './commands/cart.js';
 import { registerConfigCommands } from './commands/config.js';
 import type { Environment, OutputFormat } from './lib/types.js';
+
+// In esbuild CJS bundle, __PKG_VERSION__ is injected at build time.
+// In ESM (tsc output, tsx dev), we read package.json at runtime.
+declare const __PKG_VERSION__: string | undefined;
+
+function getVersion(): string {
+  if (typeof __PKG_VERSION__ === 'string') return __PKG_VERSION__;
+  const req = createRequire(import.meta.url);
+  return (req('../package.json') as { version: string }).version;
+}
 
 const VALID_ENVS = ['production', 'staging'];
 const VALID_FORMATS: OutputFormat[] = ['table', 'json', 'csv'];
@@ -16,7 +27,7 @@ program
   .configureHelp({ showGlobalOptions: true })
   .name('ud')
   .description('Unstoppable Domains CLI')
-  .version('0.1.0')
+  .version(getVersion())
   .option('--env <environment>', 'override active environment (production or staging)')
   .option('--format <format>', 'output format (table, json, csv)')
   .option('--quiet', 'suppress output except errors')

@@ -6,13 +6,21 @@
   "bin": {
     "ud": "./dist/index.js"
   },
+  "files": [
+    "dist/",
+    "README.md"
+  ],
   "engines": {
     "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "build": "tsc",
     "bundle": "node esbuild.config.mjs",
-    "build:binaries": "npm run bundle && pkg dist/ud-cli.cjs --out-path bin/",
+    "build:binaries": "npm run bundle && pkg dist/ud-cli.cjs --out-path bin/ && node scripts/rename-binaries.mjs",
+    "prepublishOnly": "npm run build && cp -r src/generated dist/generated",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/ tests/",
     "lint:fix": "eslint src/ tests/ --fix",
