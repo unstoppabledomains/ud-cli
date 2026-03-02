@@ -7,7 +7,6 @@ import { callAction } from '../lib/api.js';
 import { formatOutput, formatError } from '../lib/formatter.js';
 import { createSpinner } from '../lib/spinner.js';
 import { SOURCE_TO_CART_CMD } from '../lib/command-hooks.js';
-import chalk from 'chalk';
 import type { OutputFormat } from '../lib/types.js';
 
 /** Reverse map: subcommand → tool name */
