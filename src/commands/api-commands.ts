@@ -16,6 +16,30 @@ import { promptInput, promptConfirm } from '../lib/prompt.js';
 import { readFile } from 'node:fs/promises';
 import type { OutputFormat } from '../lib/types.js';
 
+/**
+ * Human-readable descriptions for command groups and subgroups.
+ * Keys are the full command path (e.g., 'dns.hosting.lander').
+ */
+const GROUP_DESCRIPTIONS: Record<string, string> = {
+  // Top-level groups
+  domains: 'Search, register, and manage your domains',
+  dns: 'Manage DNS records, nameservers, and hosting',
+  cart: 'Manage your shopping cart and checkout',
+  contacts: 'Manage WHOIS contacts',
+  listings: 'Create and manage marketplace listings',
+  offers: 'View and respond to domain offers',
+  leads: 'Manage domain leads and messages',
+  // Subgroups
+  'domains.tags': 'Add or remove domain tags',
+  'domains.flags': 'Update domain flags (WHOIS privacy, transfer lock, etc.)',
+  'domains.auto-renewal': 'Manage domain auto-renewal settings',
+  'dns.records': 'List, add, update, and remove DNS records',
+  'dns.nameservers': 'View and configure nameservers',
+  'dns.hosting': 'Manage hosting configurations and AI landers',
+  'dns.hosting.lander': 'Generate, check, and remove AI landing pages',
+  'cart.add': 'Add domains to your cart',
+};
+
 function getRootOpts(cmd: Command): Record<string, unknown> {
   let current: Command = cmd;
   while (current.parent) current = current.parent;
@@ -53,8 +77,9 @@ export function registerApiCommands(program: Command): void {
 
   // Create group commands and register routes
   for (const [groupName, routes] of groups) {
+    const groupDesc = GROUP_DESCRIPTIONS[groupName] ?? `Manage ${groupName}`;
     const groupCmd = program.commands.find((c) => c.name() === groupName)
-      ?? program.command(groupName).description(`Manage ${groupName}`);
+      ?? program.command(groupName).description(groupDesc);
 
     for (const route of routes) {
       registerRoute(groupCmd, route, specMap);
@@ -77,10 +102,14 @@ function registerRoute(
 
   // Navigate/create subgroups
   let current = parent;
+  const pathSoFar = [route.path[0]]; // starts with the top-level group
   for (let i = 0; i < pathParts.length - 1; i++) {
     const subName = pathParts[i];
+    pathSoFar.push(subName);
+    const descKey = pathSoFar.join('.');
+    const subDesc = GROUP_DESCRIPTIONS[descKey] ?? `Manage ${subName}`;
     const existing = current.commands.find((c) => c.name() === subName);
-    current = existing ?? current.command(subName).description(`${subName} operations`);
+    current = existing ?? current.command(subName).description(subDesc);
   }
 
   // Create the leaf command
