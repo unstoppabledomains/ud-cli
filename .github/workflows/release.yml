@@ -80,7 +80,7 @@ jobs:
           files: bin/ud-*
 
   publish-npm:
-    needs: ci
+    needs: publish-github-release
     runs-on: ubuntu-latest
     timeout-minutes: 10
 

@@ -35,7 +35,8 @@ for (const file of files) {
 }
 
 if (renamed === 0) {
-  console.warn('Warning: no binaries matched for renaming in bin/');
+  console.error('Error: no binaries matched for renaming in bin/');
+  process.exit(1);
 } else {
   console.log(`Renamed ${renamed} binaries`);
 }
