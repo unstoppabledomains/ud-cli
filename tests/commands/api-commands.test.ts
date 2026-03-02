@@ -2,37 +2,17 @@ import { jest } from '@jest/globals';
 import { Command } from 'commander';
 import { config, clearEnvOverride } from '../../src/lib/config.js';
 import { _setStore } from '../../src/lib/credentials.js';
-import type { CredentialStore } from '../../src/lib/credentials.js';
-import type { TokenData, Environment } from '../../src/lib/types.js';
+import { createMemoryStore } from '../helpers/memoryStore.js';
 import { setupMockFetch, teardownMockFetch, mockFetchRoute, jsonResponse } from '../helpers/mockFetch.js';
 
-function createMemoryStore(): CredentialStore & { data: Map<string, Map<string, string>> } {
-  const data = new Map<string, Map<string, string>>();
-  function bucket(env: Environment): Map<string, string> {
-    if (!data.has(env)) data.set(env, new Map());
-    return data.get(env)!;
-  }
-  return {
-    data,
-    async saveApiKey(key: string, env: Environment) { bucket(env).set('api-key', key); },
-    async getApiKey(env: Environment) { return bucket(env).get('api-key') ?? null; },
-    async saveTokens(tokens: TokenData, env: Environment) { bucket(env).set('oauth-tokens', JSON.stringify(tokens)); },
-    async getTokens(env: Environment) {
-      const raw = bucket(env).get('oauth-tokens');
-      return raw ? JSON.parse(raw) as TokenData : null;
-    },
-    async clear(env: Environment) { data.delete(env); },
-  };
-}
-
-/**
- * Create a fresh program instance for each test to avoid Commander state pollution.
- * jest.resetModules() clears the ESM module cache so Commander doesn't accumulate
- * commands across tests (dynamic import alone returns the cached singleton).
- */
 async function createTestProgram() {
   jest.resetModules();
   const { program } = await import('../../src/program.js');
+  function applyExitOverride(cmd: Command) {
+    cmd.exitOverride();
+    for (const sub of cmd.commands) applyExitOverride(sub);
+  }
+  applyExitOverride(program);
   return program;
 }
 
@@ -155,7 +135,7 @@ describe('api-commands integration', () => {
     await program.parseAsync(['node', 'ud', '--format', 'csv', 'domains', 'tlds']);
 
     const output = consoleSpy.mock.calls.map((c: unknown[]) => String(c[0])).join('\n');
-    expect(output).toContain('tld');
+    expect(output).toContain('TLD');
     expect(output).toContain('com');
   });
 

@@ -53,9 +53,16 @@ export interface EnvironmentConfig {
   };
 }
 
+export interface CommandDefaults {
+  fields?: string;
+  format?: OutputFormat;
+  quiet?: boolean;
+}
+
 export interface AppConfig {
   environment: Environment;
   environments: Record<Environment, EnvironmentConfig>;
+  defaults: Record<string, CommandDefaults>;
 }
 
 export class ApiError extends Error {

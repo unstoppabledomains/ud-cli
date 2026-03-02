@@ -31,7 +31,7 @@ describe('formatter', () => {
       const result = stripAnsi(formatOutput(data, { format: 'table' }));
       expect(result).toContain('test.com');
       expect(result).toContain('foo.com');
-      expect(result).toContain('name');
+      expect(result).toContain('Name');
     });
 
     it('renders "No results." for empty data', () => {
@@ -55,7 +55,7 @@ describe('formatter', () => {
         formatOutput(data, { format: 'table', toolName: 'ud_domains_search' }),
       );
       expect(result).toContain('test.com');
-      expect(result).toContain('available');
+      expect(result).toContain('Available');
       expect(result).toContain('$9.99');
     });
 
@@ -79,16 +79,60 @@ describe('formatter', () => {
         ],
       };
       const result = stripAnsi(formatOutput(data, { format: 'table' }));
-      expect(result).toContain('id');
-      expect(result).toContain('label');
+      expect(result).toContain('ID');
+      expect(result).toContain('Label');
       expect(result).toContain('Item A');
     });
 
     it('treats scalar response as single-row table', () => {
       const data = { success: true, orderId: 123 };
       const result = stripAnsi(formatOutput(data, { format: 'table' }));
-      expect(result).toContain('success');
+      expect(result).toContain('Success');
       expect(result).toContain('123');
+    });
+
+    it('--fields overrides default columns', () => {
+      const data = {
+        results: [
+          { name: 'test.com', available: true, extra: 'hidden' },
+          { name: 'foo.com', available: false, extra: 'also hidden' },
+        ],
+      };
+      const result = stripAnsi(
+        formatOutput(data, { format: 'table', fields: ['name', 'extra'] }),
+      );
+      expect(result).toContain('Name');
+      expect(result).toContain('Extra');
+      expect(result).toContain('hidden');
+      expect(result).not.toContain('Available');
+    });
+
+    it('--fields works with nested dotted paths', () => {
+      const data = {
+        results: [
+          { name: 'test.com', pricing: { formatted: '$9.99' }, marketplace: { status: 'listed' } },
+        ],
+      };
+      const result = stripAnsi(
+        formatOutput(data, { format: 'table', fields: ['name', 'pricing.formatted'] }),
+      );
+      expect(result).toContain('$9.99');
+      expect(result).not.toContain('listed');
+    });
+
+    it('--fields applies to CSV output', () => {
+      const data = {
+        results: [
+          { name: 'test.com', available: true, extra: 'val' },
+        ],
+      };
+      const result = stripAnsi(
+        formatOutput(data, { format: 'csv', fields: ['extra', 'name'] }),
+      );
+      const lines = result.split('\n');
+      expect(lines[0]).toBe('Extra,Name');
+      expect(lines[1]).toContain('val');
+      expect(lines[1]).toContain('test.com');
     });
   });
 
@@ -102,7 +146,7 @@ describe('formatter', () => {
       };
       const result = stripAnsi(formatOutput(data, { format: 'csv' }));
       const lines = result.split('\n');
-      expect(lines[0]).toBe('name,available');
+      expect(lines[0]).toBe('Name,Available');
       expect(lines[1]).toContain('test.com');
     });
 
@@ -139,15 +183,28 @@ describe('formatter', () => {
   });
 
   describe('pagination hints', () => {
-    it('shows page-based pagination hint', () => {
+    it('shows page-based pagination hint with context', () => {
       const data = {
         domains: [{ name: 'test.com' }],
-        pagination: { page: 1, hasMore: true, nextPage: 2 },
+        pagination: { page: 1, totalPages: 3, total: 150, hasMore: true, nextPage: 2 },
       };
       const result = stripAnsi(
         formatOutput(data, { format: 'table', responsePattern: 'paginated-page' }),
       );
-      expect(result).toContain('Use --page 2 to see more');
+      expect(result).toContain('Page 1 of 3 (150 total)');
+      expect(result).toContain('Next page: --page 2');
+    });
+
+    it('computes next page from current page when nextPage is absent', () => {
+      const data = {
+        domains: [{ name: 'test.com' }],
+        pagination: { page: 2, totalPages: 5, total: 250, hasMore: true },
+      };
+      const result = stripAnsi(
+        formatOutput(data, { format: 'table', responsePattern: 'paginated-page' }),
+      );
+      expect(result).toContain('Page 2 of 5 (250 total)');
+      expect(result).toContain('Next page: --page 3');
     });
 
     it('shows offset-based pagination hint', () => {
@@ -158,10 +215,22 @@ describe('formatter', () => {
       const result = stripAnsi(
         formatOutput(data, { format: 'table', responsePattern: 'paginated-offset' }),
       );
-      expect(result).toContain('Use --offset 20 to see more');
+      expect(result).toContain('Next page: --offset 20');
     });
 
-    it('omits hint when hasMore is false', () => {
+    it('shows context without next-page hint when hasMore is false', () => {
+      const data = {
+        results: [{ name: 'test.com' }],
+        pagination: { page: 3, totalPages: 3, total: 150, hasMore: false },
+      };
+      const result = stripAnsi(
+        formatOutput(data, { format: 'table', responsePattern: 'paginated-page' }),
+      );
+      expect(result).toContain('Page 3 of 3 (150 total)');
+      expect(result).not.toContain('Next page');
+    });
+
+    it('omits everything when no pagination data', () => {
       const data = {
         results: [{ name: 'test.com' }],
         pagination: { hasMore: false },
@@ -169,7 +238,8 @@ describe('formatter', () => {
       const result = stripAnsi(
         formatOutput(data, { format: 'table', responsePattern: 'paginated-page' }),
       );
-      expect(result).not.toContain('to see more');
+      expect(result).not.toContain('Page');
+      expect(result).not.toContain('Next page');
     });
   });
 

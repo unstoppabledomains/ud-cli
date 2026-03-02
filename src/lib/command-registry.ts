@@ -94,29 +94,6 @@ export const COMMAND_ROUTES: CommandRoute[] = [
     ],
   },
 
-  // --- AI Lander ---
-  {
-    toolName: 'ud_domain_generate_lander',
-    path: ['domains', 'lander', 'generate'],
-    positionalArgs: [
-      { name: 'domains', description: 'Domain name(s)', required: true, variadic: true },
-    ],
-  },
-  {
-    toolName: 'ud_domain_lander_status',
-    path: ['domains', 'lander', 'status'],
-    positionalArgs: [
-      { name: 'domains', description: 'Domain name(s)', required: true, variadic: true },
-    ],
-  },
-  {
-    toolName: 'ud_domain_remove_lander',
-    path: ['domains', 'lander', 'remove'],
-    positionalArgs: [
-      { name: 'domains', description: 'Domain name(s)', required: true, variadic: true },
-    ],
-  },
-
   // --- DNS Records ---
   {
     toolName: 'ud_dns_records_list',
@@ -186,6 +163,32 @@ export const COMMAND_ROUTES: CommandRoute[] = [
     toolName: 'ud_dns_hosting_remove',
     path: ['dns', 'hosting', 'remove'],
     positionalArgs: [],
+  },
+
+  // --- AI Lander (under dns hosting) ---
+  {
+    toolName: 'ud_domain_generate_lander',
+    path: ['dns', 'hosting', 'lander', 'generate'],
+    positionalArgs: [
+      { name: 'domains', description: 'Domain name(s)', required: true, variadic: true },
+    ],
+    description: 'Generate AI landing page for domains',
+  },
+  {
+    toolName: 'ud_domain_lander_status',
+    path: ['dns', 'hosting', 'lander', 'status'],
+    positionalArgs: [
+      { name: 'domains', description: 'Domain name(s)', required: true, variadic: true },
+    ],
+    description: 'Check AI lander generation status',
+  },
+  {
+    toolName: 'ud_domain_remove_lander',
+    path: ['dns', 'hosting', 'lander', 'remove'],
+    positionalArgs: [
+      { name: 'domains', description: 'Domain name(s)', required: true, variadic: true },
+    ],
+    description: 'Remove AI landing page from domains',
   },
 
   // --- Cart ---

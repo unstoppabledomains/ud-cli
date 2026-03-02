@@ -52,6 +52,7 @@ ud auth logout    # Clear stored credentials
 |--------|-------------|
 | `--env <environment>` | Override active environment (`production` or `staging`) |
 | `--format <format>` | Output format: `table` (default), `json`, or `csv` |
+| `--fields [columns]` | Show available fields, or specify columns to display |
 | `--quiet` | Suppress output except errors |
 | `--verbose` | Show detailed output |
 | `--profile <name>` | Configuration profile to use (reserved) |
@@ -69,6 +70,23 @@ ud domains search mybusiness --format json
 ud domains tlds --format csv > tlds.csv
 ```
 
+### Field Selection
+
+Use `--fields` to customize which columns are displayed in table output.
+
+```bash
+# Show available fields for a command
+ud domains list --fields
+
+# Select specific columns
+ud domains list --fields name,expiresAt,offersCount
+
+# Nested fields use dot notation
+ud domains list --fields name,listing.price,autoRenewal.status
+```
+
+Invalid field names are rejected with an error and a hint to run `--fields` for the full list.
+
 ## Command Reference
 
 ### Domains
@@ -84,9 +102,6 @@ ud domains tags add <domains...>      Add tags to domains
 ud domains tags remove <domains...>   Remove tags from domains
 ud domains flags update <domains...>  Update domain flags
 ud domains auto-renewal update <domains...>  Toggle auto-renewal
-ud domains lander generate <domains...>      Generate AI landing page
-ud domains lander status <domains...>        Check lander generation status
-ud domains lander remove <domains...>        Remove AI landing page
 ```
 
 ### DNS
@@ -103,6 +118,9 @@ ud dns nameservers set-default        Reset to default nameservers
 ud dns hosting list <domain>          List hosting configurations
 ud dns hosting add                    Add hosting configuration
 ud dns hosting remove                 Remove hosting configuration
+ud dns hosting lander generate <domains...>  Generate AI landing page
+ud dns hosting lander status <domains...>    Check lander generation status
+ud dns hosting lander remove <domains...>    Remove AI landing page
 ```
 
 ### Cart
@@ -151,6 +169,41 @@ ud leads get <domain>                 Get or create domain conversation
 ud leads messages                     List messages in a conversation
 ud leads send                         Send a message in a conversation
 ```
+
+### Config
+
+```
+ud config set <command> <key> <value>  Save a default option for a command
+ud config get [command]                Show saved defaults
+ud config reset <command> [key]        Remove saved defaults
+```
+
+Per-command defaults let you persist `--fields`, `--format`, and `--quiet` preferences so you don't have to retype them. CLI flags always override saved defaults.
+
+```bash
+# Save default fields for domains list
+ud config set "domains list" fields name,expiresAt,offersCount
+
+# Now ud domains list automatically uses those fields
+ud domains list
+
+# CLI flags still override the saved default
+ud domains list --fields name,expiresAt
+
+# Save a default output format
+ud config set "dns records list" format json
+
+# View all saved defaults
+ud config get
+
+# Remove a specific default
+ud config reset "domains list" fields
+
+# Remove all defaults for a command
+ud config reset "domains list"
+```
+
+When you pass `--fields` explicitly, the CLI shows a tip with the command to save those fields as default.
 
 ## Usage Examples
 

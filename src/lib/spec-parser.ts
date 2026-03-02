@@ -26,6 +26,8 @@ export interface CommandSpec {
   description: string;
   params: ParamSpec[];
   responsePattern: ResponsePattern;
+  /** Dotted field paths extracted from the response schema (e.g., "listing.price"). */
+  responseFields: string[];
 }
 
 // --- Internal types for raw OpenAPI structures ---
@@ -198,6 +200,85 @@ function detectResponsePattern(spec: OpenAPISpec, operation: OperationObject): R
   return 'simple';
 }
 
+// --- Response field extraction ---
+
+/** Keys that typically hold the primary data array in API responses. */
+const DATA_ARRAY_KEYS = ['results', 'domains', 'tlds', 'records', 'items', 'contacts', 'offers', 'leads', 'messages', 'listings', 'savedCards', 'configs', 'pushedDomains', 'failedDomains'];
+
+/**
+ * Extract dotted field paths from the response schema.
+ * Finds the primary data array and walks its item schema to produce
+ * paths like "listing.price", "autoRenewal.status".
+ */
+function extractResponseFields(spec: OpenAPISpec, operation: OperationObject): string[] {
+  const responseSchema = operation.responses?.['200']?.content?.['application/json']?.schema;
+  if (!responseSchema) return [];
+
+  const resolved = resolveSchema(spec, responseSchema);
+  const props = resolved.properties ?? {};
+
+  // Find the primary data array and extract field paths from its items
+  for (const key of DATA_ARRAY_KEYS) {
+    if (props[key]) {
+      const arrSchema = resolveSchema(spec, props[key]);
+      const rawType = Array.isArray(arrSchema.type) ? arrSchema.type[0] : arrSchema.type;
+      if (rawType === 'array' && arrSchema.items) {
+        const itemSchema = resolveSchema(spec, arrSchema.items);
+        return collectFieldPaths(spec, itemSchema, '', 3);
+      }
+    }
+  }
+
+  // No data array found — extract top-level scalar/object fields (skip pagination, meta keys)
+  const skipKeys = new Set(['pagination', 'truncated', 'truncationMessage', 'successCount', 'failureCount']);
+  return collectFieldPaths(spec, resolved, '', 3).filter((f) => !skipKeys.has(f.split('.')[0]));
+}
+
+/**
+ * Recursively collect dotted field paths from a schema object.
+ * Stops at the given depth to avoid excessive nesting.
+ */
+function collectFieldPaths(spec: OpenAPISpec, schema: SchemaObject, prefix: string, maxDepth: number): string[] {
+  if (maxDepth <= 0) return [];
+
+  const resolved = resolveSchema(spec, schema);
+
+  // Handle oneOf/anyOf — pick the object variant if available
+  if (resolved.oneOf || resolved.anyOf) {
+    const variants = resolved.oneOf ?? resolved.anyOf ?? [];
+    const objVariant = variants.find((v) => {
+      const r = resolveSchema(spec, v);
+      return r.type === 'object' || r.properties;
+    });
+    if (objVariant) {
+      return collectFieldPaths(spec, objVariant, prefix, maxDepth);
+    }
+    // Non-object union — treat as leaf
+    return prefix ? [prefix] : [];
+  }
+
+  const props = resolved.properties;
+  if (!props) {
+    return prefix ? [prefix] : [];
+  }
+
+  const paths: string[] = [];
+  for (const [key, propSchema] of Object.entries(props)) {
+    const fullPath = prefix ? `${prefix}.${key}` : key;
+    const propResolved = resolveSchema(spec, propSchema);
+    const rawType = Array.isArray(propResolved.type) ? propResolved.type[0] : propResolved.type;
+
+    if ((rawType === 'object' || propResolved.properties) && !propResolved.enum) {
+      // Recurse into nested objects
+      paths.push(...collectFieldPaths(spec, propResolved, fullPath, maxDepth - 1));
+    } else {
+      // Leaf field (string, number, boolean, array of primitives, enum)
+      paths.push(fullPath);
+    }
+  }
+  return paths;
+}
+
 // --- Main parser ---
 
 export function parseSpec(raw: OpenAPISpec): CommandSpec[] {
@@ -229,6 +310,7 @@ export function parseSpec(raw: OpenAPISpec): CommandSpec[] {
       description: operation.description ?? '',
       params,
       responsePattern: detectResponsePattern(raw, operation),
+      responseFields: extractResponseFields(raw, operation),
     });
   }
 
