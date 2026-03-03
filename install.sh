@@ -43,10 +43,14 @@ error() {
 # Cleanup
 # ---------------------------------------------------------------------------
 
+TMPDIR_CUSTOM=""
 TMPFILE=""
 cleanup() {
   if [ -n "$TMPFILE" ]; then
     rm -f "$TMPFILE" 2>/dev/null || true
+  fi
+  if [ -n "$TMPDIR_CUSTOM" ]; then
+    rm -rf "$TMPDIR_CUSTOM" 2>/dev/null || true
   fi
 }
 trap cleanup EXIT
@@ -157,7 +161,8 @@ main() {
 
   # Verify SHA256 checksum if checksums.txt is published alongside the release
   CHECKSUM_URL="https://github.com/${GITHUB_REPO}/releases/download/v${VERSION}/checksums.txt"
-  CHECKSUM_FILE="$(mktemp)"
+  TMPDIR_CUSTOM="$(mktemp -d)"
+  CHECKSUM_FILE="$TMPDIR_CUSTOM/checksums"
   if http_get "$CHECKSUM_URL" "$CHECKSUM_FILE" 2>/dev/null; then
     EXPECTED=$(grep "$ASSET_NAME" "$CHECKSUM_FILE" | awk '{print $1}')
     if [ -n "$EXPECTED" ]; then
@@ -170,7 +175,6 @@ main() {
         warn "Neither sha256sum nor shasum found — skipping integrity check"
       fi
       if [ -n "$ACTUAL" ] && [ "$ACTUAL" != "$EXPECTED" ]; then
-        rm -f "$CHECKSUM_FILE" 2>/dev/null || true
         error "SHA256 checksum mismatch — download may be corrupted."
         error "  Expected: $EXPECTED"
         error "  Got:      $ACTUAL"
@@ -179,7 +183,6 @@ main() {
       info "Checksum verified"
     fi
   fi
-  rm -f "$CHECKSUM_FILE" 2>/dev/null || true
 
   chmod +x "$TMPFILE"
 

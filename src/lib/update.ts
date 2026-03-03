@@ -170,6 +170,7 @@ export async function selfUpdate(
     }
   }
 
+  // Place temp file next to the binary so rename() is an atomic same-filesystem move
   const tempPath = `${process.execPath}.update`;
 
   try {

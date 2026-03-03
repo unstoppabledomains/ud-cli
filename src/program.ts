@@ -61,8 +61,9 @@ program.hook('postAction', async (_thisCommand, actionCommand) => {
   // postAction fires for every command in the chain; only run for the leaf action
   if (actionCommand !== _thisCommand) return;
 
-  // Skip during update commands (they already check)
-  if (actionCommand.name() === 'update') return;
+  // Skip during update commands (they already check) — covers both
+  // "ud update" (name=update) and "ud update check" (parent.name=update)
+  if (actionCommand.name() === 'update' || actionCommand.parent?.name() === 'update') return;
 
   // Skip in non-TTY (piped output)
   if (!process.stderr.isTTY) return;

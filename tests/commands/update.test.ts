@@ -24,7 +24,7 @@ describe('update commands', () => {
     setupMockFetch();
     consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
     errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-    process.exitCode = undefined;
+    process.exitCode = 0;
     program = await createTestProgram();
   });
 
@@ -33,7 +33,7 @@ describe('update commands', () => {
     consoleSpy.mockRestore();
     errorSpy.mockRestore();
     jest.restoreAllMocks();
-    process.exitCode = undefined;
+    process.exitCode = 0;
   });
 
   // --- update check ---
@@ -98,7 +98,7 @@ describe('update commands', () => {
       // ora spinner output goes to stderr via the ora mock, but the
       // "Already up to date" message is rendered by ora.succeed
       // We can't easily assert on ora output, but we can verify no error
-      expect(process.exitCode).toBeUndefined();
+      expect(process.exitCode).toBe(0);
     });
 
     it('sets exitCode 1 when check fails', async () => {
