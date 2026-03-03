@@ -80,14 +80,22 @@ async function installZsh(program: Command): Promise<InstallResult> {
   const script = generateCompletion(program, 'zsh');
   await writeFile(completionFile, script);
 
-  // Ensure fpath includes the completions directory
+  // Ensure fpath includes the completions directory.
+  // The fpath line must appear BEFORE any framework (oh-my-zsh, prezto, etc.)
+  // that calls compinit, so we prepend it near the top of .zshrc rather than
+  // appending at the end.
   const rcFile = path.join(homedir(), '.zshrc');
-  const fpathLine = `fpath=(~/.zsh/completions $fpath)`;
   const alreadyHasFpath = await fileContains(rcFile, '~/.zsh/completions');
 
   if (!alreadyHasFpath) {
-    const snippet = `\n${COMPLETION_MARKER}\n${fpathLine}\nautoload -Uz compinit && compinit\n`;
-    await appendToFile(rcFile, snippet);
+    const fpathSnippet = `${COMPLETION_MARKER}\nfpath=(~/.zsh/completions $fpath)\n\n`;
+    try {
+      const existing = await readFile(rcFile, 'utf-8');
+      await writeFile(rcFile, fpathSnippet + existing);
+    } catch {
+      // No .zshrc — create one with fpath + compinit (no framework to rely on)
+      await writeFile(rcFile, `${fpathSnippet}autoload -Uz compinit && compinit\n`);
+    }
   }
 
   return { message: `Shell completions written to ${completionFile}`, activateHint: 'source ~/.zshrc' };
