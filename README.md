@@ -51,7 +51,7 @@ API keys have the format `ud_mcp_` followed by 64 hex characters. Generate one f
 ### Managing credentials
 
 ```bash
-ud auth whoami    # Check current auth status
+ud auth status    # Check current auth status
 ud auth logout    # Clear stored credentials
 ```
 
@@ -105,7 +105,7 @@ ud
 ├── auth
 │   ├── login                         Authenticate (OAuth or API key)
 │   ├── logout                        Clear stored credentials
-│   └── whoami                        Check current auth status
+│   └── status                        Check current auth status
 ├── domains
 │   ├── list                          List portfolio domains
 │   ├── get <domains...>              Get detailed domain info
@@ -171,6 +171,8 @@ ud
 │   ├── set <command> <key> <value>   Save a default option
 │   ├── get [command]                 Show saved defaults
 │   └── reset <command> [key]         Remove saved defaults
+├── skill
+│   └── install                       Install Claude Code skill
 ├── env
 │   ├── show                          Show current environment
 │   └── set <environment>             Switch default environment
@@ -375,6 +377,30 @@ ud domains dns records add example.com --file records.json
 # Pipe JSON output for scripting
 ud domains list --format json | jq '.domains[].name'
 ```
+
+## Agent Skills
+
+ud-cli ships a skill that teaches coding agents (Claude Code, Cursor, GitHub Copilot, etc.) how to use domain management commands.
+
+### Install via npx skills (recommended)
+
+Works with 40+ agents, no prior install needed:
+
+```bash
+npx skills add unstoppabledomains/ud-cli
+```
+
+### Install via ud-cli
+
+If you already have the CLI installed:
+
+```bash
+ud skill install
+```
+
+Both methods copy the skill to `.claude/skills/ud-cli/` (or the equivalent for your agent). The skill covers search, DNS, cart, marketplace, and all other ud-cli workflows.
+
+For skills-less operation, agents can also read `ud --help` directly.
 
 ## Environments
 

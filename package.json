@@ -8,6 +8,7 @@
   },
   "files": [
     "dist/",
+    "skills/",
     "README.md"
   ],
   "engines": {
@@ -42,7 +43,7 @@
       "node22-win-x64"
     ],
     "outputPath": "bin",
-    "assets": []
+    "assets": ["skills/**"]
   },
   "dependencies": {
     "chalk": "^5.4.1",

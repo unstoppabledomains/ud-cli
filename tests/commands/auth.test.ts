@@ -94,9 +94,9 @@ describe('auth commands', () => {
     });
   });
 
-  describe('whoami', () => {
+  describe('status', () => {
     it('shows not authenticated when no credentials', async () => {
-      await program.parseAsync(['node', 'ud', 'auth', 'whoami']);
+      await program.parseAsync(['node', 'ud', 'auth', 'status']);
 
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining('Not authenticated'),
@@ -110,7 +110,7 @@ describe('auth commands', () => {
 
       mockFetchRoute('actions/ud_portfolio_list', () => jsonResponse({ domains: [] }));
 
-      await program.parseAsync(['node', 'ud', 'auth', 'whoami']);
+      await program.parseAsync(['node', 'ud', 'auth', 'status']);
 
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining('Authenticated via api-key'),

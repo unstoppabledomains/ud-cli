@@ -58,7 +58,7 @@ export function registerAuthCommands(program: Command): void {
     });
 
   auth
-    .command('whoami')
+    .command('status')
     .description('Show current authentication status')
     .action(async () => {
       const status = await verifyAuth();

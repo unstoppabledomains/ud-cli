@@ -7,6 +7,7 @@ import { registerApiCommands } from './commands/api-commands.js';
 import { registerSmartCartAdd } from './commands/cart.js';
 import { registerConfigCommands } from './commands/config.js';
 import { registerUpdateCommands } from './commands/update.js';
+import { registerSkillCommands } from './commands/skill.js';
 import type { Environment, OutputFormat } from './lib/types.js';
 
 // In esbuild CJS bundle, __PKG_VERSION__ is injected at build time.
@@ -28,7 +29,7 @@ export const program = new Command();
 // Commands listed here appear under "Utilities:" in root help output.
 // Everything else appears under "Commands:". Update this set when adding new
 // utility-style commands so they don't silently land in the wrong group.
-const UTILITY_COMMANDS = new Set(['config', 'env', 'help', 'update']);
+const UTILITY_COMMANDS = new Set(['config', 'env', 'help', 'skill', 'update']);
 
 program
   .configureHelp({
@@ -106,6 +107,7 @@ registerAuthCommands(program);
 registerEnvCommands(program);
 registerConfigCommands(program);
 registerUpdateCommands(program);
+registerSkillCommands(program);
 registerApiCommands(program);
 registerSmartCartAdd(program);
 
