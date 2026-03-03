@@ -28,7 +28,7 @@ export const program = new Command();
 program
   .configureHelp({ showGlobalOptions: true })
   .name('ud')
-  .description('CLI tool for managing Unstoppable Domains — domain portfolio, DNS records, marketplace listings, and more.')
+  .description('Unstoppable Domains CLI — Search, register, and manage your domains from the command line.')
   .version(getVersion(), '-V, --version', 'Output the version number')
   .helpOption('-h, --help', 'Display help for command')
   .helpCommand('help [command]', 'Display help for command')

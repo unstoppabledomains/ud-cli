@@ -1,6 +1,6 @@
 # ud-cli
 
-CLI tool for managing Unstoppable Domains — domain portfolio, DNS records, marketplace listings, and more.
+Unstoppable Domains CLI — Search, register, and manage your domains from the command line.
 
 ## Quick Start
 
