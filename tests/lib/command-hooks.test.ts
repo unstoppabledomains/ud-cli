@@ -1,4 +1,4 @@
-import { getHooks, formatOperationHint, formatCartHint } from '../../src/lib/command-hooks.js';
+import { getHooks, formatOperationHint, formatCartHint, formatFailureHints } from '../../src/lib/command-hooks.js';
 
 // Strip ANSI codes for easier assertion
 function stripAnsi(str: string): string {
@@ -28,6 +28,13 @@ describe('command-hooks', () => {
       expect(hooks!.promptInput).toBeDefined();
       expect(hooks!.promptInput!.paramName).toBe('otpCode');
       expect(hooks!.promptInput!.validate).toEqual(/^\d{6}$/);
+    });
+
+    it('returns showFailureHints for DNS record mutation tools', () => {
+      const tools = ['ud_dns_record_add', 'ud_dns_record_update', 'ud_dns_record_remove'];
+      for (const tool of tools) {
+        expect(getHooks(tool)?.showFailureHints).toBe(true);
+      }
     });
 
     it('returns showOperationHint for DNS mutation tools', () => {
@@ -169,6 +176,63 @@ describe('command-hooks', () => {
       expect(formatCartHint({ results: [] })).toBe('');
       expect(formatCartHint(null)).toBe('');
       expect(formatCartHint({})).toBe('');
+    });
+  });
+
+  describe('formatFailureHints', () => {
+    it('suggests --upsert-mode for NO_CHANGE on dns record add (JSON string error)', () => {
+      const result = {
+        results: [
+          { domain: 'example.com', success: false, error: '{"code":"NO_CHANGE","message":"No changes would occur"}' },
+        ],
+      };
+      const hint = stripAnsi(formatFailureHints('ud_dns_record_add', result));
+      expect(hint).toContain('--upsert-mode append');
+      expect(hint).toContain('--upsert-mode replace');
+    });
+
+    it('suggests --upsert-mode for NO_CHANGE on dns record add (object error)', () => {
+      const result = {
+        results: [
+          { domain: 'example.com', success: false, error: { code: 'NO_CHANGE', message: 'No changes would occur' } },
+        ],
+      };
+      const hint = stripAnsi(formatFailureHints('ud_dns_record_add', result));
+      expect(hint).toContain('--upsert-mode append');
+    });
+
+    it('shows generic NO_CHANGE hint for non-add tools', () => {
+      const result = {
+        results: [
+          { domain: 'example.com', success: false, error: '{"code":"NO_CHANGE","message":"No changes would occur"}' },
+        ],
+      };
+      const hint = stripAnsi(formatFailureHints('ud_dns_record_update', result));
+      expect(hint).toContain('already match');
+      expect(hint).not.toContain('--upsert-mode');
+    });
+
+    it('returns empty string when all results succeed', () => {
+      const result = {
+        results: [
+          { domain: 'example.com', success: true, operationId: 'op-1' },
+        ],
+      };
+      expect(formatFailureHints('ud_dns_record_add', result)).toBe('');
+    });
+
+    it('returns empty string for null/non-object input', () => {
+      expect(formatFailureHints('ud_dns_record_add', null)).toBe('');
+      expect(formatFailureHints('ud_dns_record_add', undefined)).toBe('');
+    });
+
+    it('returns empty string for unknown error codes', () => {
+      const result = {
+        results: [
+          { domain: 'example.com', success: false, error: '{"code":"UNKNOWN","message":"Something else"}' },
+        ],
+      };
+      expect(formatFailureHints('ud_dns_record_add', result)).toBe('');
     });
   });
 });

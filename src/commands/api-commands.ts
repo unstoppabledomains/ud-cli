@@ -12,7 +12,7 @@ import { callAction } from '../lib/api.js';
 import { getCommandDefaults } from '../lib/config.js';
 import { formatOutput, formatError, formatFieldsList, getKnownFields } from '../lib/formatter.js';
 import { createSpinner } from '../lib/spinner.js';
-import { getHooks, formatOperationHint, formatCartHint } from '../lib/command-hooks.js';
+import { getHooks, formatOperationHint, formatCartHint, formatFailureHints } from '../lib/command-hooks.js';
 import { promptInput, promptConfirm } from '../lib/prompt.js';
 import { readFile } from 'node:fs/promises';
 import chalk from 'chalk';
@@ -319,6 +319,12 @@ function registerRoute(
           fields,
         });
         console.log(output);
+
+        // Post-call hook: show failure hints for known error codes
+        if (hooks?.showFailureHints) {
+          const failHint = formatFailureHints(route.toolName, result);
+          if (failHint) console.log(failHint);
+        }
 
         // Post-call hook: show operation hint
         if (hooks?.showOperationHint) {
