@@ -51,8 +51,8 @@ jobs:
 
       - name: Install ldid for macOS ad-hoc signing
         run: |
-          sudo apt-get update
-          sudo apt-get install -y ldid
+          curl -fsSL -o /usr/local/bin/ldid https://github.com/ProcursusTeam/ldid/releases/download/v2.1.5-procursus7/ldid_linux_x86_64
+          chmod +x /usr/local/bin/ldid
 
       - name: Bundle and build binaries
         run: |
