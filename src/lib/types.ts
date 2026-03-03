@@ -49,7 +49,6 @@ export interface EnvironmentConfig {
   authMethod?: 'api-key' | 'oauth';
   oauth?: {
     clientId?: string;
-    registrationAccessToken?: string;
   };
 }
 
