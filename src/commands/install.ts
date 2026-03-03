@@ -53,17 +53,23 @@ async function appendToFile(filePath: string, content: string): Promise<void> {
   }
 }
 
-async function installBash(program: Command): Promise<string> {
+interface InstallResult {
+  message: string;
+  /** Shell command the user can run to activate completions in the current session. */
+  activateHint?: string;
+}
+
+async function installBash(program: Command): Promise<InstallResult> {
   const rcFile = path.join(homedir(), '.bashrc');
   if (await fileContains(rcFile, COMPLETION_MARKER)) {
-    return `Shell completions already installed in ${rcFile}`;
+    return { message: `Shell completions already installed in ${rcFile}` };
   }
   const snippet = `\n${COMPLETION_MARKER}\neval "$(ud completion -s bash)"\n`;
   await appendToFile(rcFile, snippet);
-  return `Shell completions added to ${rcFile}`;
+  return { message: `Shell completions added to ${rcFile}`, activateHint: 'source ~/.bashrc' };
 }
 
-async function installZsh(program: Command): Promise<string> {
+async function installZsh(program: Command): Promise<InstallResult> {
   const completionDir = path.join(homedir(), '.zsh', 'completions');
   const completionFile = path.join(completionDir, '_ud');
 
@@ -82,10 +88,10 @@ async function installZsh(program: Command): Promise<string> {
     await appendToFile(rcFile, snippet);
   }
 
-  return `Shell completions written to ${completionFile}`;
+  return { message: `Shell completions written to ${completionFile}`, activateHint: 'source ~/.zshrc' };
 }
 
-async function installFish(program: Command): Promise<string> {
+async function installFish(program: Command): Promise<InstallResult> {
   const completionDir = path.join(homedir(), '.config', 'fish', 'completions');
   const completionFile = path.join(completionDir, 'ud.fish');
 
@@ -93,26 +99,27 @@ async function installFish(program: Command): Promise<string> {
   const script = generateCompletion(program, 'fish');
   await writeFile(completionFile, script);
 
-  return `Shell completions written to ${completionFile}`;
+  // Fish auto-loads completions from ~/.config/fish/completions/ — no source needed
+  return { message: `Shell completions written to ${completionFile}` };
 }
 
-async function installPowershell(program: Command): Promise<string> {
+async function installPowershell(program: Command): Promise<InstallResult> {
   // $PROFILE is not available in Node — use the default location
   const profileDir = path.join(homedir(), 'Documents', 'PowerShell');
   const profileFile = path.join(profileDir, 'Microsoft.PowerShell_profile.ps1');
 
   if (await fileContains(profileFile, COMPLETION_MARKER)) {
-    return `Shell completions already installed in ${profileFile}`;
+    return { message: `Shell completions already installed in ${profileFile}` };
   }
 
   const script = generateCompletion(program, 'powershell');
   const snippet = `\n${COMPLETION_MARKER}\n${script}`;
   await appendToFile(profileFile, snippet);
 
-  return `Shell completions added to ${profileFile}`;
+  return { message: `Shell completions added to ${profileFile}`, activateHint: `. $PROFILE` };
 }
 
-async function installCompletions(program: Command, shell: Shell): Promise<string> {
+async function installCompletions(program: Command, shell: Shell): Promise<InstallResult> {
   switch (shell) {
     case 'bash':
       return installBash(program);
@@ -179,9 +186,11 @@ export function registerInstallCommand(program: Command): void {
       const shell = detectShell();
       if (shell) {
         try {
-          const message = await installCompletions(program, shell);
-          console.log(chalk.green(`\u2713 ${message}`));
-          console.log(chalk.dim('Restart your shell or open a new terminal for completions to take effect.'));
+          const result = await installCompletions(program, shell);
+          console.log(chalk.green(`\u2713 ${result.message}`));
+          if (result.activateHint) {
+            console.log(chalk.dim(`  To activate now, run: ${result.activateHint}`));
+          }
         } catch (err) {
           console.error(
             chalk.red(`Failed to install shell completions: ${err instanceof Error ? err.message : String(err)}`),
