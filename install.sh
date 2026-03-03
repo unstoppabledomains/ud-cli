@@ -229,7 +229,7 @@ main() {
 
   # Install shell completions
   info "Setting up shell completions…"
-  if "$INSTALL_PATH" install 2>/dev/null; then
+  if "$INSTALL_PATH" install; then
     info "Shell completions installed"
   else
     warn "Shell completion setup skipped (run 'ud install' later)"

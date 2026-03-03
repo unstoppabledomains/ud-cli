@@ -106,8 +106,10 @@ async function installFish(program: Command): Promise<InstallResult> {
 }
 
 async function installPowershell(program: Command): Promise<InstallResult> {
-  // $PROFILE is not available in Node — use the default location
-  const profileDir = path.join(homedir(), 'Documents', 'PowerShell');
+  // $PROFILE is not available in Node — use platform-appropriate default
+  const profileDir = platform() === 'win32'
+    ? path.join(homedir(), 'Documents', 'PowerShell')
+    : path.join(homedir(), '.config', 'powershell');
   const profileFile = path.join(profileDir, 'Microsoft.PowerShell_profile.ps1');
 
   if (await fileContains(profileFile, COMPLETION_MARKER)) {
