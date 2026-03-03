@@ -98,6 +98,86 @@ Invalid field names are rejected with an error and a hint to run `--fields` for 
 
 ## Command Reference
 
+```
+ud
+├── search <query>                    Search for available domains
+├── tlds                              List available TLDs
+├── auth
+│   ├── login                         Authenticate (OAuth or API key)
+│   ├── logout                        Clear stored credentials
+│   └── whoami                        Check current auth status
+├── domains
+│   ├── list                          List portfolio domains
+│   ├── get <domains...>              Get detailed domain info
+│   ├── push <domains...>             Push domains to another user
+│   ├── operations <domains...>       Get pending operations
+│   ├── tags
+│   │   ├── add <domains...>          Add tags to domains
+│   │   └── remove <domains...>       Remove tags from domains
+│   ├── flags
+│   │   └── update <domains...>       Update domain flags
+│   ├── auto-renewal
+│   │   └── update <domains...>       Toggle auto-renewal
+│   ├── contacts
+│   │   ├── list                      List ICANN contacts
+│   │   └── create                    Create ICANN contact
+│   ├── dns
+│   │   ├── records
+│   │   │   ├── list <domain>         List DNS records
+│   │   │   ├── add <domain>          Add DNS records
+│   │   │   ├── update                Update DNS records
+│   │   │   ├── remove                Remove DNS records
+│   │   │   └── remove-all <domains...>  Remove all DNS records
+│   │   └── nameservers
+│   │       ├── list <domain>         List nameservers
+│   │       ├── set-custom            Set custom nameservers
+│   │       └── set-default           Reset to default nameservers
+│   └── hosting
+│       ├── redirects
+│       │   ├── list <domain>         List redirect configurations
+│       │   ├── add                   Add redirect configuration
+│       │   └── remove                Remove redirect configuration
+│       └── landers
+│           ├── generate <domains...> Generate AI landing page
+│           ├── status <domains...>   Check lander generation status
+│           └── remove <domains...>   Remove AI landing page
+├── cart
+│   ├── get                           Get shopping cart with pricing
+│   ├── remove                        Remove items from cart
+│   ├── checkout                      Complete cart checkout
+│   ├── url                           Get checkout URL
+│   ├── payment-methods               Get available payment methods
+│   ├── add-payment-method            Get URL to add payment method
+│   └── add [domain...]               Smart add (auto-detects source)
+│       ├── registration <domains...> Add domains for registration
+│       ├── listed <domains...>       Add marketplace-listed domains
+│       ├── afternic <domains...>     Add Afternic marketplace domains
+│       ├── sedo <domains...>         Add Sedo marketplace domains
+│       └── renewal <domains...>      Add domain renewals
+├── marketplace
+│   ├── listings
+│   │   ├── create <domains...>       Create marketplace listings
+│   │   ├── update                    Update marketplace listings
+│   │   └── cancel                    Cancel listings
+│   ├── offers
+│   │   ├── list                      List marketplace offers
+│   │   └── respond                   Respond to marketplace offers
+│   └── leads
+│       ├── list                      List domain conversation leads
+│       ├── get <domain>              Get or create domain conversation
+│       ├── messages                  List messages in a conversation
+│       └── send                      Send a message in a conversation
+├── config
+│   ├── set <command> <key> <value>   Save a default option
+│   ├── get [command]                 Show saved defaults
+│   └── reset <command> [key]         Remove saved defaults
+├── env
+│   ├── show                          Show current environment
+│   └── set <environment>             Switch default environment
+└── update
+    └── check                         Check for updates
+```
+
 ### Search & Discovery
 
 ```
