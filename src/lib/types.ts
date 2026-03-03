@@ -63,6 +63,7 @@ export interface AppConfig {
   environment: Environment;
   environments: Record<Environment, EnvironmentConfig>;
   defaults: Record<string, CommandDefaults>;
+  lastUpdateCheck: number;
 }
 
 export class ApiError extends Error {

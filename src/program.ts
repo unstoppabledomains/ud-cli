@@ -6,6 +6,7 @@ import { registerEnvCommands } from './commands/env.js';
 import { registerApiCommands } from './commands/api-commands.js';
 import { registerSmartCartAdd } from './commands/cart.js';
 import { registerConfigCommands } from './commands/config.js';
+import { registerUpdateCommands } from './commands/update.js';
 import type { Environment, OutputFormat } from './lib/types.js';
 
 // In esbuild CJS bundle, __PKG_VERSION__ is injected at build time.
@@ -51,5 +52,37 @@ program
 registerAuthCommands(program);
 registerEnvCommands(program);
 registerConfigCommands(program);
+registerUpdateCommands(program);
 registerApiCommands(program);
 registerSmartCartAdd(program);
+
+// --- Background update check (once per 24 h, after command execution) ---
+program.hook('postAction', async (_thisCommand, actionCommand) => {
+  // Only run once — on the leaf command that actually executed
+  if (actionCommand.parent !== program && actionCommand.parent !== undefined) return;
+
+  // Skip during update commands (they already check)
+  if (process.argv[2] === 'update') return;
+
+  // Skip in non-TTY (piped output)
+  if (!process.stderr.isTTY) return;
+
+  // Lazy-import to avoid loading update module on every invocation
+  const { shouldCheckForUpdate, checkForUpdate, recordUpdateCheck } = await import('./lib/update.js');
+
+  if (!shouldCheckForUpdate()) return;
+
+  try {
+    const result = await checkForUpdate();
+    recordUpdateCheck();
+    if (result.updateAvailable) {
+      const chalk = (await import('chalk')).default;
+      process.stderr.write(
+        chalk.yellow(`\nUpdate available: ${result.current} → ${result.latest}`) +
+        chalk.dim(' — run "ud update" to upgrade\n'),
+      );
+    }
+  } catch {
+    // Silently ignore — update check failures should never break the CLI
+  }
+});
