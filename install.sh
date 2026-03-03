@@ -155,6 +155,32 @@ main() {
   info "Downloading ${ASSET_NAME}…"
   http_get "$DOWNLOAD_URL" "$TMPFILE"
 
+  # Verify SHA256 checksum if checksums.txt is published alongside the release
+  CHECKSUM_URL="https://github.com/${GITHUB_REPO}/releases/download/v${VERSION}/checksums.txt"
+  CHECKSUM_FILE="$(mktemp)"
+  if http_get "$CHECKSUM_URL" "$CHECKSUM_FILE" 2>/dev/null; then
+    EXPECTED=$(grep "$ASSET_NAME" "$CHECKSUM_FILE" | awk '{print $1}')
+    if [ -n "$EXPECTED" ]; then
+      if command -v sha256sum >/dev/null 2>&1; then
+        ACTUAL=$(sha256sum "$TMPFILE" | awk '{print $1}')
+      elif command -v shasum >/dev/null 2>&1; then
+        ACTUAL=$(shasum -a 256 "$TMPFILE" | awk '{print $1}')
+      else
+        ACTUAL=""
+        warn "Neither sha256sum nor shasum found — skipping integrity check"
+      fi
+      if [ -n "$ACTUAL" ] && [ "$ACTUAL" != "$EXPECTED" ]; then
+        rm -f "$CHECKSUM_FILE" 2>/dev/null || true
+        error "SHA256 checksum mismatch — download may be corrupted."
+        error "  Expected: $EXPECTED"
+        error "  Got:      $ACTUAL"
+        exit 1
+      fi
+      info "Checksum verified"
+    fi
+  fi
+  rm -f "$CHECKSUM_FILE" 2>/dev/null || true
+
   chmod +x "$TMPFILE"
 
   # macOS: strip quarantine attribute to avoid Gatekeeper block

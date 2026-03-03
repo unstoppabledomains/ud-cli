@@ -1,4 +1,5 @@
 import { createRequire } from 'node:module';
+import { createHash } from 'node:crypto';
 import { chmod, rename, unlink, writeFile } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -153,6 +154,20 @@ export async function selfUpdate(
   const MIN_BINARY_SIZE = 1 * 1024 * 1024; // 1 MB
   if (buffer.length < MIN_BINARY_SIZE) {
     throw new Error(`Downloaded binary is suspiciously small (${buffer.length} bytes). Aborting.`);
+  }
+
+  // Verify SHA256 checksum if checksums.txt is published alongside the release
+  const checksumUrl = `https://github.com/${GITHUB_REPO}/releases/download/v${latest}/checksums.txt`;
+  const checksumRes = await fetch(checksumUrl, { headers: { 'User-Agent': 'ud-cli' } });
+  if (checksumRes.ok) {
+    const checksums = await checksumRes.text();
+    const binaryName = getBinaryName();
+    const expectedLine = checksums.split('\n').find((l) => l.includes(binaryName));
+    const expected = expectedLine?.split(/\s+/)[0];
+    const actual = createHash('sha256').update(buffer).digest('hex');
+    if (expected && actual !== expected) {
+      throw new Error('Binary integrity check failed — SHA256 mismatch. Download may be corrupted.');
+    }
   }
 
   const tempPath = `${process.execPath}.update`;
