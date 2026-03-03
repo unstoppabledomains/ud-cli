@@ -34,7 +34,7 @@ jobs:
       - name: Test
         run: npm test
 
-  build-linux:
+  build-binaries:
     needs: ci
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -49,41 +49,31 @@ jobs:
 
       - run: npm ci
 
-      - name: Bundle and build Linux/Windows binaries
+      - name: Bundle and build binaries
         run: |
           npm run bundle
           sed -i '1{/^#!/d}' dist/ud-cli.cjs
-          npx pkg dist/ud-cli.cjs --targets node22-linux-x64,node22-linux-arm64,node22-win-x64 --out-path bin/
+          npx pkg dist/ud-cli.cjs --targets node22-macos-arm64,node22-macos-x64,node22-linux-x64,node22-linux-arm64,node22-win-x64 --out-path bin/
           node scripts/rename-binaries.mjs
 
       - name: Upload binaries
         uses: actions/upload-artifact@v4
         with:
-          name: binaries-linux
+          name: binaries
           path: bin/ud-*
           if-no-files-found: error
 
-  build-macos:
-    needs: ci
+  sign-macos:
+    needs: build-binaries
     runs-on: macos-latest
-    timeout-minutes: 15
+    timeout-minutes: 5
 
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
+      - name: Download binaries
+        uses: actions/download-artifact@v4
         with:
-          node-version: 22
-          cache: npm
-
-      - run: npm ci
-
-      - name: Bundle and build macOS binaries
-        run: |
-          npm run bundle
-          sed -i '' '1{/^#!/d;}' dist/ud-cli.cjs
-          npx pkg dist/ud-cli.cjs --targets node22-macos-arm64,node22-macos-x64 --out-path bin/
-          node scripts/rename-binaries.mjs
+          name: binaries
+          path: bin/
 
       - name: Ad-hoc sign macOS binaries
         run: |
@@ -93,31 +83,25 @@ jobs:
             echo "Signed: $f"
           done
 
-      - name: Upload binaries
+      - name: Upload signed binaries
         uses: actions/upload-artifact@v4
         with:
-          name: binaries-macos
+          name: binaries-signed
           path: bin/ud-*
           if-no-files-found: error
 
   publish-github-release:
-    needs: [build-linux, build-macos]
+    needs: sign-macos
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download Linux/Windows binaries
+      - name: Download binaries
         uses: actions/download-artifact@v4
         with:
-          name: binaries-linux
-          path: bin/
-
-      - name: Download macOS binaries
-        uses: actions/download-artifact@v4
-        with:
-          name: binaries-macos
+          name: binaries-signed
           path: bin/
 
       - name: Generate checksums
