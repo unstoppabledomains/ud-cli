@@ -124,12 +124,17 @@ ud dns records remove-all <domains...>  Remove all DNS records
 ud dns nameservers list <domain>      List nameservers
 ud dns nameservers set-custom         Set custom nameservers
 ud dns nameservers set-default        Reset to default nameservers
-ud dns hosting list <domain>          List hosting configurations
-ud dns hosting add                    Add hosting configuration
-ud dns hosting remove                 Remove hosting configuration
-ud dns hosting lander generate <domains...>  Generate AI landing page
-ud dns hosting lander status <domains...>    Check lander generation status
-ud dns hosting lander remove <domains...>    Remove AI landing page
+```
+
+### Hosting
+
+```
+ud hosting redirects list <domain>             List redirect configurations
+ud hosting redirects add                       Add redirect configuration
+ud hosting redirects remove                    Remove redirect configuration
+ud hosting landers generate <domains...>       Generate AI landing page
+ud hosting landers status <domains...>         Check lander generation status
+ud hosting landers remove <domains...>         Remove AI landing page
 ```
 
 ### Cart
