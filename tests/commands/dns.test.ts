@@ -194,22 +194,22 @@ describe('dns commands', () => {
     expect(capturedBody!.domains).toBeDefined();
   });
 
-  // --- dns hosting ---
+  // --- hosting redirects ---
 
-  it('dns hosting list passes domain', async () => {
+  it('hosting redirects list passes domain', async () => {
     let capturedBody: Record<string, unknown> | null = null;
     mockFetchRoute('actions/ud_dns_hosting_list', (_url, init) => {
       capturedBody = JSON.parse(init?.body as string);
       return jsonResponse({ configs: [{ type: 'redirect', subName: '', targetUrl: 'https://example.com', status: 'active' }] });
     });
 
-    await program.parseAsync(['node', 'ud', 'dns', 'hosting', 'list', 'test.com']);
+    await program.parseAsync(['node', 'ud', 'hosting', 'redirects', 'list', 'test.com']);
 
     expect(capturedBody).toBeTruthy();
     expect(capturedBody!.domain).toBe('test.com');
   });
 
-  it('dns hosting add passes --data body', async () => {
+  it('hosting redirects add passes --data body', async () => {
     let capturedBody: Record<string, unknown> | null = null;
     mockFetchRoute('actions/ud_dns_hosting_add', (_url, init) => {
       capturedBody = JSON.parse(init?.body as string);
@@ -217,7 +217,7 @@ describe('dns commands', () => {
     });
 
     await program.parseAsync([
-      'node', 'ud', 'dns', 'hosting', 'add',
+      'node', 'ud', 'hosting', 'redirects', 'add',
       '--data', '{"domains":[{"name":"test.com"}],"config":{"type":"redirect","targetUrl":"https://example.com"}}',
     ]);
 
@@ -225,7 +225,7 @@ describe('dns commands', () => {
     expect(capturedBody!.config).toBeDefined();
   });
 
-  it('dns hosting remove passes --data body', async () => {
+  it('hosting redirects remove passes --data body', async () => {
     let capturedBody: Record<string, unknown> | null = null;
     mockFetchRoute('actions/ud_dns_hosting_remove', (_url, init) => {
       capturedBody = JSON.parse(init?.body as string);
@@ -233,7 +233,7 @@ describe('dns commands', () => {
     });
 
     await program.parseAsync([
-      'node', 'ud', 'dns', 'hosting', 'remove',
+      'node', 'ud', 'hosting', 'redirects', 'remove',
       '--data', '{"domains":[{"name":"test.com"}],"subName":"www"}',
     ]);
 
@@ -241,42 +241,42 @@ describe('dns commands', () => {
     expect(capturedBody!.subName).toBe('www');
   });
 
-  // --- dns hosting lander ---
+  // --- hosting landers ---
 
-  it('dns hosting lander generate passes variadic domains', async () => {
+  it('hosting landers generate passes variadic domains', async () => {
     let capturedBody: Record<string, unknown> | null = null;
     mockFetchRoute('actions/ud_domain_generate_lander', (_url, init) => {
       capturedBody = JSON.parse(init?.body as string);
       return jsonResponse({ results: [{ domain: 'test.com', success: true, jobId: 'j123' }] });
     });
 
-    await program.parseAsync(['node', 'ud', 'dns', 'hosting', 'lander', 'generate', 'test.com']);
+    await program.parseAsync(['node', 'ud', 'hosting', 'landers', 'generate', 'test.com']);
 
     expect(capturedBody).toBeTruthy();
     expect(capturedBody!.domains).toEqual([{ name: 'test.com' }]);
   });
 
-  it('dns hosting lander status passes variadic domains', async () => {
+  it('hosting landers status passes variadic domains', async () => {
     let capturedBody: Record<string, unknown> | null = null;
     mockFetchRoute('actions/ud_domain_lander_status', (_url, init) => {
       capturedBody = JSON.parse(init?.body as string);
       return jsonResponse({ results: [{ domain: 'test.com', status: 'active', hostingType: 'ai' }] });
     });
 
-    await program.parseAsync(['node', 'ud', 'dns', 'hosting', 'lander', 'status', 'test.com']);
+    await program.parseAsync(['node', 'ud', 'hosting', 'landers', 'status', 'test.com']);
 
     expect(capturedBody).toBeTruthy();
     expect(capturedBody!.domains).toEqual([{ name: 'test.com' }]);
   });
 
-  it('dns hosting lander remove passes variadic domains with --confirm', async () => {
+  it('hosting landers remove passes variadic domains with --confirm', async () => {
     let capturedBody: Record<string, unknown> | null = null;
     mockFetchRoute('actions/ud_domain_remove_lander', (_url, init) => {
       capturedBody = JSON.parse(init?.body as string);
       return jsonResponse({ results: [{ domain: 'test.com', success: true }] });
     });
 
-    await program.parseAsync(['node', 'ud', 'dns', 'hosting', 'lander', 'remove', 'test.com', '--confirm']);
+    await program.parseAsync(['node', 'ud', 'hosting', 'landers', 'remove', 'test.com', '--confirm']);
 
     expect(capturedBody).toBeTruthy();
     expect(capturedBody!.domains).toEqual([{ name: 'test.com' }]);

@@ -146,29 +146,29 @@ export const COMMAND_ROUTES: CommandRoute[] = [
     positionalArgs: [],
   },
 
-  // --- DNS Hosting ---
+  // --- Hosting: Redirects ---
   {
     toolName: 'ud_dns_hosting_list',
-    path: ['dns', 'hosting', 'list'],
+    path: ['hosting', 'redirects', 'list'],
     positionalArgs: [
       { name: 'domain', description: 'Domain name', required: true, variadic: false },
     ],
   },
   {
     toolName: 'ud_dns_hosting_add',
-    path: ['dns', 'hosting', 'add'],
+    path: ['hosting', 'redirects', 'add'],
     positionalArgs: [],
   },
   {
     toolName: 'ud_dns_hosting_remove',
-    path: ['dns', 'hosting', 'remove'],
+    path: ['hosting', 'redirects', 'remove'],
     positionalArgs: [],
   },
 
-  // --- AI Lander (under dns hosting) ---
+  // --- Hosting: AI Landers ---
   {
     toolName: 'ud_domain_generate_lander',
-    path: ['dns', 'hosting', 'lander', 'generate'],
+    path: ['hosting', 'landers', 'generate'],
     positionalArgs: [
       { name: 'domains', description: 'Domain name(s)', required: true, variadic: true },
     ],
@@ -176,7 +176,7 @@ export const COMMAND_ROUTES: CommandRoute[] = [
   },
   {
     toolName: 'ud_domain_lander_status',
-    path: ['dns', 'hosting', 'lander', 'status'],
+    path: ['hosting', 'landers', 'status'],
     positionalArgs: [
       { name: 'domains', description: 'Domain name(s)', required: true, variadic: true },
     ],
@@ -184,7 +184,7 @@ export const COMMAND_ROUTES: CommandRoute[] = [
   },
   {
     toolName: 'ud_domain_remove_lander',
-    path: ['dns', 'hosting', 'lander', 'remove'],
+    path: ['hosting', 'landers', 'remove'],
     positionalArgs: [
       { name: 'domains', description: 'Domain name(s)', required: true, variadic: true },
     ],

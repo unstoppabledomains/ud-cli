@@ -50,7 +50,6 @@
     "commander": "^13.1.0",
     "conf": "^13.1.0",
     "keytar": "^7.9.0",
-    "open": "^10.1.0",
     "ora": "^9.3.0"
   },
   "devDependencies": {

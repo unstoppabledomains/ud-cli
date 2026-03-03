@@ -1,4 +1,5 @@
 import * as crypto from 'node:crypto';
+import { spawn } from 'node:child_process';
 import * as http from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { apiBaseUrl, getEnvConfig, setEnvConfig } from './config.js';
@@ -165,8 +166,9 @@ export async function performOAuthLogin(): Promise<TokenData> {
     authorizeUrl.searchParams.set('code_challenge_method', 'S256');
     authorizeUrl.searchParams.set('state', state);
 
-    const open = (await import('open')).default;
-    await open(authorizeUrl.toString());
+    const url = authorizeUrl.toString();
+    const cmd = process.platform === 'win32' ? 'start' : process.platform === 'darwin' ? 'open' : 'xdg-open';
+    spawn(cmd, [url], { stdio: 'ignore', detached: true }).unref();
 
     // 6. Wait for callback
     const { code, returnedState } = await waitForCallback();
