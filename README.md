@@ -15,7 +15,7 @@ npm install -g @unstoppabledomains/ud-cli
 ud auth login
 
 # You're ready — try it out
-ud domains list
+ud domains search mybusiness
 ```
 
 ## Updating

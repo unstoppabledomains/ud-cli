@@ -28,14 +28,16 @@ export const program = new Command();
 program
   .configureHelp({ showGlobalOptions: true })
   .name('ud')
-  .description('Unstoppable Domains CLI')
-  .version(getVersion())
-  .option('--env <environment>', 'override active environment (production or staging)')
-  .option('--format <format>', 'output format (table, json, csv)')
-  .option('--quiet', 'suppress output except errors')
-  .option('--verbose', 'show detailed output')
-  .option('--fields [columns]', 'show available fields, or specify columns to display (e.g., name,expiresAt,listing.price)')
-  .option('--profile <name>', 'configuration profile to use')
+  .description('CLI tool for managing Unstoppable Domains — domain portfolio, DNS records, marketplace listings, and more.')
+  .version(getVersion(), '-V, --version', 'Output the version number')
+  .helpOption('-h, --help', 'Display help for command')
+  .helpCommand('help [command]', 'Display help for command')
+  .option('--env <environment>', 'Override active environment (production or staging)')
+  .option('--format <format>', 'Output format (table, json, csv)')
+  .option('--quiet', 'Suppress output except errors')
+  .option('--verbose', 'Show detailed output')
+  .option('--fields [columns]', 'Show available fields, or specify columns to display (e.g., name,expiresAt,listing.price)')
+  .option('--profile <name>', 'Configuration profile to use')
   .hook('preAction', (thisCommand) => {
     const opts = thisCommand.opts<{ env?: string; format?: string }>();
     if (opts.env) {
