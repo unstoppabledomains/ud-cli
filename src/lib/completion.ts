@@ -152,17 +152,19 @@ function generateZsh(nodes: CompletionNode[]): string {
   const root = nodes.find((n) => n.path.length === 0)!;
 
   // Build global option args for _arguments
-  const globalOptionArgs = root.options.map((o) => {
+  // Generate separate entries for short and long forms to avoid zsh brace expansion issues
+  const globalOptionArgs: string[] = [];
+  for (const o of root.options) {
     const desc = escapeZsh(o.description);
+    const suffix = o.takesArg ? ':' : '';
     if (o.short) {
-      return o.takesArg
-        ? `'(${o.short} ${o.long})'\\{${o.short},${o.long}\\}'[${desc}]:'`
-        : `'(${o.short} ${o.long})'\\{${o.short},${o.long}\\}'[${desc}]'`;
+      const excl = `(${o.short} ${o.long})`;
+      globalOptionArgs.push(`'${excl}${o.short}[${desc}]${suffix}'`);
+      globalOptionArgs.push(`'${excl}${o.long}[${desc}]${suffix}'`);
+    } else {
+      globalOptionArgs.push(`'${o.long}[${desc}]${suffix}'`);
     }
-    return o.takesArg
-      ? `'${o.long}[${desc}]:'`
-      : `'${o.long}[${desc}]'`;
-  });
+  }
 
   const functions: string[] = [];
 
@@ -193,14 +195,26 @@ function generateZsh(nodes: CompletionNode[]): string {
       }
     }
 
-    const caseBlock = caseEntries.length > 0
-      ? `\n  case $state in\n    args)\n      case $line[1] in\n${caseEntries.join('\n')}\n      esac\n      ;;\n  esac`
-      : '';
-
     // Root function includes global options
     const optionLines = node.path.length === 0
       ? globalOptionArgs.map((a) => `    ${a} \\`).join('\n')
       : '';
+
+    // Build the case block — always include subcmd for _describe, add args if there are children
+    const caseParts: string[] = [
+      '    subcmd)',
+      "      _describe 'command' commands",
+      '      ;;',
+    ];
+    if (caseEntries.length > 0) {
+      caseParts.push(
+        '    args)',
+        '      case $line[1] in',
+        ...caseEntries,
+        '      esac',
+        '      ;;',
+      );
+    }
 
     functions.push(`${funcName}() {
   local -a commands=(
@@ -208,8 +222,12 @@ ${commandEntries}
   )
 
   _arguments -C \\
-${optionLines ? optionLines + '\n' : ''}    '1: :_describe "command" commands' \\
-    '*::arg:->args'${caseBlock}
+${optionLines ? optionLines + '\n' : ''}    '1: :->subcmd' \\
+    '*::arg:->args'
+
+  case $state in
+${caseParts.join('\n')}
+  esac
 }`);
   }
 
