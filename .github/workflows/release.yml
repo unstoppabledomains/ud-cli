@@ -59,7 +59,7 @@ jobs:
           npm run bundle
           sed -i '1{/^#!/d}' dist/ud-cli.cjs
           npx pkg dist/ud-cli.cjs --targets node22-macos-x64,node22-linux-x64,node22-win-x64 --out-path bin/
-          node scripts/rename-binaries.mjs
+          node scripts/rename-binaries.mjs --arch x64
 
       - name: Upload binaries
         uses: actions/upload-artifact@v4
@@ -93,7 +93,7 @@ jobs:
           npm run bundle
           sed -i '1{/^#!/d}' dist/ud-cli.cjs
           npx pkg dist/ud-cli.cjs --targets node22-macos-arm64,node22-linux-arm64 --out-path bin/
-          node scripts/rename-binaries.mjs
+          node scripts/rename-binaries.mjs --arch arm64
 
       - name: Upload binaries
         uses: actions/upload-artifact@v4
