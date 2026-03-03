@@ -37,6 +37,7 @@ class SimpleSpinner implements SpinnerLike {
   }
 
   start(text?: string): this {
+    if (this.#interval) return this;
     if (text) this.#text = text;
     this.#interval = setInterval(() => {
       const frame = SPINNER_FRAMES[this.#frameIndex % SPINNER_FRAMES.length];
@@ -76,6 +77,7 @@ class SimpleSpinner implements SpinnerLike {
 
 // --- Factory ---
 
+/** Returns true when running inside a @yao-pkg/pkg binary bundle. */
 function isPkgBinary(): boolean {
   return !!(process as unknown as Record<string, unknown>).pkg;
 }
