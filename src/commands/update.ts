@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
-import ora from 'ora';
+import { createSpinner } from '../lib/spinner.js';
 import {
   checkForUpdate,
   isBinaryInstall,
@@ -13,7 +13,8 @@ export function registerUpdateCommands(program: Command): void {
     .command('update')
     .description('Update ud-cli to the latest version')
     .action(async () => {
-      const spinner = ora({ text: 'Checking for updates…', discardStdin: false }).start();
+      const spinner = await createSpinner('Checking for updates…');
+      spinner.start();
 
       let info: UpdateInfo;
       try {
@@ -39,7 +40,8 @@ export function registerUpdateCommands(program: Command): void {
         return;
       }
 
-      const dlSpinner = ora({ text: `Downloading v${info.latest}…`, discardStdin: false }).start();
+      const dlSpinner = await createSpinner(`Downloading v${info.latest}…`);
+      dlSpinner.start();
 
       try {
         const result = await selfUpdate(info.latest);
