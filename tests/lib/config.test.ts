@@ -51,6 +51,10 @@ describe('config', () => {
       expect(apiBaseUrl('production')).toBe('https://api.unstoppabledomains.com');
     });
 
+    it('returns sandbox URL', () => {
+      expect(apiBaseUrl('sandbox')).toBe('https://api.ud-sandbox.com');
+    });
+
     it('returns staging URL', () => {
       expect(apiBaseUrl('staging')).toBe('https://api.ud-staging.com');
     });

@@ -25,7 +25,7 @@ export function registerSkillCommands(program: Command): void {
 
   skill
     .command('install')
-    .description('Install ud-cli skill for Claude Code')
+    .description('Install ud-cli skill for coding agents')
     .option('--target <dir>', 'Target directory (default: current working directory)')
     .action(async (opts: { target?: string }) => {
       const cwd = opts.target ?? process.cwd();
