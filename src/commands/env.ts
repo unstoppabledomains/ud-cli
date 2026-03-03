@@ -3,7 +3,7 @@ import chalk from 'chalk';
 import { getDefaultEnv, setDefaultEnv, apiBaseUrl } from '../lib/config.js';
 import type { Environment } from '../lib/types.js';
 
-const VALID_ENVS: Environment[] = ['production', 'staging'];
+const VALID_ENVS: Environment[] = ['production', 'sandbox', 'staging'];
 
 export function registerEnvCommands(program: Command): void {
   const env = program.command('env').description('Manage environment settings');
@@ -20,7 +20,7 @@ export function registerEnvCommands(program: Command): void {
 
   env
     .command('set <environment>')
-    .description('Set the default environment (production or staging)')
+    .description('Set the default environment (production or sandbox)')
     .action((environment: string) => {
       if (!VALID_ENVS.includes(environment as Environment)) {
         console.error(chalk.red(`Invalid environment: ${environment}. Must be one of: ${VALID_ENVS.join(', ')}`));

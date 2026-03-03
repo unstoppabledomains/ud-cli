@@ -23,7 +23,7 @@ ud auth status               # Check current auth
 --file <path>                Read JSON request body from file
 --domains-file <path>        Read domain list from file (one per line)
 --quiet                      Suppress output except errors
---env production|staging     Override environment
+--env production|sandbox     Override environment
 ```
 
 ## Commands

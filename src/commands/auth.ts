@@ -4,6 +4,7 @@ import { getActiveEnv, getEnvConfig, setEnvConfig, clearEnvConfig, apiBaseUrl } 
 import { saveApiKey, clearCredentials, getTokens } from '../lib/credentials.js';
 import { performOAuthLogin, revokeToken, discoverMetadata } from '../lib/oauth.js';
 import { verifyAuth } from '../lib/api.js';
+import type { Environment } from '../lib/types.js';
 
 const API_KEY_PATTERN = /^ud_mcp_[0-9a-f]{64}$/;
 
@@ -84,8 +85,8 @@ async function loginApiKey(env: string, key?: string): Promise<void> {
     return;
   }
 
-  await saveApiKey(key, env as 'production' | 'staging');
-  setEnvConfig({ authMethod: 'api-key' }, env as 'production' | 'staging');
+  await saveApiKey(key, env as Environment);
+  setEnvConfig({ authMethod: 'api-key' }, env as Environment);
 
   // Verify the key actually works
   const status = await verifyAuth();
@@ -103,7 +104,7 @@ async function loginOAuth(env: string): Promise<void> {
 
   try {
     await performOAuthLogin();
-    setEnvConfig({ authMethod: 'oauth' }, env as 'production' | 'staging');
+    setEnvConfig({ authMethod: 'oauth' }, env as Environment);
     console.log(chalk.green(`✓ OAuth login successful for ${env}.`));
   } catch (err) {
     console.error(chalk.red(`OAuth login failed: ${err instanceof Error ? err.message : String(err)}`));

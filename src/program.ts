@@ -21,7 +21,7 @@ function getVersion(): string {
   return (req('../package.json') as { version: string }).version;
 }
 
-const VALID_ENVS = ['production', 'staging'];
+const VALID_ENVS = ['production', 'sandbox', 'staging'];
 const VALID_FORMATS: OutputFormat[] = ['table', 'json', 'csv'];
 
 export const program = new Command();
@@ -84,7 +84,7 @@ program
   .version(getVersion(), '-V, --version', 'Output the version number')
   .helpOption('-h, --help', 'Display help for command')
   .helpCommand('help [command]', 'Display help for command')
-  .option('--env <environment>', 'Override active environment (production or staging)')
+  .option('--env <environment>', 'Override active environment (production or sandbox)')
   .option('--format <format>', 'Output format (table, json, csv)')
   .option('--quiet', 'Suppress output except errors')
   .option('--verbose', 'Show detailed output')

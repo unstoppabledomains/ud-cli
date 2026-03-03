@@ -59,7 +59,7 @@ ud auth logout    # Clear stored credentials
 
 | Option | Description |
 |--------|-------------|
-| `--env <environment>` | Override active environment (`production` or `staging`) |
+| `--env <environment>` | Override active environment (`production` or `sandbox`) |
 | `--format <format>` | Output format: `table` (default), `json`, or `csv` |
 | `--fields [columns]` | Show available fields, or specify columns to display |
 | `--quiet` | Suppress output except errors |
@@ -407,12 +407,12 @@ For skills-less operation, agents can also read `ud --help` directly.
 | Environment | Base URL |
 |-------------|----------|
 | `production` (default) | `https://api.unstoppabledomains.com` |
-| `staging` | `https://api.ud-staging.com` |
+| `sandbox` | `https://api.ud-sandbox.com` |
 
 ```bash
 ud env show              # Show current environment
-ud env set staging       # Switch default environment
-ud --env staging <cmd>   # Override environment for a single command
+ud env set sandbox       # Switch default environment
+ud --env sandbox <cmd>   # Override environment for a single command
 ```
 
 Credentials are stored per-environment, so you can be authenticated to both simultaneously.
