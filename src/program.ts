@@ -25,16 +25,20 @@ const VALID_FORMATS: OutputFormat[] = ['table', 'json', 'csv'];
 
 export const program = new Command();
 
+// Commands listed here appear under "Utilities:" in root help output.
+// Everything else appears under "Commands:". Update this set when adding new
+// utility-style commands so they don't silently land in the wrong group.
+const UTILITY_COMMANDS = new Set(['auth', 'config', 'env', 'help', 'update']);
+
 program
   .configureHelp({
     showGlobalOptions: true,
     sortSubcommands: true,
     visibleCommands(cmd) {
       const cmds = Help.prototype.visibleCommands.call(this, cmd);
-      const utility = new Set(['help', 'update']);
       return cmds.sort((a, b) => {
-        const aUtil = utility.has(a.name());
-        const bUtil = utility.has(b.name());
+        const aUtil = UTILITY_COMMANDS.has(a.name());
+        const bUtil = UTILITY_COMMANDS.has(b.name());
         if (aUtil !== bUtil) return aUtil ? 1 : -1;
         return a.name().localeCompare(b.name());
       });
@@ -48,13 +52,11 @@ program
       // Root command: render grouped command sections instead of one flat list.
       // Suppress the default "Commands:" block by temporarily hiding all commands,
       // then append our own grouped sections.
-      const coreNames = new Set([
-        'cart', 'contacts', 'dns', 'domains', 'leads', 'listings', 'offers',
-      ]);
       const allCmds = helper.visibleCommands(cmd);
       const origVisible = helper.visibleCommands;
       helper.visibleCommands = () => [];
       const base = Help.prototype.formatHelp.call(this, cmd, helper);
+      // Restore before padWidth() so alignment accounts for all commands, not just the empty override.
       helper.visibleCommands = origVisible;
 
       const termWidth = helper.padWidth(cmd, helper);
@@ -66,12 +68,12 @@ program
           helper,
         );
 
-      const core = allCmds.filter((c: Command) => coreNames.has(c.name()));
-      const helpers = allCmds.filter((c: Command) => !coreNames.has(c.name()));
+      const core = allCmds.filter((c: Command) => !UTILITY_COMMANDS.has(c.name()));
+      const utils = allCmds.filter((c: Command) => UTILITY_COMMANDS.has(c.name()));
 
       const sections: string[] = [''];
       if (core.length) sections.push(helper.styleTitle('Commands:'), ...core.map(fmt), '');
-      if (helpers.length) sections.push(helper.styleTitle('Utilities:'), ...helpers.map(fmt), '');
+      if (utils.length) sections.push(helper.styleTitle('Utilities:'), ...utils.map(fmt), '');
 
       return base + sections.join('\n');
     },
