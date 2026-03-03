@@ -41,7 +41,7 @@ export function registerUpdateCommands(program: Command): void {
       const dlSpinner = ora(`Downloading v${info.latest}…`).start();
 
       try {
-        const result = await selfUpdate();
+        const result = await selfUpdate(info.latest);
         dlSpinner.succeed(
           `Updated successfully: ${chalk.dim(result.previousVersion)} → ${chalk.bold(result.newVersion)}`,
         );

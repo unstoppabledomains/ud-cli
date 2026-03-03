@@ -58,8 +58,8 @@ registerSmartCartAdd(program);
 
 // --- Background update check (once per 24 h, after command execution) ---
 program.hook('postAction', async (_thisCommand, actionCommand) => {
-  // Only run once — on the leaf command that actually executed
-  if (actionCommand.parent !== program && actionCommand.parent !== undefined) return;
+  // Only run for top-level subcommands (e.g., "domains list" fires on "domains")
+  if (actionCommand.parent !== program) return;
 
   // Skip during update commands (they already check)
   if (process.argv[2] === 'update') return;

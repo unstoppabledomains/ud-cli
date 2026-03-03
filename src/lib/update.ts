@@ -112,9 +112,11 @@ export async function checkForUpdate(): Promise<UpdateInfo> {
   return { current, latest, updateAvailable: isNewer(current, latest) };
 }
 
-export async function selfUpdate(): Promise<{ previousVersion: string; newVersion: string }> {
+export async function selfUpdate(
+  knownLatest?: string,
+): Promise<{ previousVersion: string; newVersion: string }> {
   const current = getCurrentVersion();
-  const latest = await getLatestVersion();
+  const latest = knownLatest ?? (await getLatestVersion());
 
   if (!isNewer(current, latest)) {
     return { previousVersion: current, newVersion: current };
