@@ -25,7 +25,8 @@ import type { OutputFormat } from '../lib/types.js';
 const GROUP_DESCRIPTIONS: Record<string, string> = {
   // Top-level groups
   domains: 'Search, register, and manage your domains',
-  dns: 'Manage DNS records, nameservers, and hosting',
+  dns: 'Manage DNS records and nameservers',
+  hosting: 'Manage hosting configurations and AI landers',
   cart: 'Manage your shopping cart and checkout',
   contacts: 'Manage WHOIS contacts',
   listings: 'Create and manage marketplace listings',
@@ -37,8 +38,8 @@ const GROUP_DESCRIPTIONS: Record<string, string> = {
   'domains.auto-renewal': 'Manage domain auto-renewal settings',
   'dns.records': 'List, add, update, and remove DNS records',
   'dns.nameservers': 'View and configure nameservers',
-  'dns.hosting': 'Manage hosting configurations and AI landers',
-  'dns.hosting.lander': 'Generate, check, and remove AI landing pages',
+  'hosting.redirects': 'Manage redirects, proxies, and seller storefronts',
+  'hosting.landers': 'Manage AI-generated landing pages',
   'cart.add': 'Add domains to your cart',
 };
 
