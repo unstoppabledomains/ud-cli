@@ -23,6 +23,10 @@ const schema = {
     type: 'object' as const,
     default: {},
   },
+  lastUpdateCheck: {
+    type: 'number' as const,
+    default: 0,
+  },
 };
 
 const config = new Conf<AppConfig>({

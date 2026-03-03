@@ -1,0 +1,203 @@
+import { createRequire } from 'node:module';
+import { createHash } from 'node:crypto';
+import { chmod, rename, unlink, writeFile } from 'node:fs/promises';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import { config } from './config.js';
+
+const execFileAsync = promisify(execFile);
+
+const GITHUB_REPO = 'unstoppabledomains/ud-cli';
+const RELEASES_LATEST_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
+const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+declare const __PKG_VERSION__: string | undefined;
+
+// ---------------------------------------------------------------------------
+// Version helpers
+// ---------------------------------------------------------------------------
+
+export function getCurrentVersion(): string {
+  if (typeof __PKG_VERSION__ === 'string') return __PKG_VERSION__;
+  const req = createRequire(import.meta.url);
+  return (req('../../package.json') as { version: string }).version;
+}
+
+export async function getLatestVersion(options?: { timeoutMs?: number }): Promise<string> {
+  const fetchOptions: RequestInit = {
+    headers: {
+      Accept: 'application/vnd.github.v3+json',
+      'User-Agent': 'ud-cli',
+    },
+  };
+  if (options?.timeoutMs) {
+    fetchOptions.signal = AbortSignal.timeout(options.timeoutMs);
+  }
+  const res = await fetch(RELEASES_LATEST_URL, fetchOptions);
+  if (!res.ok) {
+    throw new Error(`GitHub API returned ${res.status}: ${res.statusText}`);
+  }
+  const data = (await res.json()) as { tag_name: string };
+  return data.tag_name.replace(/^v/, '');
+}
+
+/** Strip pre-release and build metadata (e.g. "1.0.0-beta.1+build" → "1.0.0"). */
+const normalize = (v: string): string => v.replace(/[-+].*$/, '');
+
+/** Compare two semver strings. Returns true if latest > current. */
+export function isNewer(current: string, latest: string): boolean {
+  const c = normalize(current).split('.').map(Number);
+  const l = normalize(latest).split('.').map(Number);
+  for (let i = 0; i < Math.max(c.length, l.length); i++) {
+    const cv = c[i] ?? 0;
+    const lv = l[i] ?? 0;
+    if (lv > cv) return true;
+    if (lv < cv) return false;
+  }
+  return false;
+}
+
+// ---------------------------------------------------------------------------
+// Install-method detection
+// ---------------------------------------------------------------------------
+
+/** @yao-pkg/pkg injects `process.pkg` when running as a standalone binary bundle. */
+export function isBinaryInstall(): boolean {
+  return !!(process as unknown as Record<string, unknown>).pkg;
+}
+
+// ---------------------------------------------------------------------------
+// Platform / binary naming
+// ---------------------------------------------------------------------------
+
+const PLATFORM_MAP: Record<string, string> = {
+  darwin: 'macos',
+  linux: 'linux',
+  win32: 'win',
+};
+
+const ARCH_MAP: Record<string, string> = {
+  arm64: 'arm64',
+  x64: 'x64',
+};
+
+export function getBinaryName(): string {
+  const os = PLATFORM_MAP[process.platform];
+  const arch = ARCH_MAP[process.arch];
+  if (!os || !arch) {
+    throw new Error(`Unsupported platform: ${process.platform}-${process.arch}`);
+  }
+  const ext = process.platform === 'win32' ? '.exe' : '';
+  return `ud-${os}-${arch}${ext}`;
+}
+
+export function getDownloadUrl(version: string): string {
+  return `https://github.com/${GITHUB_REPO}/releases/download/v${version}/${getBinaryName()}`;
+}
+
+// ---------------------------------------------------------------------------
+// Update check throttling
+// ---------------------------------------------------------------------------
+
+export function shouldCheckForUpdate(): boolean {
+  const last = config.get('lastUpdateCheck') as number;
+  return Date.now() - last > CHECK_INTERVAL_MS;
+}
+
+export function recordUpdateCheck(): void {
+  config.set('lastUpdateCheck', Date.now());
+}
+
+// ---------------------------------------------------------------------------
+// Core check / update logic
+// ---------------------------------------------------------------------------
+
+export interface UpdateInfo {
+  current: string;
+  latest: string;
+  updateAvailable: boolean;
+}
+
+export async function checkForUpdate(options?: { timeoutMs?: number }): Promise<UpdateInfo> {
+  const current = getCurrentVersion();
+  const latest = await getLatestVersion(options);
+  return { current, latest, updateAvailable: isNewer(current, latest) };
+}
+
+export async function selfUpdate(
+  knownLatest?: string,
+): Promise<{ previousVersion: string; newVersion: string }> {
+  const current = getCurrentVersion();
+  const latest = knownLatest ?? (await getLatestVersion());
+
+  if (!isNewer(current, latest)) {
+    return { previousVersion: current, newVersion: current };
+  }
+
+  if (process.platform === 'win32') {
+    throw new Error(
+      'Self-update is not supported on Windows. Download the latest release from:\n' +
+        `  https://github.com/${GITHUB_REPO}/releases`,
+    );
+  }
+
+  const url = getDownloadUrl(latest);
+  const res = await fetch(url, {
+    headers: { 'User-Agent': 'ud-cli' },
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to download binary: ${res.status} ${res.statusText}`);
+  }
+
+  const buffer = Buffer.from(await res.arrayBuffer());
+
+  const MIN_BINARY_SIZE = 1 * 1024 * 1024; // 1 MB
+  if (buffer.length < MIN_BINARY_SIZE) {
+    throw new Error(`Downloaded binary is suspiciously small (${buffer.length} bytes). Aborting.`);
+  }
+
+  // Verify SHA256 checksum if checksums.txt is published alongside the release
+  const checksumUrl = `https://github.com/${GITHUB_REPO}/releases/download/v${latest}/checksums.txt`;
+  const checksumRes = await fetch(checksumUrl, { headers: { 'User-Agent': 'ud-cli' } });
+  if (checksumRes.ok) {
+    const checksums = await checksumRes.text();
+    const binaryName = getBinaryName();
+    const expectedLine = checksums.split('\n').find((l) => l.includes(binaryName));
+    const expected = expectedLine?.split(/\s+/)[0];
+    const actual = createHash('sha256').update(buffer).digest('hex');
+    if (expected && actual !== expected) {
+      throw new Error('Binary integrity check failed — SHA256 mismatch. Download may be corrupted.');
+    }
+  }
+
+  // Place temp file next to the binary so rename() is an atomic same-filesystem move
+  const tempPath = `${process.execPath}.update`;
+
+  try {
+    await writeFile(tempPath, buffer);
+    await chmod(tempPath, 0o755);
+
+    // Strip macOS quarantine attribute
+    if (process.platform === 'darwin') {
+      try {
+        await execFileAsync('xattr', ['-d', 'com.apple.quarantine', tempPath]);
+      } catch {
+        // Attribute may not be set — ignore
+      }
+    }
+
+    await rename(tempPath, process.execPath);
+  } catch (err: unknown) {
+    // Clean up temp file on failure
+    await unlink(tempPath).catch(() => {});
+
+    if (err instanceof Error && 'code' in err && (err as NodeJS.ErrnoException).code === 'EACCES') {
+      throw new Error(
+        `Permission denied. Try running with elevated privileges:\n  sudo ud update`,
+      );
+    }
+    throw err;
+  }
+
+  return { previousVersion: current, newVersion: latest };
+}

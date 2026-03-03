@@ -1,19 +1,34 @@
 # ud-cli
 
-CLI tool for managing Unstoppable Domains — domain portfolio, DNS records, marketplace listings, and more.
+Unstoppable Domains CLI — Search, register, and manage your domains from the command line.
 
 ## Quick Start
 
 ```bash
-# Install globally from npm
+# Install (macOS / Linux) — may prompt for sudo
+curl -fsSL https://raw.githubusercontent.com/unstoppabledomains/ud-cli/main/install.sh | sh
+
+# Or install via npm
 npm install -g @unstoppabledomains/ud-cli
 
 # Authenticate (opens browser for OAuth)
 ud auth login
 
 # You're ready — try it out
-ud domains list
+ud domains search mybusiness
 ```
+
+## Updating
+
+```bash
+# Check for updates
+ud update check
+
+# Update to the latest version
+ud update
+```
+
+The CLI also checks for updates automatically once every 24 hours and prints a notification if a newer version is available.
 
 ## Authentication
 
