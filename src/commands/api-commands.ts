@@ -304,7 +304,7 @@ function registerRoute(
       body[hooks.promptInput.paramName] = value;
     }
 
-    const spinner = await createSpinner(`Running ${route.toolName}...`, { quiet, format });
+    const spinner = await createSpinner(`Running ${route.path.join(' ')}...`, { quiet, format });
     spinner.start();
 
     try {

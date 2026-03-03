@@ -13,7 +13,7 @@ export function registerUpdateCommands(program: Command): void {
     .command('update')
     .description('Update ud-cli to the latest version')
     .action(async () => {
-      const spinner = ora('Checking for updates…').start();
+      const spinner = ora({ text: 'Checking for updates…', discardStdin: false }).start();
 
       let info: UpdateInfo;
       try {
@@ -39,7 +39,7 @@ export function registerUpdateCommands(program: Command): void {
         return;
       }
 
-      const dlSpinner = ora(`Downloading v${info.latest}…`).start();
+      const dlSpinner = ora({ text: `Downloading v${info.latest}…`, discardStdin: false }).start();
 
       try {
         const result = await selfUpdate(info.latest);

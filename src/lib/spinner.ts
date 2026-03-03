@@ -29,7 +29,7 @@ export async function createSpinner(
 
   try {
     const ora = (await import('ora')).default;
-    return ora(text);
+    return ora({ text, discardStdin: false });
   } catch {
     return noopSpinner;
   }
