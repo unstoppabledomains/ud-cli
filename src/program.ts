@@ -1,5 +1,5 @@
 import { createRequire } from 'node:module';
-import { Command } from 'commander';
+import { Command, Help } from 'commander';
 import { setEnvOverride } from './lib/config.js';
 import { registerAuthCommands } from './commands/auth.js';
 import { registerEnvCommands } from './commands/env.js';
@@ -26,7 +26,56 @@ const VALID_FORMATS: OutputFormat[] = ['table', 'json', 'csv'];
 export const program = new Command();
 
 program
-  .configureHelp({ showGlobalOptions: true })
+  .configureHelp({
+    showGlobalOptions: true,
+    sortSubcommands: true,
+    visibleCommands(cmd) {
+      const cmds = Help.prototype.visibleCommands.call(this, cmd);
+      const utility = new Set(['help', 'update']);
+      return cmds.sort((a, b) => {
+        const aUtil = utility.has(a.name());
+        const bUtil = utility.has(b.name());
+        if (aUtil !== bUtil) return aUtil ? 1 : -1;
+        return a.name().localeCompare(b.name());
+      });
+    },
+    formatHelp(cmd, helper) {
+      // Subcommands use the default single "Commands:" section
+      if (cmd.parent) {
+        return Help.prototype.formatHelp.call(this, cmd, helper);
+      }
+
+      // Root command: render grouped command sections instead of one flat list.
+      // Suppress the default "Commands:" block by temporarily hiding all commands,
+      // then append our own grouped sections.
+      const coreNames = new Set([
+        'cart', 'contacts', 'dns', 'domains', 'leads', 'listings', 'offers',
+      ]);
+      const allCmds = helper.visibleCommands(cmd);
+      const origVisible = helper.visibleCommands;
+      helper.visibleCommands = () => [];
+      const base = Help.prototype.formatHelp.call(this, cmd, helper);
+      helper.visibleCommands = origVisible;
+
+      const termWidth = helper.padWidth(cmd, helper);
+      const fmt = (c: Command) =>
+        helper.formatItem(
+          helper.styleSubcommandTerm(helper.subcommandTerm(c)),
+          termWidth,
+          helper.styleSubcommandDescription(helper.subcommandDescription(c)),
+          helper,
+        );
+
+      const core = allCmds.filter((c: Command) => coreNames.has(c.name()));
+      const helpers = allCmds.filter((c: Command) => !coreNames.has(c.name()));
+
+      const sections: string[] = [''];
+      if (core.length) sections.push(helper.styleTitle('Commands:'), ...core.map(fmt), '');
+      if (helpers.length) sections.push(helper.styleTitle('Utilities:'), ...helpers.map(fmt), '');
+
+      return base + sections.join('\n');
+    },
+  })
   .name('ud')
   .description('Unstoppable Domains CLI — Search, register, and manage your domains from the command line.')
   .version(getVersion(), '-V, --version', 'Output the version number')
