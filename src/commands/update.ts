@@ -5,6 +5,7 @@ import {
   checkForUpdate,
   isBinaryInstall,
   selfUpdate,
+  type UpdateInfo,
 } from '../lib/update.js';
 
 export function registerUpdateCommands(program: Command): void {
@@ -14,7 +15,7 @@ export function registerUpdateCommands(program: Command): void {
     .action(async () => {
       const spinner = ora('Checking for updates…').start();
 
-      let info;
+      let info: UpdateInfo;
       try {
         info = await checkForUpdate();
       } catch (err) {

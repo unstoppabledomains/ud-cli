@@ -162,12 +162,32 @@ main() {
 
   INSTALL_PATH="${INSTALL_DIR}/${BINARY_NAME}"
 
+  # Ensure install directory exists
+  if [ ! -d "$INSTALL_DIR" ]; then
+    if [ -w "$(dirname "$INSTALL_DIR")" ]; then
+      mkdir -p "$INSTALL_DIR"
+    elif command -v sudo >/dev/null 2>&1; then
+      info "Creating ${INSTALL_DIR} (sudo required)…"
+      sudo mkdir -p "$INSTALL_DIR"
+    else
+      error "${INSTALL_DIR} does not exist and sudo is not available."
+      error "Create the directory manually or run this installer as root."
+      exit 1
+    fi
+  fi
+
   if [ -w "$INSTALL_DIR" ]; then
     mv "$TMPFILE" "$INSTALL_PATH"
-  else
+  elif command -v sudo >/dev/null 2>&1; then
     info "Installing to ${INSTALL_DIR} (sudo required)…"
     sudo mv "$TMPFILE" "$INSTALL_PATH"
     sudo chmod +x "$INSTALL_PATH"
+  else
+    error "${INSTALL_DIR} is not writable and sudo is not available."
+    error "Run this installer as root or move the binary manually:"
+    error "  mv $TMPFILE $INSTALL_PATH"
+    TMPFILE=""
+    exit 1
   fi
 
   # Clear TMPFILE so cleanup trap doesn't try to remove the installed binary

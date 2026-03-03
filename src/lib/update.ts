@@ -22,10 +22,17 @@ export function getCurrentVersion(): string {
   return (req('../../package.json') as { version: string }).version;
 }
 
-export async function getLatestVersion(): Promise<string> {
-  const res = await fetch(RELEASES_LATEST_URL, {
-    headers: { Accept: 'application/vnd.github.v3+json' },
-  });
+export async function getLatestVersion(options?: { timeoutMs?: number }): Promise<string> {
+  const fetchOptions: RequestInit = {
+    headers: {
+      Accept: 'application/vnd.github.v3+json',
+      'User-Agent': 'ud-cli',
+    },
+  };
+  if (options?.timeoutMs) {
+    fetchOptions.signal = AbortSignal.timeout(options.timeoutMs);
+  }
+  const res = await fetch(RELEASES_LATEST_URL, fetchOptions);
   if (!res.ok) {
     throw new Error(`GitHub API returned ${res.status}: ${res.statusText}`);
   }
@@ -50,6 +57,7 @@ function isNewer(current: string, latest: string): boolean {
 // Install-method detection
 // ---------------------------------------------------------------------------
 
+/** @yao-pkg/pkg injects `process.pkg` when running as a standalone binary bundle. */
 export function isBinaryInstall(): boolean {
   return !!(process as unknown as Record<string, unknown>).pkg;
 }
@@ -106,9 +114,9 @@ export interface UpdateInfo {
   updateAvailable: boolean;
 }
 
-export async function checkForUpdate(): Promise<UpdateInfo> {
+export async function checkForUpdate(options?: { timeoutMs?: number }): Promise<UpdateInfo> {
   const current = getCurrentVersion();
-  const latest = await getLatestVersion();
+  const latest = await getLatestVersion(options);
   return { current, latest, updateAvailable: isNewer(current, latest) };
 }
 
@@ -120,6 +128,13 @@ export async function selfUpdate(
 
   if (!isNewer(current, latest)) {
     return { previousVersion: current, newVersion: current };
+  }
+
+  if (process.platform === 'win32') {
+    throw new Error(
+      'Self-update is not supported on Windows. Download the latest release from:\n' +
+        `  https://github.com/${GITHUB_REPO}/releases`,
+    );
   }
 
   const url = getDownloadUrl(latest);

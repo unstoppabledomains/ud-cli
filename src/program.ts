@@ -62,7 +62,7 @@ program.hook('postAction', async (_thisCommand, actionCommand) => {
   if (actionCommand.parent !== program) return;
 
   // Skip during update commands (they already check)
-  if (process.argv[2] === 'update') return;
+  if (actionCommand.name() === 'update' || actionCommand.name() === 'check') return;
 
   // Skip in non-TTY (piped output)
   if (!process.stderr.isTTY) return;
@@ -73,7 +73,7 @@ program.hook('postAction', async (_thisCommand, actionCommand) => {
   if (!shouldCheckForUpdate()) return;
 
   try {
-    const result = await checkForUpdate();
+    const result = await checkForUpdate({ timeoutMs: 5000 });
     recordUpdateCheck();
     if (result.updateAvailable) {
       const chalk = (await import('chalk')).default;

@@ -9,7 +9,7 @@ CLI tool for managing Unstoppable Domains — domain portfolio, DNS records, mar
 curl -fsSL https://raw.githubusercontent.com/unstoppabledomains/ud-cli/main/install.sh | sh
 
 # Or install via npm
-sudo npm install -g @unstoppabledomains/ud-cli
+npm install -g @unstoppabledomains/ud-cli
 
 # Authenticate (opens browser for OAuth)
 ud auth login
