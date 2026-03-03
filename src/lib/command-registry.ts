@@ -22,18 +22,20 @@ export interface CommandRoute {
 }
 
 export const COMMAND_ROUTES: CommandRoute[] = [
-  // --- Domain Search ---
+  // --- Search & Discovery (root-level commands) ---
   {
     toolName: 'ud_domains_search',
-    path: ['domains', 'search'],
+    path: ['search'],
     positionalArgs: [
       { name: 'query', description: 'Domain name or search term', required: true, variadic: false },
     ],
+    description: 'Search for available domains',
   },
   {
     toolName: 'ud_tld_list',
-    path: ['domains', 'tlds'],
+    path: ['tlds'],
     positionalArgs: [],
+    description: 'List available TLDs',
   },
 
   // --- Portfolio ---
@@ -97,31 +99,31 @@ export const COMMAND_ROUTES: CommandRoute[] = [
   // --- DNS Records ---
   {
     toolName: 'ud_dns_records_list',
-    path: ['dns', 'records', 'list'],
+    path: ['domains', 'dns', 'records', 'list'],
     positionalArgs: [
       { name: 'domain', description: 'Domain name', required: true, variadic: false },
     ],
   },
   {
     toolName: 'ud_dns_record_add',
-    path: ['dns', 'records', 'add'],
+    path: ['domains', 'dns', 'records', 'add'],
     positionalArgs: [
       { name: 'domain', description: 'Domain name', required: true, variadic: false },
     ],
   },
   {
     toolName: 'ud_dns_record_update',
-    path: ['dns', 'records', 'update'],
+    path: ['domains', 'dns', 'records', 'update'],
     positionalArgs: [],
   },
   {
     toolName: 'ud_dns_record_remove',
-    path: ['dns', 'records', 'remove'],
+    path: ['domains', 'dns', 'records', 'remove'],
     positionalArgs: [],
   },
   {
     toolName: 'ud_dns_records_remove_all',
-    path: ['dns', 'records', 'remove-all'],
+    path: ['domains', 'dns', 'records', 'remove-all'],
     positionalArgs: [
       { name: 'domains', description: 'Domain name(s)', required: true, variadic: true },
     ],
@@ -130,45 +132,45 @@ export const COMMAND_ROUTES: CommandRoute[] = [
   // --- DNS Nameservers ---
   {
     toolName: 'ud_dns_nameservers_list',
-    path: ['dns', 'nameservers', 'list'],
+    path: ['domains', 'dns', 'nameservers', 'list'],
     positionalArgs: [
       { name: 'domain', description: 'Domain name', required: true, variadic: false },
     ],
   },
   {
     toolName: 'ud_dns_nameservers_set_custom',
-    path: ['dns', 'nameservers', 'set-custom'],
+    path: ['domains', 'dns', 'nameservers', 'set-custom'],
     positionalArgs: [],
   },
   {
     toolName: 'ud_dns_nameservers_set_default',
-    path: ['dns', 'nameservers', 'set-default'],
+    path: ['domains', 'dns', 'nameservers', 'set-default'],
     positionalArgs: [],
   },
 
   // --- Hosting: Redirects ---
   {
     toolName: 'ud_dns_hosting_list',
-    path: ['hosting', 'redirects', 'list'],
+    path: ['domains', 'hosting', 'redirects', 'list'],
     positionalArgs: [
       { name: 'domain', description: 'Domain name', required: true, variadic: false },
     ],
   },
   {
     toolName: 'ud_dns_hosting_add',
-    path: ['hosting', 'redirects', 'add'],
+    path: ['domains', 'hosting', 'redirects', 'add'],
     positionalArgs: [],
   },
   {
     toolName: 'ud_dns_hosting_remove',
-    path: ['hosting', 'redirects', 'remove'],
+    path: ['domains', 'hosting', 'redirects', 'remove'],
     positionalArgs: [],
   },
 
   // --- Hosting: AI Landers ---
   {
     toolName: 'ud_domain_generate_lander',
-    path: ['hosting', 'landers', 'generate'],
+    path: ['domains', 'hosting', 'landers', 'generate'],
     positionalArgs: [
       { name: 'domains', description: 'Domain name(s)', required: true, variadic: true },
     ],
@@ -176,7 +178,7 @@ export const COMMAND_ROUTES: CommandRoute[] = [
   },
   {
     toolName: 'ud_domain_lander_status',
-    path: ['hosting', 'landers', 'status'],
+    path: ['domains', 'hosting', 'landers', 'status'],
     positionalArgs: [
       { name: 'domains', description: 'Domain name(s)', required: true, variadic: true },
     ],
@@ -184,7 +186,7 @@ export const COMMAND_ROUTES: CommandRoute[] = [
   },
   {
     toolName: 'ud_domain_remove_lander',
-    path: ['hosting', 'landers', 'remove'],
+    path: ['domains', 'hosting', 'landers', 'remove'],
     positionalArgs: [
       { name: 'domains', description: 'Domain name(s)', required: true, variadic: true },
     ],
@@ -261,67 +263,67 @@ export const COMMAND_ROUTES: CommandRoute[] = [
   // --- Contacts ---
   {
     toolName: 'ud_contacts_list',
-    path: ['contacts', 'list'],
+    path: ['domains', 'contacts', 'list'],
     positionalArgs: [],
   },
   {
     toolName: 'ud_contact_create',
-    path: ['contacts', 'create'],
+    path: ['domains', 'contacts', 'create'],
     positionalArgs: [],
   },
 
-  // --- Listings / Marketplace ---
+  // --- Marketplace: Listings ---
   {
     toolName: 'ud_listing_create',
-    path: ['listings', 'create'],
+    path: ['marketplace', 'listings', 'create'],
     positionalArgs: [
       { name: 'domains', description: 'Domain name(s) to list', required: true, variadic: true },
     ],
   },
   {
     toolName: 'ud_listing_update',
-    path: ['listings', 'update'],
+    path: ['marketplace', 'listings', 'update'],
     positionalArgs: [],
   },
   {
     toolName: 'ud_listing_cancel',
-    path: ['listings', 'cancel'],
+    path: ['marketplace', 'listings', 'cancel'],
     positionalArgs: [],
   },
 
-  // --- Offers ---
+  // --- Marketplace: Offers ---
   {
     toolName: 'ud_offers_list',
-    path: ['offers', 'list'],
+    path: ['marketplace', 'offers', 'list'],
     positionalArgs: [],
   },
   {
     toolName: 'ud_offer_respond',
-    path: ['offers', 'respond'],
+    path: ['marketplace', 'offers', 'respond'],
     positionalArgs: [],
   },
 
-  // --- Leads ---
+  // --- Marketplace: Leads ---
   {
     toolName: 'ud_leads_list',
-    path: ['leads', 'list'],
+    path: ['marketplace', 'leads', 'list'],
     positionalArgs: [],
   },
   {
     toolName: 'ud_lead_get',
-    path: ['leads', 'get'],
+    path: ['marketplace', 'leads', 'get'],
     positionalArgs: [
       { name: 'domain', description: 'Domain name', required: true, variadic: false },
     ],
   },
   {
     toolName: 'ud_lead_messages_list',
-    path: ['leads', 'messages'],
+    path: ['marketplace', 'leads', 'messages'],
     positionalArgs: [],
   },
   {
     toolName: 'ud_lead_message_send',
-    path: ['leads', 'send'],
+    path: ['marketplace', 'leads', 'send'],
     positionalArgs: [],
   },
 ];

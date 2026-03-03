@@ -4,7 +4,7 @@ import type { ParamSpec } from '../../src/lib/spec-parser.js';
 
 const SIMPLE_ROUTE: CommandRoute = {
   toolName: 'ud_domains_search',
-  path: ['domains', 'search'],
+  path: ['search'],
   positionalArgs: [
     { name: 'query', description: 'Search query', required: true, variadic: false },
   ],

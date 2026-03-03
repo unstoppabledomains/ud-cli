@@ -181,7 +181,7 @@ describe('marketplace commands', () => {
         return jsonResponse({ results: [{ domain: 'sell.com', success: true, listingId: 'l1' }] });
       });
 
-      await program.parseAsync(['node', 'ud', 'listings', 'create', 'sell.com']);
+      await program.parseAsync(['node', 'ud', 'marketplace', 'listings', 'create', 'sell.com']);
 
       expect(capturedBody).toBeTruthy();
       const domains = capturedBody!.domains as Record<string, unknown>[];
@@ -196,7 +196,7 @@ describe('marketplace commands', () => {
         return jsonResponse({ results: [{ domain: 'sell.com', success: true, listingId: 'l1' }] });
       });
 
-      await program.parseAsync(['node', 'ud', 'listings', 'create', 'sell.com', '--price', '99.99']);
+      await program.parseAsync(['node', 'ud', 'marketplace', 'listings', 'create', 'sell.com', '--price', '99.99']);
 
       expect(capturedBody).toBeTruthy();
       const domains = capturedBody!.domains as Record<string, unknown>[];
@@ -211,7 +211,7 @@ describe('marketplace commands', () => {
       });
 
       await program.parseAsync([
-        'node', 'ud', 'listings', 'cancel', '--confirm',
+        'node', 'ud', 'marketplace', 'listings', 'cancel', '--confirm',
         '--data', '{"listingIds":["l1"]}',
       ]);
 
@@ -224,7 +224,7 @@ describe('marketplace commands', () => {
         return jsonResponse({});
       });
 
-      await program.parseAsync(['node', 'ud', 'listings', 'cancel', '--data', '{"listingIds":["l1"]}']);
+      await program.parseAsync(['node', 'ud', 'marketplace', 'listings', 'cancel', '--data', '{"listingIds":["l1"]}']);
 
       const output = consoleSpy.mock.calls.map((c: unknown[]) => String(c[0])).join('\n');
       expect(output).toContain('Aborted');
@@ -241,7 +241,7 @@ describe('marketplace commands', () => {
         return jsonResponse({ offers: [{ domainName: 'offer.com', amount: 1000, status: 'pending' }] });
       });
 
-      await program.parseAsync(['node', 'ud', 'offers', 'list']);
+      await program.parseAsync(['node', 'ud', 'marketplace', 'offers', 'list']);
       expect(called).toBe(true);
     });
 
@@ -253,7 +253,7 @@ describe('marketplace commands', () => {
       });
 
       await program.parseAsync([
-        'node', 'ud', 'offers', 'respond',
+        'node', 'ud', 'marketplace', 'offers', 'respond',
         '--data', '{"offers":[{"offerId":"o1","action":"accept"}]}',
       ]);
 
@@ -272,7 +272,7 @@ describe('marketplace commands', () => {
         return jsonResponse({ leads: [{ domain: 'lead.com', status: 'active' }] });
       });
 
-      await program.parseAsync(['node', 'ud', 'leads', 'list']);
+      await program.parseAsync(['node', 'ud', 'marketplace', 'leads', 'list']);
       expect(called).toBe(true);
     });
 
@@ -283,7 +283,7 @@ describe('marketplace commands', () => {
         return jsonResponse({ conversation: { id: 'c1', domainName: 'lead.com' }, message: 'Started' });
       });
 
-      await program.parseAsync(['node', 'ud', 'leads', 'get', 'lead.com']);
+      await program.parseAsync(['node', 'ud', 'marketplace', 'leads', 'get', 'lead.com']);
 
       expect(capturedBody).toBeTruthy();
       expect(capturedBody!.domain).toBe('lead.com');
@@ -296,7 +296,7 @@ describe('marketplace commands', () => {
         return jsonResponse({ messages: [{ id: 'm1', content: 'Hello' }] });
       });
 
-      await program.parseAsync(['node', 'ud', 'leads', 'messages', '--conversation-id', '42']);
+      await program.parseAsync(['node', 'ud', 'marketplace', 'leads', 'messages', '--conversation-id', '42']);
 
       expect(capturedBody).toBeTruthy();
       expect(capturedBody!.conversationId).toBe(42);
@@ -310,7 +310,7 @@ describe('marketplace commands', () => {
       });
 
       await program.parseAsync([
-        'node', 'ud', 'leads', 'send',
+        'node', 'ud', 'marketplace', 'leads', 'send',
         '--conversation-id', '42', '--content', 'Reply',
       ]);
 
@@ -330,7 +330,7 @@ describe('marketplace commands', () => {
         return jsonResponse({ contacts: [{ id: 'ct1', firstName: 'John', lastName: 'Doe' }] });
       });
 
-      await program.parseAsync(['node', 'ud', 'contacts', 'list']);
+      await program.parseAsync(['node', 'ud', 'domains', 'contacts', 'list']);
       expect(called).toBe(true);
     });
 
@@ -342,7 +342,7 @@ describe('marketplace commands', () => {
       });
 
       await program.parseAsync([
-        'node', 'ud', 'contacts', 'create',
+        'node', 'ud', 'domains', 'contacts', 'create',
         '--data', '{"firstName":"Jane","lastName":"Doe","email":"jane@example.com"}',
       ]);
 

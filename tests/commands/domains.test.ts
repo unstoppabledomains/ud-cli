@@ -46,44 +46,44 @@ describe('domain commands', () => {
     process.exitCode = undefined;
   });
 
-  // --- domains search ---
+  // --- search (root-level) ---
 
-  it('domains search passes query and --tlds', async () => {
+  it('search passes query and --tlds', async () => {
     let capturedBody: Record<string, unknown> | null = null;
     mockFetchRoute('actions/ud_domains_search', (_url, init) => {
       capturedBody = JSON.parse(init?.body as string);
       return jsonResponse({ results: [], pagination: { total: 0, hasMore: false } });
     });
 
-    await program.parseAsync(['node', 'ud', 'domains', 'search', 'example', '--tlds', 'com,org']);
+    await program.parseAsync(['node', 'ud', 'search', 'example', '--tlds', 'com,org']);
 
     expect(capturedBody).toBeTruthy();
     expect(capturedBody!.query).toBe('example');
     expect(capturedBody!.tlds).toEqual(['com', 'org']);
   });
 
-  it('domains search passes --limit', async () => {
+  it('search passes --limit', async () => {
     let capturedBody: Record<string, unknown> | null = null;
     mockFetchRoute('actions/ud_domains_search', (_url, init) => {
       capturedBody = JSON.parse(init?.body as string);
       return jsonResponse({ results: [], pagination: { total: 0, hasMore: false } });
     });
 
-    await program.parseAsync(['node', 'ud', 'domains', 'search', 'test', '--limit', '10']);
+    await program.parseAsync(['node', 'ud', 'search', 'test', '--limit', '10']);
 
     expect(capturedBody!.limit).toBe(10);
   });
 
-  // --- domains tlds ---
+  // --- tlds (root-level) ---
 
-  it('domains tlds calls ud_tld_list', async () => {
+  it('tlds calls ud_tld_list', async () => {
     let called = false;
     mockFetchRoute('actions/ud_tld_list', () => {
       called = true;
       return jsonResponse({ tlds: [{ tld: 'com' }, { tld: 'xyz' }] });
     });
 
-    await program.parseAsync(['node', 'ud', 'domains', 'tlds']);
+    await program.parseAsync(['node', 'ud', 'tlds']);
     expect(called).toBe(true);
   });
 
