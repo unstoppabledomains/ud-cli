@@ -62,7 +62,7 @@ program.hook('postAction', async (_thisCommand, actionCommand) => {
   if (actionCommand.parent !== program) return;
 
   // Skip during update commands (they already check)
-  if (actionCommand.name() === 'update' || actionCommand.name() === 'check') return;
+  if (actionCommand.name() === 'update') return;
 
   // Skip in non-TTY (piped output)
   if (!process.stderr.isTTY) return;

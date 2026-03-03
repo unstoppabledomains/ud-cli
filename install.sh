@@ -124,6 +124,8 @@ http_get() {
 
 get_latest_version() {
   RELEASES_URL="https://api.github.com/repos/${GITHUB_REPO}/releases/latest"
+  # Parse tag_name from GitHub API JSON using grep+sed (no jq dependency).
+  # This is fragile if the JSON format changes, but acceptable for a POSIX installer.
   VERSION=$(http_get "$RELEASES_URL" | grep '"tag_name"' | sed 's/.*"tag_name"[[:space:]]*:[[:space:]]*"v\([^"]*\)".*/\1/')
 
   if [ -z "$VERSION" ]; then

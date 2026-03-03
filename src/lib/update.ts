@@ -40,10 +40,13 @@ export async function getLatestVersion(options?: { timeoutMs?: number }): Promis
   return data.tag_name.replace(/^v/, '');
 }
 
+/** Strip pre-release and build metadata (e.g. "1.0.0-beta.1+build" → "1.0.0"). */
+const normalize = (v: string): string => v.replace(/[-+].*$/, '');
+
 /** Compare two semver strings. Returns true if latest > current. */
-function isNewer(current: string, latest: string): boolean {
-  const c = current.split('.').map(Number);
-  const l = latest.split('.').map(Number);
+export function isNewer(current: string, latest: string): boolean {
+  const c = normalize(current).split('.').map(Number);
+  const l = normalize(latest).split('.').map(Number);
   for (let i = 0; i < Math.max(c.length, l.length); i++) {
     const cv = c[i] ?? 0;
     const lv = l[i] ?? 0;
@@ -138,12 +141,20 @@ export async function selfUpdate(
   }
 
   const url = getDownloadUrl(latest);
-  const res = await fetch(url);
+  const res = await fetch(url, {
+    headers: { 'User-Agent': 'ud-cli' },
+  });
   if (!res.ok) {
     throw new Error(`Failed to download binary: ${res.status} ${res.statusText}`);
   }
 
   const buffer = Buffer.from(await res.arrayBuffer());
+
+  const MIN_BINARY_SIZE = 1 * 1024 * 1024; // 1 MB
+  if (buffer.length < MIN_BINARY_SIZE) {
+    throw new Error(`Downloaded binary is suspiciously small (${buffer.length} bytes). Aborting.`);
+  }
+
   const tempPath = `${process.execPath}.update`;
 
   try {
