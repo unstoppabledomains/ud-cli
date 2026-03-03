@@ -30,7 +30,10 @@ const schema = {
 };
 
 const config = new Conf<AppConfig>({
-  projectName: process.env.NODE_ENV === 'test' ? 'ud-cli-test' : 'ud-cli',
+  projectName:
+    process.env.NODE_ENV === 'test'
+      ? `ud-cli-test-${process.env.JEST_WORKER_ID ?? '0'}`
+      : 'ud-cli',
   schema,
 });
 
