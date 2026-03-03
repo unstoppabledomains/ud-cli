@@ -220,6 +220,8 @@ function generateZsh(nodes: CompletionNode[]): string {
   local -a commands=(
 ${commandEntries}
   )
+  local state line context
+  typeset -A opt_args
 
   _arguments -C \\
 ${optionLines ? optionLines + '\n' : ''}    '1: :->subcmd' \\
@@ -293,8 +295,11 @@ function generateFish(nodes: CompletionNode[]): string {
   for (const node of nodes) {
     if (node.subcommands.length === 0) continue;
 
+    // For root: show subcommands only when no subcommand has been entered yet
+    // For nested: use our helper to match the exact command path
+    const allTopLevelSubs = root.subcommands.map((s) => s.name).join(' ');
     const condition = node.path.length === 0
-      ? '__fish_use_subcommand'
+      ? `not __fish_seen_subcommand_from ${allTopLevelSubs}`
       : `__ud_using_command ${node.path.join(' ')}`;
 
     lines.push(`# ${node.path.length === 0 ? 'Top-level' : node.path.join(' ')} subcommands`);
