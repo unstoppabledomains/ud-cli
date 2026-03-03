@@ -5,20 +5,14 @@ CLI tool for managing Unstoppable Domains — domain portfolio, DNS records, mar
 ## Quick Start
 
 ```bash
-# Install dependencies
-npm install
+# Install globally from npm
+npm install -g @unstoppabledomains/ud-cli
 
 # Authenticate (opens browser for OAuth)
-npx tsx src/index.ts auth login
+ud auth login
 
-# Check auth status
-npx tsx src/index.ts auth whoami
-
-# Search for domains
-npx tsx src/index.ts domains search mybusiness
-
-# List your portfolio
-npx tsx src/index.ts domains list
+# You're ready — try it out
+ud domains list
 ```
 
 ## Authentication
@@ -336,6 +330,16 @@ npm run build:binaries      # Create standalone executables in bin/
 ```
 
 Binary targets: macOS (arm64, x64), Linux (x64), Windows (x64).
+
+## Building from Source
+
+```bash
+git clone https://github.com/unstoppabledomains/ud-cli.git
+cd ud-cli
+npm install
+npm run build
+npm install -g .
+```
 
 ## Credential Storage
 
