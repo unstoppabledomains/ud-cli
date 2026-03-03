@@ -34,7 +34,7 @@ jobs:
       - name: Test
         run: npm test
 
-  build-binaries:
+  build-x64:
     needs: ci
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -54,32 +54,72 @@ jobs:
           curl -fsSL -o /usr/local/bin/ldid https://github.com/ProcursusTeam/ldid/releases/download/v2.1.5-procursus7/ldid_linux_x86_64
           chmod +x /usr/local/bin/ldid
 
-      - name: Bundle and build binaries
+      - name: Bundle and build x64 binaries
         run: |
           npm run bundle
           sed -i '1{/^#!/d}' dist/ud-cli.cjs
-          npx pkg dist/ud-cli.cjs --targets node22-macos-arm64,node22-macos-x64,node22-linux-x64,node22-linux-arm64,node22-win-x64 --out-path bin/
+          npx pkg dist/ud-cli.cjs --targets node22-macos-x64,node22-linux-x64,node22-win-x64 --out-path bin/
           node scripts/rename-binaries.mjs
 
       - name: Upload binaries
         uses: actions/upload-artifact@v4
         with:
-          name: binaries
+          name: binaries-x64
+          path: bin/ud-*
+          if-no-files-found: error
+
+  build-arm64:
+    needs: ci
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install ldid for macOS ad-hoc signing
+        run: |
+          curl -fsSL -o /usr/local/bin/ldid https://github.com/ProcursusTeam/ldid/releases/download/v2.1.5-procursus7/ldid_linux_aarch64
+          chmod +x /usr/local/bin/ldid
+
+      - name: Bundle and build arm64 binaries
+        run: |
+          npm run bundle
+          sed -i '1{/^#!/d}' dist/ud-cli.cjs
+          npx pkg dist/ud-cli.cjs --targets node22-macos-arm64,node22-linux-arm64 --out-path bin/
+          node scripts/rename-binaries.mjs
+
+      - name: Upload binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: binaries-arm64
           path: bin/ud-*
           if-no-files-found: error
 
   publish-github-release:
-    needs: build-binaries
+    needs: [build-x64, build-arm64]
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download binaries
+      - name: Download x64 binaries
         uses: actions/download-artifact@v4
         with:
-          name: binaries
+          name: binaries-x64
+          path: bin/
+
+      - name: Download arm64 binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: binaries-arm64
           path: bin/
 
       - name: Generate checksums
