@@ -1,4 +1,4 @@
-export type Environment = 'production' | 'staging';
+export type Environment = 'production' | 'sandbox' | 'staging';
 
 export type OutputFormat = 'table' | 'json' | 'csv';
 

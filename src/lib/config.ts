@@ -3,6 +3,7 @@ import type { AppConfig, CommandDefaults, Environment, EnvironmentConfig } from 
 
 const BASE_URLS: Record<Environment, string> = {
   production: 'https://api.unstoppabledomains.com',
+  sandbox: 'https://api.ud-sandbox.com',
   staging: 'https://api.ud-staging.com',
 };
 
@@ -10,12 +11,13 @@ const schema = {
   environment: {
     type: 'string' as const,
     default: 'production',
-    enum: ['production', 'staging'],
+    enum: ['production', 'sandbox', 'staging'],
   },
   environments: {
     type: 'object' as const,
     default: {
       production: {},
+      sandbox: {},
       staging: {},
     },
   },

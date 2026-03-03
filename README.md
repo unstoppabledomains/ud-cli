@@ -51,7 +51,7 @@ API keys have the format `ud_mcp_` followed by 64 hex characters. Generate one f
 ### Managing credentials
 
 ```bash
-ud auth whoami    # Check current auth status
+ud auth status    # Check current auth status
 ud auth logout    # Clear stored credentials
 ```
 
@@ -59,7 +59,7 @@ ud auth logout    # Clear stored credentials
 
 | Option | Description |
 |--------|-------------|
-| `--env <environment>` | Override active environment (`production` or `staging`) |
+| `--env <environment>` | Override active environment (`production` or `sandbox`) |
 | `--format <format>` | Output format: `table` (default), `json`, or `csv` |
 | `--fields [columns]` | Show available fields, or specify columns to display |
 | `--quiet` | Suppress output except errors |
@@ -105,7 +105,7 @@ ud
 ├── auth
 │   ├── login                         Authenticate (OAuth or API key)
 │   ├── logout                        Clear stored credentials
-│   └── whoami                        Check current auth status
+│   └── status                        Check current auth status
 ├── domains
 │   ├── list                          List portfolio domains
 │   ├── get <domains...>              Get detailed domain info
@@ -171,6 +171,8 @@ ud
 │   ├── set <command> <key> <value>   Save a default option
 │   ├── get [command]                 Show saved defaults
 │   └── reset <command> [key]         Remove saved defaults
+├── skill
+│   └── install                       Install Claude Code skill
 ├── env
 │   ├── show                          Show current environment
 │   └── set <environment>             Switch default environment
@@ -376,17 +378,41 @@ ud domains dns records add example.com --file records.json
 ud domains list --format json | jq '.domains[].name'
 ```
 
+## Agent Skills
+
+ud-cli ships a skill that teaches coding agents (Claude Code, Cursor, GitHub Copilot, etc.) how to use domain management commands.
+
+### Install via npx skills (recommended)
+
+Works with 40+ agents, no prior install needed:
+
+```bash
+npx skills add unstoppabledomains/ud-cli
+```
+
+### Install via ud-cli
+
+If you already have the CLI installed:
+
+```bash
+ud skill install
+```
+
+Both methods copy the skill to `.claude/skills/ud-cli/` (or the equivalent for your agent). The skill covers search, DNS, cart, marketplace, and all other ud-cli workflows.
+
+For skills-less operation, agents can also read `ud --help` directly.
+
 ## Environments
 
 | Environment | Base URL |
 |-------------|----------|
 | `production` (default) | `https://api.unstoppabledomains.com` |
-| `staging` | `https://api.ud-staging.com` |
+| `sandbox` | `https://api.ud-sandbox.com` |
 
 ```bash
 ud env show              # Show current environment
-ud env set staging       # Switch default environment
-ud --env staging <cmd>   # Override environment for a single command
+ud env set sandbox       # Switch default environment
+ud --env sandbox <cmd>   # Override environment for a single command
 ```
 
 Credentials are stored per-environment, so you can be authenticated to both simultaneously.

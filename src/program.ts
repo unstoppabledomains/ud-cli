@@ -7,6 +7,7 @@ import { registerApiCommands } from './commands/api-commands.js';
 import { registerSmartCartAdd } from './commands/cart.js';
 import { registerConfigCommands } from './commands/config.js';
 import { registerUpdateCommands } from './commands/update.js';
+import { registerSkillCommands } from './commands/skill.js';
 import type { Environment, OutputFormat } from './lib/types.js';
 
 // In esbuild CJS bundle, __PKG_VERSION__ is injected at build time.
@@ -20,7 +21,7 @@ function getVersion(): string {
   return (req('../package.json') as { version: string }).version;
 }
 
-const VALID_ENVS = ['production', 'staging'];
+const VALID_ENVS = ['production', 'sandbox', 'staging'];
 const VALID_FORMATS: OutputFormat[] = ['table', 'json', 'csv'];
 
 export const program = new Command();
@@ -28,7 +29,7 @@ export const program = new Command();
 // Commands listed here appear under "Utilities:" in root help output.
 // Everything else appears under "Commands:". Update this set when adding new
 // utility-style commands so they don't silently land in the wrong group.
-const UTILITY_COMMANDS = new Set(['config', 'env', 'help', 'update']);
+const UTILITY_COMMANDS = new Set(['config', 'env', 'help', 'skill', 'update']);
 
 program
   .configureHelp({
@@ -83,7 +84,7 @@ program
   .version(getVersion(), '-V, --version', 'Output the version number')
   .helpOption('-h, --help', 'Display help for command')
   .helpCommand('help [command]', 'Display help for command')
-  .option('--env <environment>', 'Override active environment (production or staging)')
+  .option('--env <environment>', 'Override active environment (production or sandbox)')
   .option('--format <format>', 'Output format (table, json, csv)')
   .option('--quiet', 'Suppress output except errors')
   .option('--verbose', 'Show detailed output')
@@ -106,6 +107,7 @@ registerAuthCommands(program);
 registerEnvCommands(program);
 registerConfigCommands(program);
 registerUpdateCommands(program);
+registerSkillCommands(program);
 registerApiCommands(program);
 registerSmartCartAdd(program);
 
