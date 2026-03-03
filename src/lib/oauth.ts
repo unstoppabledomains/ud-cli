@@ -137,20 +137,17 @@ export async function performOAuthLogin(): Promise<TokenData> {
   const redirectUri = `http://127.0.0.1:${port}/callback`;
 
   try {
-    // 3. Register client (or reuse existing)
-    const envConfig = getEnvConfig();
-    let clientId = envConfig.oauth?.clientId;
-
-    if (!clientId) {
-      const registration = await registerClient(metadata.registration_endpoint, redirectUri);
-      clientId = registration.client_id;
-      setEnvConfig({
-        oauth: {
-          ...envConfig.oauth,
-          clientId,
-        },
-      });
-    }
+    // 3. Register client with the current redirect URI.
+    // Always re-register because the local server port changes each login,
+    // so a cached clientId's redirect_uri won't match the new port.
+    const registration = await registerClient(metadata.registration_endpoint, redirectUri);
+    const clientId = registration.client_id;
+    setEnvConfig({
+      oauth: {
+        ...getEnvConfig().oauth,
+        clientId,
+      },
+    });
 
     // 4. Generate PKCE pair
     const codeVerifier = generateCodeVerifier();
