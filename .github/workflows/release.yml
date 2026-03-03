@@ -59,15 +59,48 @@ jobs:
           path: bin/ud-*
           if-no-files-found: error
 
-  publish-github-release:
+  sign-macos:
     needs: build-binaries
+    runs-on: macos-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Download binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: binaries
+          path: bin/
+
+      - name: Ad-hoc sign macOS binaries
+        run: |
+          for f in bin/ud-macos-*; do
+            codesign --sign - --force "$f"
+            codesign --verify "$f"
+            echo "Signed: $f"
+          done
+
+      - name: Upload signed binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: binaries-signed
+          path: bin/ud-*
+          if-no-files-found: error
+
+  publish-github-release:
+    needs: sign-macos
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download binaries
+      - name: Download signed macOS binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: binaries-signed
+          path: bin/
+
+      - name: Download Linux/Windows binaries
         uses: actions/download-artifact@v4
         with:
           name: binaries
