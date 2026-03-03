@@ -11,7 +11,7 @@ import {
 export function registerUpdateCommands(program: Command): void {
   const update = program
     .command('update')
-    .description('Update ud-cli to the latest version')
+    .description('Update to the latest version')
     .action(async () => {
       const spinner = await createSpinner('Checking for updates…');
       spinner.start();

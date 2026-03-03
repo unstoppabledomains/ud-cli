@@ -55,7 +55,7 @@ describe('dns commands', () => {
       return jsonResponse({ records: [{ type: 'A', subName: '', values: ['1.2.3.4'], ttl: 300 }] });
     });
 
-    await program.parseAsync(['node', 'ud', 'dns', 'records', 'list', 'example.com']);
+    await program.parseAsync(['node', 'ud', 'domains', 'dns', 'records', 'list', 'example.com']);
 
     expect(capturedBody).toBeTruthy();
     expect(capturedBody!.domain).toBe('example.com');
@@ -71,7 +71,7 @@ describe('dns commands', () => {
     });
 
     await program.parseAsync([
-      'node', 'ud', 'dns', 'records', 'add', 'example.com',
+      'node', 'ud', 'domains', 'dns', 'records', 'add', 'example.com',
       '--type', 'A', '--values', '1.2.3.4',
     ]);
 
@@ -93,7 +93,7 @@ describe('dns commands', () => {
     });
 
     await program.parseAsync([
-      'node', 'ud', 'dns', 'records', 'update',
+      'node', 'ud', 'domains', 'dns', 'records', 'update',
       '--data', '{"records":[{"domain":"test.com","type":"A","values":["5.6.7.8"]}]}',
     ]);
 
@@ -111,7 +111,7 @@ describe('dns commands', () => {
     });
 
     await program.parseAsync([
-      'node', 'ud', 'dns', 'records', 'remove',
+      'node', 'ud', 'domains', 'dns', 'records', 'remove',
       '--data', '{"records":[{"domain":"test.com","type":"A"}]}',
     ]);
 
@@ -128,7 +128,7 @@ describe('dns commands', () => {
       return jsonResponse({ results: [{ domain: 'test.com', success: true }] });
     });
 
-    await program.parseAsync(['node', 'ud', 'dns', 'records', 'remove-all', 'test.com', '--confirm']);
+    await program.parseAsync(['node', 'ud', 'domains', 'dns', 'records', 'remove-all', 'test.com', '--confirm']);
 
     expect(capturedBody).toBeTruthy();
     expect(capturedBody!.domains).toEqual([{ name: 'test.com' }]);
@@ -141,7 +141,7 @@ describe('dns commands', () => {
     });
 
     // Non-TTY: promptConfirm returns false, so it should abort
-    await program.parseAsync(['node', 'ud', 'dns', 'records', 'remove-all', 'test.com']);
+    await program.parseAsync(['node', 'ud', 'domains', 'dns', 'records', 'remove-all', 'test.com']);
 
     const output = consoleSpy.mock.calls.map((c: unknown[]) => String(c[0])).join('\n');
     expect(output).toContain('Aborted');
@@ -156,7 +156,7 @@ describe('dns commands', () => {
       return jsonResponse({ domain: 'test.com', nameservers: ['ns1.test.com'], isUsingDefaultNameservers: true });
     });
 
-    await program.parseAsync(['node', 'ud', 'dns', 'nameservers', 'list', 'test.com']);
+    await program.parseAsync(['node', 'ud', 'domains', 'dns', 'nameservers', 'list', 'test.com']);
 
     expect(capturedBody).toBeTruthy();
     expect(capturedBody!.domain).toBe('test.com');
@@ -170,7 +170,7 @@ describe('dns commands', () => {
     });
 
     await program.parseAsync([
-      'node', 'ud', 'dns', 'nameservers', 'set-custom',
+      'node', 'ud', 'domains', 'dns', 'nameservers', 'set-custom',
       '--data', '{"domains":[{"name":"test.com"}],"nameservers":["ns1.custom.com","ns2.custom.com"]}',
     ]);
 
@@ -186,7 +186,7 @@ describe('dns commands', () => {
     });
 
     await program.parseAsync([
-      'node', 'ud', 'dns', 'nameservers', 'set-default',
+      'node', 'ud', 'domains', 'dns', 'nameservers', 'set-default',
       '--data', '{"domains":[{"name":"test.com"}]}',
     ]);
 
@@ -203,7 +203,7 @@ describe('dns commands', () => {
       return jsonResponse({ configs: [{ type: 'redirect', subName: '', targetUrl: 'https://example.com', status: 'active' }] });
     });
 
-    await program.parseAsync(['node', 'ud', 'hosting', 'redirects', 'list', 'test.com']);
+    await program.parseAsync(['node', 'ud', 'domains', 'hosting', 'redirects', 'list', 'test.com']);
 
     expect(capturedBody).toBeTruthy();
     expect(capturedBody!.domain).toBe('test.com');
@@ -217,7 +217,7 @@ describe('dns commands', () => {
     });
 
     await program.parseAsync([
-      'node', 'ud', 'hosting', 'redirects', 'add',
+      'node', 'ud', 'domains', 'hosting', 'redirects', 'add',
       '--data', '{"domains":[{"name":"test.com"}],"config":{"type":"redirect","targetUrl":"https://example.com"}}',
     ]);
 
@@ -233,7 +233,7 @@ describe('dns commands', () => {
     });
 
     await program.parseAsync([
-      'node', 'ud', 'hosting', 'redirects', 'remove',
+      'node', 'ud', 'domains', 'hosting', 'redirects', 'remove',
       '--data', '{"domains":[{"name":"test.com"}],"subName":"www"}',
     ]);
 
@@ -250,7 +250,7 @@ describe('dns commands', () => {
       return jsonResponse({ results: [{ domain: 'test.com', success: true, jobId: 'j123' }] });
     });
 
-    await program.parseAsync(['node', 'ud', 'hosting', 'landers', 'generate', 'test.com']);
+    await program.parseAsync(['node', 'ud', 'domains', 'hosting', 'landers', 'generate', 'test.com']);
 
     expect(capturedBody).toBeTruthy();
     expect(capturedBody!.domains).toEqual([{ name: 'test.com' }]);
@@ -263,7 +263,7 @@ describe('dns commands', () => {
       return jsonResponse({ results: [{ domain: 'test.com', status: 'active', hostingType: 'ai' }] });
     });
 
-    await program.parseAsync(['node', 'ud', 'hosting', 'landers', 'status', 'test.com']);
+    await program.parseAsync(['node', 'ud', 'domains', 'hosting', 'landers', 'status', 'test.com']);
 
     expect(capturedBody).toBeTruthy();
     expect(capturedBody!.domains).toEqual([{ name: 'test.com' }]);
@@ -276,7 +276,7 @@ describe('dns commands', () => {
       return jsonResponse({ results: [{ domain: 'test.com', success: true }] });
     });
 
-    await program.parseAsync(['node', 'ud', 'hosting', 'landers', 'remove', 'test.com', '--confirm']);
+    await program.parseAsync(['node', 'ud', 'domains', 'hosting', 'landers', 'remove', 'test.com', '--confirm']);
 
     expect(capturedBody).toBeTruthy();
     expect(capturedBody!.domains).toEqual([{ name: 'test.com' }]);
@@ -294,7 +294,7 @@ describe('dns commands', () => {
     });
 
     await program.parseAsync([
-      'node', 'ud', 'dns', 'records', 'add', 'test.com',
+      'node', 'ud', 'domains', 'dns', 'records', 'add', 'test.com',
       '--type', 'A', '--values', '1.2.3.4',
     ]);
 

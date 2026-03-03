@@ -24,23 +24,26 @@ import type { OutputFormat } from '../lib/types.js';
  */
 const GROUP_DESCRIPTIONS: Record<string, string> = {
   // Top-level groups
-  domains: 'Search, register, and manage your domains',
-  dns: 'Manage DNS records and nameservers',
-  hosting: 'Manage hosting configurations and AI landers',
+  domains: 'Manage your domains, DNS, hosting, and contacts',
   cart: 'Manage your shopping cart and checkout',
-  contacts: 'Manage WHOIS contacts',
-  listings: 'Create and manage marketplace listings',
-  offers: 'View and respond to domain offers',
-  leads: 'Manage domain leads and messages',
-  // Subgroups
+  marketplace: 'Manage marketplace listings, offers, and leads',
+  // Subgroups under domains
   'domains.tags': 'Add or remove domain tags',
   'domains.flags': 'Update domain flags (WHOIS privacy, transfer lock, etc.)',
   'domains.auto-renewal': 'Manage domain auto-renewal settings',
-  'dns.records': 'List, add, update, and remove DNS records',
-  'dns.nameservers': 'View and configure nameservers',
-  'hosting.redirects': 'Manage redirects, proxies, and seller storefronts',
-  'hosting.landers': 'Manage AI-generated landing pages',
+  'domains.dns': 'Manage DNS records and nameservers',
+  'domains.dns.records': 'List, add, update, and remove DNS records',
+  'domains.dns.nameservers': 'View and configure nameservers',
+  'domains.hosting': 'Manage hosting configurations and AI landers',
+  'domains.hosting.redirects': 'Manage redirects, proxies, and seller storefronts',
+  'domains.hosting.landers': 'Manage AI-generated landing pages',
+  'domains.contacts': 'Manage WHOIS contacts',
+  // Subgroups under cart
   'cart.add': 'Add domains to your cart',
+  // Subgroups under marketplace
+  'marketplace.listings': 'Create and manage marketplace listings',
+  'marketplace.offers': 'View and respond to domain offers',
+  'marketplace.leads': 'Manage domain leads and messages',
 };
 
 function getRootOpts(cmd: Command): Record<string, unknown> {
@@ -69,13 +72,23 @@ function loadSpec(): Map<string, CommandSpec> {
 export function registerApiCommands(program: Command): void {
   const specMap = loadSpec();
 
-  // Group routes by their top-level path segment
+  // Separate root-level commands (single-segment paths) from grouped commands
+  const rootRoutes: CommandRoute[] = [];
   const groups = new Map<string, CommandRoute[]>();
   for (const route of COMMAND_ROUTES) {
-    const groupName = route.path[0];
-    const list = groups.get(groupName) ?? [];
-    if (!groups.has(groupName)) groups.set(groupName, list);
-    list.push(route);
+    if (route.path.length === 1) {
+      rootRoutes.push(route);
+    } else {
+      const groupName = route.path[0];
+      const list = groups.get(groupName) ?? [];
+      if (!groups.has(groupName)) groups.set(groupName, list);
+      list.push(route);
+    }
+  }
+
+  // Register root-level commands directly on program
+  for (const route of rootRoutes) {
+    registerRoute(program, route, specMap);
   }
 
   // Create group commands and register routes
@@ -105,18 +118,23 @@ function registerRoute(
 
   // Navigate/create subgroups
   let current = parent;
-  const pathSoFar = [route.path[0]]; // starts with the top-level group
-  for (let i = 0; i < pathParts.length - 1; i++) {
-    const subName = pathParts[i];
-    pathSoFar.push(subName);
-    const descKey = pathSoFar.join('.');
-    const subDesc = GROUP_DESCRIPTIONS[descKey] ?? `Manage ${subName}`;
-    const existing = current.commands.find((c) => c.name() === subName);
-    current = existing ?? current.command(subName).description(subDesc);
-  }
+  let leafName: string;
 
-  // Create the leaf command
-  const leafName = pathParts[pathParts.length - 1];
+  if (pathParts.length === 0) {
+    // Root-level command (single-segment path) — parent is already the program
+    leafName = route.path[0];
+  } else {
+    const pathSoFar = [route.path[0]]; // starts with the top-level group
+    for (let i = 0; i < pathParts.length - 1; i++) {
+      const subName = pathParts[i];
+      pathSoFar.push(subName);
+      const descKey = pathSoFar.join('.');
+      const subDesc = GROUP_DESCRIPTIONS[descKey] ?? `Manage ${subName}`;
+      const existing = current.commands.find((c) => c.name() === subName);
+      current = existing ?? current.command(subName).description(subDesc);
+    }
+    leafName = pathParts[pathParts.length - 1];
+  }
   const cmd = current.command(leafName);
 
   // Set description from spec or route override

@@ -44,7 +44,7 @@ describe('api-commands integration', () => {
     process.exitCode = undefined;
   });
 
-  it('domains search calls callAction with query', async () => {
+  it('search calls callAction with query', async () => {
     let capturedBody: Record<string, unknown> | null = null;
     mockFetchRoute('actions/ud_domains_search', (_url, init) => {
       capturedBody = JSON.parse(init?.body as string);
@@ -54,13 +54,13 @@ describe('api-commands integration', () => {
       });
     });
 
-    await program.parseAsync(['node', 'ud', 'domains', 'search', 'test']);
+    await program.parseAsync(['node', 'ud', 'search', 'test']);
 
     expect(capturedBody).toBeTruthy();
     expect(capturedBody!.query).toBe('test');
   });
 
-  it('domains search passes --limit flag', async () => {
+  it('search passes --limit flag', async () => {
     let capturedBody: Record<string, unknown> | null = null;
     mockFetchRoute('actions/ud_domains_search', (_url, init) => {
       capturedBody = JSON.parse(init?.body as string);
@@ -70,33 +70,33 @@ describe('api-commands integration', () => {
       });
     });
 
-    await program.parseAsync(['node', 'ud', 'domains', 'search', 'test', '--limit', '5']);
+    await program.parseAsync(['node', 'ud', 'search', 'test', '--limit', '5']);
 
     expect(capturedBody).toBeTruthy();
     expect(capturedBody!.limit).toBe(5);
   });
 
-  it('domains search passes --tlds as comma-separated array', async () => {
+  it('search passes --tlds as comma-separated array', async () => {
     let capturedBody: Record<string, unknown> | null = null;
     mockFetchRoute('actions/ud_domains_search', (_url, init) => {
       capturedBody = JSON.parse(init?.body as string);
       return jsonResponse({ results: [], pagination: { total: 0, hasMore: false } });
     });
 
-    await program.parseAsync(['node', 'ud', 'domains', 'search', 'test', '--tlds', 'com,org']);
+    await program.parseAsync(['node', 'ud', 'search', 'test', '--tlds', 'com,org']);
 
     expect(capturedBody).toBeTruthy();
     expect(capturedBody!.tlds).toEqual(['com', 'org']);
   });
 
-  it('domains tlds calls ud_tld_list', async () => {
+  it('tlds calls ud_tld_list', async () => {
     let called = false;
     mockFetchRoute('actions/ud_tld_list', () => {
       called = true;
       return jsonResponse({ tlds: [{ tld: 'com' }, { tld: 'org' }] });
     });
 
-    await program.parseAsync(['node', 'ud', 'domains', 'tlds']);
+    await program.parseAsync(['node', 'ud', 'tlds']);
 
     expect(called).toBe(true);
   });
@@ -119,7 +119,7 @@ describe('api-commands integration', () => {
       return jsonResponse({ tlds: [{ tld: 'com' }] });
     });
 
-    await program.parseAsync(['node', 'ud', '--format', 'json', 'domains', 'tlds']);
+    await program.parseAsync(['node', 'ud', '--format', 'json', 'tlds']);
 
     const output = consoleSpy.mock.calls.map((c: unknown[]) => String(c[0])).join('\n');
     // Should be valid JSON
@@ -132,7 +132,7 @@ describe('api-commands integration', () => {
       return jsonResponse({ tlds: [{ tld: 'com', type: 'generic' }] });
     });
 
-    await program.parseAsync(['node', 'ud', '--format', 'csv', 'domains', 'tlds']);
+    await program.parseAsync(['node', 'ud', '--format', 'csv', 'tlds']);
 
     const output = consoleSpy.mock.calls.map((c: unknown[]) => String(c[0])).join('\n');
     expect(output).toContain('TLD');
@@ -147,7 +147,7 @@ describe('api-commands integration', () => {
       });
     });
 
-    await program.parseAsync(['node', 'ud', 'domains', 'search', 'test']);
+    await program.parseAsync(['node', 'ud', 'search', 'test']);
 
     expect(process.exitCode).toBe(1);
     expect(errorSpy).toHaveBeenCalled();
@@ -172,7 +172,7 @@ describe('api-commands integration', () => {
     });
 
     await program.parseAsync([
-      'node', 'ud', 'contacts', 'list', '--data', '{"includeDisabled":true}',
+      'node', 'ud', 'domains', 'contacts', 'list', '--data', '{"includeDisabled":true}',
     ]);
 
     expect(capturedBody).toEqual({ includeDisabled: true });
@@ -185,7 +185,7 @@ describe('api-commands integration', () => {
       return jsonResponse({ records: [] });
     });
 
-    await program.parseAsync(['node', 'ud', 'dns', 'records', 'list', 'example.com']);
+    await program.parseAsync(['node', 'ud', 'domains', 'dns', 'records', 'list', 'example.com']);
 
     expect(capturedBody).toBeTruthy();
     expect(capturedBody!.domain).toBe('example.com');

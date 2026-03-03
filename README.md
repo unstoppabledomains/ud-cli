@@ -15,7 +15,7 @@ npm install -g @unstoppabledomains/ud-cli
 ud auth login
 
 # You're ready — try it out
-ud domains search mybusiness
+ud search mybusiness
 ```
 
 ## Updating
@@ -70,13 +70,13 @@ ud auth logout    # Clear stored credentials
 
 ```bash
 # Table output (default) — human-readable
-ud domains search mybusiness
+ud search mybusiness
 
 # JSON output — for scripting and piping
-ud domains search mybusiness --format json
+ud search mybusiness --format json
 
 # CSV output — for spreadsheets and data processing
-ud domains tlds --format csv > tlds.csv
+ud tlds --format csv > tlds.csv
 ```
 
 ### Field Selection
@@ -98,11 +98,96 @@ Invalid field names are rejected with an error and a hint to run `--fields` for 
 
 ## Command Reference
 
+```
+ud
+├── search <query>                    Search for available domains
+├── tlds                              List available TLDs
+├── auth
+│   ├── login                         Authenticate (OAuth or API key)
+│   ├── logout                        Clear stored credentials
+│   └── whoami                        Check current auth status
+├── domains
+│   ├── list                          List portfolio domains
+│   ├── get <domains...>              Get detailed domain info
+│   ├── push <domains...>             Push domains to another user
+│   ├── operations <domains...>       Get pending operations
+│   ├── tags
+│   │   ├── add <domains...>          Add tags to domains
+│   │   └── remove <domains...>       Remove tags from domains
+│   ├── flags
+│   │   └── update <domains...>       Update domain flags
+│   ├── auto-renewal
+│   │   └── update <domains...>       Toggle auto-renewal
+│   ├── contacts
+│   │   ├── list                      List ICANN contacts
+│   │   └── create                    Create ICANN contact
+│   ├── dns
+│   │   ├── records
+│   │   │   ├── list <domain>         List DNS records
+│   │   │   ├── add <domain>          Add DNS records
+│   │   │   ├── update                Update DNS records
+│   │   │   ├── remove                Remove DNS records
+│   │   │   └── remove-all <domains...>  Remove all DNS records
+│   │   └── nameservers
+│   │       ├── list <domain>         List nameservers
+│   │       ├── set-custom            Set custom nameservers
+│   │       └── set-default           Reset to default nameservers
+│   └── hosting
+│       ├── redirects
+│       │   ├── list <domain>         List redirect configurations
+│       │   ├── add                   Add redirect configuration
+│       │   └── remove                Remove redirect configuration
+│       └── landers
+│           ├── generate <domains...> Generate AI landing page
+│           ├── status <domains...>   Check lander generation status
+│           └── remove <domains...>   Remove AI landing page
+├── cart
+│   ├── get                           Get shopping cart with pricing
+│   ├── remove                        Remove items from cart
+│   ├── checkout                      Complete cart checkout
+│   ├── url                           Get checkout URL
+│   ├── payment-methods               Get available payment methods
+│   ├── add-payment-method            Get URL to add payment method
+│   └── add [domain...]               Smart add (auto-detects source)
+│       ├── registration <domains...> Add domains for registration
+│       ├── listed <domains...>       Add marketplace-listed domains
+│       ├── afternic <domains...>     Add Afternic marketplace domains
+│       ├── sedo <domains...>         Add Sedo marketplace domains
+│       └── renewal <domains...>      Add domain renewals
+├── marketplace
+│   ├── listings
+│   │   ├── create <domains...>       Create marketplace listings
+│   │   ├── update                    Update marketplace listings
+│   │   └── cancel                    Cancel listings
+│   ├── offers
+│   │   ├── list                      List marketplace offers
+│   │   └── respond                   Respond to marketplace offers
+│   └── leads
+│       ├── list                      List domain conversation leads
+│       ├── get <domain>              Get or create domain conversation
+│       ├── messages                  List messages in a conversation
+│       └── send                      Send a message in a conversation
+├── config
+│   ├── set <command> <key> <value>   Save a default option
+│   ├── get [command]                 Show saved defaults
+│   └── reset <command> [key]         Remove saved defaults
+├── env
+│   ├── show                          Show current environment
+│   └── set <environment>             Switch default environment
+└── update
+    └── check                         Check for updates
+```
+
+### Search & Discovery
+
+```
+ud search <query>                     Search for available domains
+ud tlds                               List available TLDs
+```
+
 ### Domains
 
 ```
-ud domains search <query>             Search for available domains
-ud domains tlds                       List available TLDs
 ud domains list                       List portfolio domains
 ud domains get <domains...>           Get detailed domain info
 ud domains push <domains...>          Push domains to another user
@@ -111,30 +196,32 @@ ud domains tags add <domains...>      Add tags to domains
 ud domains tags remove <domains...>   Remove tags from domains
 ud domains flags update <domains...>  Update domain flags
 ud domains auto-renewal update <domains...>  Toggle auto-renewal
+ud domains contacts list              List ICANN contacts
+ud domains contacts create            Create ICANN contact
 ```
 
-### DNS
+#### DNS (`ud domains dns`)
 
 ```
-ud dns records list <domain>          List DNS records
-ud dns records add <domain>           Add DNS records
-ud dns records update                 Update DNS records
-ud dns records remove                 Remove DNS records
-ud dns records remove-all <domains...>  Remove all DNS records
-ud dns nameservers list <domain>      List nameservers
-ud dns nameservers set-custom         Set custom nameservers
-ud dns nameservers set-default        Reset to default nameservers
+ud domains dns records list <domain>          List DNS records
+ud domains dns records add <domain>           Add DNS records
+ud domains dns records update                 Update DNS records
+ud domains dns records remove                 Remove DNS records
+ud domains dns records remove-all <domains...>  Remove all DNS records
+ud domains dns nameservers list <domain>      List nameservers
+ud domains dns nameservers set-custom         Set custom nameservers
+ud domains dns nameservers set-default        Reset to default nameservers
 ```
 
-### Hosting
+#### Hosting (`ud domains hosting`)
 
 ```
-ud hosting redirects list <domain>             List redirect configurations
-ud hosting redirects add                       Add redirect configuration
-ud hosting redirects remove                    Remove redirect configuration
-ud hosting landers generate <domains...>       Generate AI landing page
-ud hosting landers status <domains...>         Check lander generation status
-ud hosting landers remove <domains...>         Remove AI landing page
+ud domains hosting redirects list <domain>             List redirect configurations
+ud domains hosting redirects add                       Add redirect configuration
+ud domains hosting redirects remove                    Remove redirect configuration
+ud domains hosting landers generate <domains...>       Generate AI landing page
+ud domains hosting landers status <domains...>         Check lander generation status
+ud domains hosting landers remove <domains...>         Remove AI landing page
 ```
 
 ### Cart
@@ -154,37 +241,20 @@ ud cart add sedo <domains...>         Add Sedo marketplace domains
 ud cart add renewal <domains...>      Add domain renewals
 ```
 
-### Contacts
+### Marketplace
 
 ```
-ud contacts list                      List ICANN contacts
-ud contacts create                    Create ICANN contact
-```
-
-### Listings
-
-```
-ud listings create <domains...>       Create marketplace listings
-ud listings create <domains...> --price 99.99  Set listing price in dollars
-ud listings update                    Update marketplace listings
-ud listings update --price 50.00      Update listing price in dollars
-ud listings cancel                    Cancel marketplace listings (requires --confirm)
-```
-
-### Offers
-
-```
-ud offers list                        List marketplace offers
-ud offers respond                     Respond to marketplace offers
-```
-
-### Leads
-
-```
-ud leads list                         List domain conversation leads
-ud leads get <domain>                 Get or create domain conversation
-ud leads messages                     List messages in a conversation
-ud leads send                         Send a message in a conversation
+ud marketplace listings create <domains...>       Create marketplace listings
+ud marketplace listings create <domains...> --price 99.99  Set listing price
+ud marketplace listings update                    Update marketplace listings
+ud marketplace listings update --price 50.00      Update listing price
+ud marketplace listings cancel                    Cancel listings (requires --confirm)
+ud marketplace offers list                        List marketplace offers
+ud marketplace offers respond                     Respond to marketplace offers
+ud marketplace leads list                         List domain conversation leads
+ud marketplace leads get <domain>                 Get or create domain conversation
+ud marketplace leads messages                     List messages in a conversation
+ud marketplace leads send                         Send a message in a conversation
 ```
 
 ### Config
@@ -208,7 +278,7 @@ ud domains list
 ud domains list --fields name,expiresAt
 
 # Save a default output format
-ud config set "dns records list" format json
+ud config set "domains dns records list" format json
 
 # View all saved defaults
 ud config get
@@ -228,7 +298,7 @@ When you pass `--fields` explicitly, the CLI shows a tip with the command to sav
 
 ```bash
 # Search for domains
-ud domains search mybusiness --tlds com,org,io --limit 10
+ud search mybusiness --tlds com,org,io --limit 10
 
 # Smart cart add — auto-detects the source type
 ud cart add mybusiness.com mybusiness.io
@@ -246,13 +316,13 @@ ud cart checkout --confirm
 
 ```bash
 # List current records
-ud dns records list example.com --format json
+ud domains dns records list example.com --format json
 
 # Add an A record (single-item shorthand)
-ud dns records add example.com --type A --values 1.2.3.4
+ud domains dns records add example.com --type A --values 1.2.3.4
 
 # Bulk operations with --data
-ud dns records add example.com --data '{
+ud domains dns records add example.com --data '{
   "records": [
     {"domain": "example.com", "type": "A", "values": ["1.2.3.4"]},
     {"domain": "example.com", "type": "CNAME", "subName": "www", "values": ["example.com"]}
@@ -264,30 +334,30 @@ ud dns records add example.com --data '{
 
 ```bash
 # List a domain for sale at $99.99
-ud listings create mydomain.com --price 99.99
+ud marketplace listings create mydomain.com --price 99.99
 
 # Update listing price
-ud listings update --price 50.00 --data '{"listings":[{"listingId":"l123"}]}'
+ud marketplace listings update --price 50.00 --data '{"listings":[{"listingId":"l123"}]}'
 
 # Cancel a listing
-ud listings cancel --confirm --data '{"listingIds":["l123"]}'
+ud marketplace listings cancel --confirm --data '{"listingIds":["l123"]}'
 
 # View and respond to offers
-ud offers list
-ud offers respond --data '{"offers":[{"offerId":"o123","action":"accept"}]}'
+ud marketplace offers list
+ud marketplace offers respond --data '{"offers":[{"offerId":"o123","action":"accept"}]}'
 
 # Manage leads
-ud leads list
-ud leads get mydomain.com
-ud leads messages --conversation-id 42
-ud leads send --conversation-id 42 --content "Thanks for your interest!"
+ud marketplace leads list
+ud marketplace leads get mydomain.com
+ud marketplace leads messages --conversation-id 42
+ud marketplace leads send --conversation-id 42 --content "Thanks for your interest!"
 ```
 
 ### Advanced usage
 
 ```bash
 # Use --data for complex request bodies
-ud contacts create --data '{
+ud domains contacts create --data '{
   "firstName": "Jane",
   "lastName": "Doe",
   "email": "jane@example.com",
@@ -300,7 +370,7 @@ ud contacts create --data '{
 }'
 
 # Read request body from a file
-ud dns records add example.com --file records.json
+ud domains dns records add example.com --file records.json
 
 # Pipe JSON output for scripting
 ud domains list --format json | jq '.domains[].name'

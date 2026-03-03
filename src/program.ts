@@ -28,7 +28,7 @@ export const program = new Command();
 // Commands listed here appear under "Utilities:" in root help output.
 // Everything else appears under "Commands:". Update this set when adding new
 // utility-style commands so they don't silently land in the wrong group.
-const UTILITY_COMMANDS = new Set(['auth', 'config', 'env', 'help', 'update']);
+const UTILITY_COMMANDS = new Set(['config', 'env', 'help', 'update']);
 
 program
   .configureHelp({

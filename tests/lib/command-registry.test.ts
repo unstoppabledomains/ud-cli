@@ -17,9 +17,9 @@ describe('command-registry', () => {
     expect(new Set(paths).size).toBe(paths.length);
   });
 
-  it('all routes have at least 2-level paths', () => {
+  it('all routes have at least 1-level paths', () => {
     for (const route of COMMAND_ROUTES) {
-      expect(route.path.length).toBeGreaterThanOrEqual(2);
+      expect(route.path.length).toBeGreaterThanOrEqual(1);
     }
   });
 
@@ -35,7 +35,7 @@ describe('command-registry', () => {
 
   it('domain search route has query positional arg', () => {
     const search = COMMAND_ROUTES.find((r) => r.toolName === 'ud_domains_search')!;
-    expect(search.path).toEqual(['domains', 'search']);
+    expect(search.path).toEqual(['search']);
     expect(search.positionalArgs).toHaveLength(1);
     expect(search.positionalArgs[0].name).toBe('query');
     expect(search.positionalArgs[0].required).toBe(true);
@@ -52,7 +52,7 @@ describe('command-registry', () => {
 
   it('dns records list has single domain arg', () => {
     const list = COMMAND_ROUTES.find((r) => r.toolName === 'ud_dns_records_list')!;
-    expect(list.path).toEqual(['dns', 'records', 'list']);
+    expect(list.path).toEqual(['domains', 'dns', 'records', 'list']);
     expect(list.positionalArgs).toHaveLength(1);
     expect(list.positionalArgs[0].name).toBe('domain');
     expect(list.positionalArgs[0].variadic).toBe(false);
@@ -61,13 +61,11 @@ describe('command-registry', () => {
   describe('getGroups', () => {
     it('returns expected group names', () => {
       const groups = getGroups();
+      expect(groups).toContain('search');
+      expect(groups).toContain('tlds');
       expect(groups).toContain('domains');
-      expect(groups).toContain('dns');
       expect(groups).toContain('cart');
-      expect(groups).toContain('contacts');
-      expect(groups).toContain('listings');
-      expect(groups).toContain('offers');
-      expect(groups).toContain('leads');
+      expect(groups).toContain('marketplace');
     });
   });
 
