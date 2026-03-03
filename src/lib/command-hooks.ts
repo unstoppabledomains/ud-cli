@@ -30,6 +30,8 @@ export interface CommandHooks {
   priceOption?: boolean;
   /** Show an operation-tracking hint after the API call completes. */
   showOperationHint?: boolean;
+  /** Show actionable hints when specific error codes appear in bulk results. */
+  showFailureHints?: boolean;
   /** Show a cart-add hint using the first available result from search. */
   showCartHint?: boolean;
 }
@@ -97,9 +99,9 @@ const HOOKS: Record<string, CommandHooks> = {
     transformBody: makePriceTransformer('listings'),
   },
   ud_domains_search: { showCartHint: true },
-  ud_dns_record_add: { showOperationHint: true },
-  ud_dns_record_update: { showOperationHint: true },
-  ud_dns_record_remove: { showOperationHint: true },
+  ud_dns_record_add: { showOperationHint: true, showFailureHints: true },
+  ud_dns_record_update: { showOperationHint: true, showFailureHints: true },
+  ud_dns_record_remove: { showOperationHint: true, showFailureHints: true },
   ud_dns_nameservers_set_custom: { showOperationHint: true },
   ud_dns_nameservers_set_default: { showOperationHint: true },
   ud_dns_hosting_add: { showOperationHint: true },
@@ -144,6 +146,48 @@ export function formatOperationHint(result: unknown): string {
     : 'ud domains operations <domain>';
 
   return chalk.dim(`Tip: DNS changes are async. Track with: ${trackCmd}`);
+}
+
+/**
+ * Format actionable hints for known error codes in bulk DNS results.
+ * Scans result.results[] for error codes and returns a user-friendly suggestion.
+ */
+export function formatFailureHints(toolName: string, result: unknown): string {
+  if (!result || typeof result !== 'object') return '';
+
+  const obj = result as Record<string, unknown>;
+  const results = obj.results as Record<string, unknown>[] | undefined;
+  if (!Array.isArray(results)) return '';
+
+  const errorCodes = new Set<string>();
+  for (const item of results) {
+    if (item.success) continue;
+    const err = item.error;
+    if (typeof err === 'string') {
+      try {
+        const parsed = JSON.parse(err) as { code?: string };
+        if (parsed.code) errorCodes.add(parsed.code);
+      } catch {
+        // error is not JSON — skip
+      }
+    } else if (err && typeof err === 'object') {
+      const code = (err as Record<string, unknown>).code;
+      if (typeof code === 'string') errorCodes.add(code);
+    }
+  }
+
+  if (errorCodes.size === 0) return '';
+
+  const hints: string[] = [];
+
+  if (errorCodes.has('NO_CHANGE') && toolName === 'ud_dns_record_add') {
+    hints.push('Records already exist. Use --upsert-mode append to add alongside existing values, or --upsert-mode replace to overwrite them.');
+  } else if (errorCodes.has('NO_CHANGE')) {
+    hints.push('No changes would occur. The records may already match the requested state.');
+  }
+
+  if (hints.length === 0) return '';
+  return chalk.yellow(`Hint: ${hints.join('\n')}`);
 }
 
 /** Map marketplace source to the corresponding cart add subcommand. */
