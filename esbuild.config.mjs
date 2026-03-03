@@ -15,9 +15,6 @@ await esbuild.build({
   define: {
     __PKG_VERSION__: JSON.stringify(pkg.version),
   },
-  banner: {
-    js: '#!/usr/bin/env node',
-  },
 });
 
 console.log('Bundle created: dist/ud-cli.cjs');
