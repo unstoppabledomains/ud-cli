@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import { mkdir, readFile, writeFile, access, cp } from 'node:fs/promises';
-import { homedir } from 'node:os';
+import { homedir, platform } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import chalk from 'chalk';
@@ -59,14 +59,16 @@ interface InstallResult {
   activateHint?: string;
 }
 
-async function installBash(program: Command): Promise<InstallResult> {
-  const rcFile = path.join(homedir(), '.bashrc');
+async function installBash(): Promise<InstallResult> {
+  // macOS bash login shells read ~/.bash_profile, not ~/.bashrc
+  const rcName = platform() === 'darwin' ? '.bash_profile' : '.bashrc';
+  const rcFile = path.join(homedir(), rcName);
   if (await fileContains(rcFile, COMPLETION_MARKER)) {
     return { message: `Shell completions already installed in ${rcFile}` };
   }
   const snippet = `\n${COMPLETION_MARKER}\neval "$(ud completion -s bash)"\n`;
   await appendToFile(rcFile, snippet);
-  return { message: `Shell completions added to ${rcFile}`, activateHint: 'source ~/.bashrc' };
+  return { message: `Shell completions added to ${rcFile}`, activateHint: `source ~/${rcName}` };
 }
 
 async function installZsh(program: Command): Promise<InstallResult> {
@@ -122,7 +124,7 @@ async function installPowershell(program: Command): Promise<InstallResult> {
 async function installCompletions(program: Command, shell: Shell): Promise<InstallResult> {
   switch (shell) {
     case 'bash':
-      return installBash(program);
+      return installBash();
     case 'zsh':
       return installZsh(program);
     case 'fish':

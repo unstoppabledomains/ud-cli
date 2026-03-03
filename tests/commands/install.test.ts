@@ -1,8 +1,5 @@
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { Command } from 'commander';
-import { mkdtemp, readFile, rm, mkdir, writeFile } from 'node:fs/promises';
-import { tmpdir, homedir } from 'node:os';
-import path from 'node:path';
 
 async function createTestProgram() {
   jest.resetModules();
@@ -77,8 +74,8 @@ describe('install command', () => {
       .map((call) => String(call[0]))
       .join('\n');
 
-    // Should mention bashrc or shell completions
-    expect(allOutput).toMatch(/bashrc|completions|shell/i);
+    // Should mention bash_profile (macOS) or bashrc (Linux) or shell completions
+    expect(allOutput).toMatch(/bash_profile|bashrc|completions|shell/i);
   });
 
   it('detects fish from SHELL env var', async () => {
