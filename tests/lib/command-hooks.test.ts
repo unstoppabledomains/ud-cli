@@ -61,8 +61,8 @@ describe('command-hooks', () => {
     });
 
     it('returns undefined for tools without hooks', () => {
-      expect(getHooks('ud_portfolio_list')).toBeUndefined();
-      expect(getHooks('ud_dns_records_list')).toBeUndefined();
+      expect(getHooks('ud_nonexistent_tool')).toBeUndefined();
+      expect(getHooks('some_unknown_tool')).toBeUndefined();
     });
   });
 

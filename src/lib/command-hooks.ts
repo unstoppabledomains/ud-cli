@@ -34,6 +34,14 @@ export interface CommandHooks {
   showFailureHints?: boolean;
   /** Show a cart-add hint using the first available result from search. */
   showCartHint?: boolean;
+  /** Show a hint to view the cart after adding items. */
+  showViewCartHint?: boolean;
+  /** Show a hint about how to checkout after viewing the cart. */
+  showCheckoutHint?: boolean;
+  /** Show a hint about viewing lead messages after listing leads. */
+  showLeadMessagesHint?: boolean;
+  /** Post-action hint shown after a successful API call. Static string or dynamic function. */
+  postActionHint?: string | ((result: unknown) => string);
 }
 
 /**
@@ -58,6 +66,148 @@ function makePriceTransformer(arrayKey: string): CommandHooks['transformBody'] {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Post-action hint helpers (must be defined before HOOKS)
+// ---------------------------------------------------------------------------
+
+/** Extract the first domain name from common response shapes. */
+function extractFirstDomain(result: unknown): string | undefined {
+  if (!result || typeof result !== 'object') return undefined;
+  const obj = result as Record<string, unknown>;
+
+  // Bulk results: results[].domain or results[].domainName
+  const results = obj.results as Record<string, unknown>[] | undefined;
+  if (Array.isArray(results) && results.length > 0) {
+    const item = results[0];
+    if (typeof item.domain === 'string') return item.domain;
+    if (typeof item.domainName === 'string') return item.domainName;
+  }
+
+  // Portfolio: domains[].name or domains[].domain
+  const domains = obj.domains as Record<string, unknown>[] | undefined;
+  if (Array.isArray(domains) && domains.length > 0) {
+    const item = domains[0];
+    if (typeof item.name === 'string') return item.name;
+    if (typeof item.domain === 'string') return item.domain;
+  }
+
+  // Single domain field
+  if (typeof obj.domain === 'string') return obj.domain;
+
+  return undefined;
+}
+
+export const VIEW_CART_HINT = chalk.dim('\nTip: View your cart with: ud cart list');
+export const CHECKOUT_HINT = chalk.dim('\nTip: Ready to buy? Run: ud cart checkout');
+const VERIFY_PORTFOLIO_HINT = chalk.dim('\nTip: Verify your portfolio: ud domains list');
+const OFFERS_LIST_HINT = chalk.dim('\nTip: View your offers: ud marketplace offers list');
+
+/** domains list → get details */
+function formatPortfolioNextHint(result: unknown): string {
+  const domain = extractFirstDomain(result);
+  if (!domain) return '';
+  return chalk.dim(`\nTip: Get full details: ud domains get ${domain}`);
+}
+
+/** domains get → manage DNS */
+function formatDomainDetailHint(result: unknown): string {
+  const domain = extractFirstDomain(result);
+  if (!domain) return '';
+  return chalk.dim(`\nTip: Manage DNS records: ud domains dns records show ${domain}`);
+}
+
+/** Generic mutation → verify with domains get */
+function formatVerifyDomainHint(result: unknown): string {
+  const domain = extractFirstDomain(result);
+  if (!domain) return '';
+  return chalk.dim(`\nTip: Verify changes: ud domains get ${domain}`);
+}
+
+/** checkout → view purchased domains */
+function formatPostCheckoutHint(result: unknown): string {
+  if (!result || typeof result !== 'object') return '';
+  const obj = result as Record<string, unknown>;
+  const summary = obj.summary as Record<string, unknown> | undefined;
+  const domains = summary?.domains as string[] | undefined;
+  if (!Array.isArray(domains) || domains.length === 0) return '';
+  return chalk.dim(`\nTip: View your new domains: ud domains get ${domains.join(' ')}`);
+}
+
+/** dns records show → add a record */
+function formatDnsRecordsHint(result: unknown): string {
+  if (!result || typeof result !== 'object') return '';
+  const obj = result as Record<string, unknown>;
+  const domain = typeof obj.domain === 'string' ? obj.domain : undefined;
+  const domainArg = domain ? ` ${domain}` : '';
+  return chalk.dim(`\nTip: Add a record: ud domains dns records add${domainArg} --type A --value 1.2.3.4`);
+}
+
+/** offers list → respond to an offer */
+function formatOfferRespondHint(result: unknown): string {
+  if (!result || typeof result !== 'object') return '';
+  const obj = result as Record<string, unknown>;
+  const offers = (obj.offers ?? obj.results) as Record<string, unknown>[] | undefined;
+  if (!Array.isArray(offers) || offers.length === 0) return '';
+  const id = offers[0].id;
+  const idStr = id != null ? String(id) : '<id>';
+  return chalk.dim(`\nTip: Respond to an offer:\n  ud marketplace offers respond --offer-id ${idStr} --action accept`);
+}
+
+/** lead get (open) → send a message */
+function formatLeadOpenHint(result: unknown): string {
+  if (!result || typeof result !== 'object') return '';
+  const obj = result as Record<string, unknown>;
+  const conversation = obj.conversation as Record<string, unknown> | undefined;
+  const id = conversation?.id;
+  const idStr = id != null ? String(id) : '<id>';
+  return chalk.dim(`\nTip: Send a message:\n  ud marketplace leads messages send --conversation-id ${idStr} --content "Your message"`);
+}
+
+/** lead messages list → reply */
+function formatLeadReplyHint(result: unknown): string {
+  if (!result || typeof result !== 'object') return '';
+  const obj = result as Record<string, unknown>;
+  const id = obj.conversationId;
+  const idStr = id != null ? String(id) : '<id>';
+  return chalk.dim(`\nTip: Reply to this conversation:\n  ud marketplace leads messages send --conversation-id ${idStr} --content "Your reply"`);
+}
+
+/** lead message send → view conversation */
+function formatViewConversationHint(result: unknown): string {
+  if (!result || typeof result !== 'object') return '';
+  const obj = result as Record<string, unknown>;
+  const id = obj.conversationId;
+  const idStr = id != null ? String(id) : '<id>';
+  return chalk.dim(`\nTip: View conversation: ud marketplace leads messages list --conversation-id ${idStr}`);
+}
+
+/** lander generate → check status */
+function formatLanderCheckHint(result: unknown): string {
+  const domain = extractFirstDomain(result);
+  if (!domain) return '';
+  return chalk.dim(`\nTip: Check lander status: ud domains hosting landers show ${domain}`);
+}
+
+/** operations show → conditional next step */
+function formatOperationsNextHint(result: unknown): string {
+  if (!result || typeof result !== 'object') return '';
+  const obj = result as Record<string, unknown>;
+  const summary = obj.summary as Record<string, unknown> | undefined;
+  const pendingDomains = summary?.domainsWithPending as string[] | undefined;
+
+  if (Array.isArray(pendingDomains) && pendingDomains.length > 0) {
+    return chalk.dim(`\nTip: Operations still pending. Re-check with: ud domains operations show ${pendingDomains.join(' ')}`);
+  }
+
+  const domain = extractFirstDomain(result);
+  if (!domain) return '';
+  return chalk.dim(`\nTip: All operations complete. Verify DNS: ud domains dns records show ${domain}`);
+}
+
+// ---------------------------------------------------------------------------
+// Hooks registry
+// ---------------------------------------------------------------------------
+
 const HOOKS: Record<string, CommandHooks> = {
   ud_dns_records_remove_all: {
     requireConfirm: {
@@ -79,25 +229,58 @@ const HOOKS: Record<string, CommandHooks> = {
       prompt: 'Enter 6-digit OTP code: ',
       validate: /^\d{6}$/,
     },
+    postActionHint: VERIFY_PORTFOLIO_HINT,
   },
   ud_cart_checkout: {
     requireConfirm: {
       message: 'Are you sure you want to complete this purchase? Review your cart with: ud cart list',
     },
+    postActionHint: formatPostCheckoutHint,
   },
   ud_listing_cancel: {
     requireConfirm: {
       message: 'This will cancel the specified listing(s). Are you sure?',
     },
+    postActionHint: formatVerifyDomainHint,
   },
   ud_listing_create: {
     priceOption: true,
     transformBody: makePriceTransformer('domains'),
+    postActionHint: formatVerifyDomainHint,
   },
   ud_listing_update: {
     priceOption: true,
     transformBody: makePriceTransformer('listings'),
+    postActionHint: formatVerifyDomainHint,
   },
+  ud_cart_get: { showCheckoutHint: true },
+  ud_cart_remove: { postActionHint: VIEW_CART_HINT },
+  ud_cart_add_domain_registration: { showViewCartHint: true },
+  ud_cart_add_domain_listed: { showViewCartHint: true },
+  ud_cart_add_domain_afternic: { showViewCartHint: true },
+  ud_cart_add_domain_sedo: { showViewCartHint: true },
+  ud_cart_add_domain_renewal: { showViewCartHint: true },
+  // Portfolio & domain management
+  ud_portfolio_list: { postActionHint: formatPortfolioNextHint },
+  ud_domain_get: { postActionHint: formatDomainDetailHint },
+  ud_domain_tags_add: { postActionHint: formatVerifyDomainHint },
+  ud_domain_tags_remove: { postActionHint: formatVerifyDomainHint },
+  ud_domain_flags_update: { postActionHint: formatVerifyDomainHint },
+  ud_domain_auto_renewal_update: { postActionHint: formatVerifyDomainHint },
+  // DNS
+  ud_dns_records_list: { postActionHint: formatDnsRecordsHint },
+  ud_domain_pending_operations: { postActionHint: formatOperationsNextHint },
+  // Marketplace leads
+  ud_leads_list: { showLeadMessagesHint: true },
+  ud_lead_get: { postActionHint: formatLeadOpenHint },
+  ud_lead_messages_list: { postActionHint: formatLeadReplyHint },
+  ud_lead_message_send: { postActionHint: formatViewConversationHint },
+  // Marketplace offers
+  ud_offers_list: { postActionHint: formatOfferRespondHint },
+  ud_offer_respond: { postActionHint: OFFERS_LIST_HINT },
+  // Landers
+  ud_domain_generate_lander: { postActionHint: formatLanderCheckHint },
+  // Search & DNS ops
   ud_domains_search: { showCartHint: true },
   ud_dns_record_add: { showOperationHint: true, showFailureHints: true },
   ud_dns_record_update: { showOperationHint: true, showFailureHints: true },
@@ -229,4 +412,21 @@ export function formatCartHint(result: unknown): string {
     ({ name, subCmd }) => `  ud cart add ${subCmd} ${name}`,
   );
   return chalk.dim(`\nTo add to cart:\n${lines.join('\n')}`);
+}
+
+/**
+ * Format a hint about viewing lead messages from lead list results.
+ * Uses the first lead's ID to show a concrete example command.
+ */
+export function formatLeadMessagesHint(result: unknown): string {
+  if (!result || typeof result !== 'object') return '';
+
+  const obj = result as Record<string, unknown>;
+  const leads = (obj.results ?? obj.leads ?? obj.conversations) as Record<string, unknown>[] | undefined;
+  if (!Array.isArray(leads) || leads.length === 0) return '';
+
+  const firstId = leads[0].id;
+  const idExample = firstId != null ? String(firstId) : '<id>';
+
+  return chalk.dim(`\nTip: View messages for a lead:\n  ud marketplace leads messages list --conversation-id ${idExample}`);
 }
