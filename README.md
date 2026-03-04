@@ -11,8 +11,8 @@ curl -fsSL https://raw.githubusercontent.com/unstoppabledomains/ud-cli/main/inst
 # Or install via npm
 npm install -g @unstoppabledomains/ud-cli
 
-# Authenticate (opens browser for OAuth)
-ud auth login
+# Create an account (or use ud auth login to sign in)
+ud auth signup
 
 # You're ready — try it out
 ud search mybusiness
@@ -32,13 +32,21 @@ The CLI also checks for updates automatically once every 24 hours and prints a n
 
 ## Authentication
 
-### OAuth (default, browser-based)
+### Signup (create account)
+
+```bash
+ud auth signup
+```
+
+Creates a new account directly from the terminal. Prompts for email and password, sends a verification code to your email, and signs you in — no browser needed.
+
+### OAuth (browser-based)
 
 ```bash
 ud auth login
 ```
 
-Opens a browser for authorization using OAuth 2.0 with PKCE. Tokens are automatically refreshed.
+Opens a browser for authorization using OAuth 2.0 with PKCE. Use this to sign in to an existing account. Tokens are automatically refreshed.
 
 ### API Key
 
@@ -101,6 +109,7 @@ Invalid field names are rejected with an error and a hint to run `--fields` for 
 ```
 ud
 ├── auth
+│   ├── signup                        Create a new account
 │   ├── login                         Authenticate (OAuth or API key)
 │   ├── logout                        Clear stored credentials
 │   └── status                        Check current auth status

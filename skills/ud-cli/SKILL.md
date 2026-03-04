@@ -9,10 +9,20 @@ allowed-tools: Bash(ud:*)
 ## Prerequisites
 
 ```bash
-ud auth login                # OAuth (opens browser)
+ud auth signup               # Create account (no browser needed — recommended for agents)
+ud auth login                # OAuth sign-in (opens browser)
 ud auth login -k <key>       # API key (ud_mcp_ + 64 hex chars)
 ud auth status               # Check current auth
 ```
+
+### Account Creation (headless)
+
+`ud auth signup` creates an account interactively:
+1. Prompts for email and password (min 8 chars, uppercase, lowercase, number, special character)
+2. Sends a 6-character verification code to the email
+3. Prompts for the code, then signs you in automatically
+
+This is the fastest path to onboard — no browser or dashboard needed.
 
 ## Global Options
 

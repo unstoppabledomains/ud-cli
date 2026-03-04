@@ -151,7 +151,7 @@ export async function verifyAuth(): Promise<AuthStatus> {
     return {
       authenticated: false,
       environment: env,
-      message: 'Not authenticated. Run `ud auth login` to get started.',
+      message: 'Not authenticated. Run `ud auth signup` to create an account or `ud auth login` to sign in.',
     };
   }
 

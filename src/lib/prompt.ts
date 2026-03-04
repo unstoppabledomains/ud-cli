@@ -39,6 +39,67 @@ export async function promptInput(
 }
 
 /**
+ * Prompt the user for a password with masked input (echoes * per character).
+ * Returns empty string in non-TTY environments.
+ */
+export async function promptPassword(message: string): Promise<string> {
+  if (!process.stdin.isTTY) return '';
+
+  process.stdout.write(message);
+
+  return new Promise((resolve) => {
+    const stdin = process.stdin;
+    stdin.setRawMode(true);
+    stdin.resume();
+    stdin.setEncoding('utf8');
+
+    let password = '';
+
+    const onData = (chunk: string): void => {
+      // Raw-mode stdin may deliver multiple characters in a single chunk
+      // (e.g. pasted text), so iterate through each character individually.
+      for (const char of chunk) {
+        switch (char) {
+          case '\n':
+          case '\r':
+          case '\u0004': // Ctrl+D
+            stdin.setRawMode(false);
+            stdin.pause();
+            stdin.removeListener('data', onData);
+            process.stdout.write('\n');
+            resolve(password);
+            return;
+          case '\u0003': // Ctrl+C
+            stdin.setRawMode(false);
+            stdin.pause();
+            stdin.removeListener('data', onData);
+            process.stdout.write('\n');
+            process.exitCode = 130;
+            resolve('');
+            return;
+          case '\u007F': // Backspace
+          case '\b':
+            if (password.length > 0) {
+              password = password.slice(0, -1);
+              process.stdout.write('\b \b');
+            }
+            break;
+          default:
+            // Only accept printable ASCII (space through tilde)
+            if (char >= ' ' && char <= '~') {
+              password += char;
+              process.stdout.write('*');
+            }
+            break;
+        }
+      }
+    };
+
+    stdin.on('data', onData);
+  });
+}
+
+/**
  * Prompt the user for a yes/no confirmation.
  * Returns false in non-TTY environments.
  */
