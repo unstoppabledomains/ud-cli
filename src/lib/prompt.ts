@@ -39,6 +39,60 @@ export async function promptInput(
 }
 
 /**
+ * Prompt the user for a password with masked input (echoes * per character).
+ * Returns empty string in non-TTY environments.
+ */
+export async function promptPassword(message: string): Promise<string> {
+  if (!process.stdin.isTTY) return '';
+
+  process.stdout.write(message);
+
+  return new Promise((resolve) => {
+    const stdin = process.stdin;
+    stdin.setRawMode(true);
+    stdin.resume();
+    stdin.setEncoding('utf8');
+
+    let password = '';
+
+    const onData = (char: string): void => {
+      switch (char) {
+        case '\n':
+        case '\r':
+        case '\u0004': // Ctrl+D
+          stdin.setRawMode(false);
+          stdin.pause();
+          stdin.removeListener('data', onData);
+          process.stdout.write('\n');
+          resolve(password);
+          break;
+        case '\u0003': // Ctrl+C
+          stdin.setRawMode(false);
+          stdin.pause();
+          stdin.removeListener('data', onData);
+          process.stdout.write('\n');
+          process.exitCode = 130;
+          resolve('');
+          break;
+        case '\u007F': // Backspace
+        case '\b':
+          if (password.length > 0) {
+            password = password.slice(0, -1);
+            process.stdout.write('\b \b');
+          }
+          break;
+        default:
+          password += char;
+          process.stdout.write('*');
+          break;
+      }
+    };
+
+    stdin.on('data', onData);
+  });
+}
+
+/**
  * Prompt the user for a yes/no confirmation.
  * Returns false in non-TTY environments.
  */
