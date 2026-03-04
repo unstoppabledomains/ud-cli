@@ -8,6 +8,9 @@ import Table from 'cli-table3';
 import type { OutputFormat } from './types.js';
 import type { ResponsePattern } from './spec-parser.js';
 
+/** Maximum characters in a single table cell line before truncation (table format only). */
+const MAX_CELL_CHARS = 60;
+
 interface FormatOptions {
   format: OutputFormat;
   responsePattern?: ResponsePattern;
@@ -207,16 +210,16 @@ const TABLE_CONFIGS: Record<string, string[]> = {
   // TLD list (spec returns string[], so extractTableData wraps them)
   ud_tld_list: ['tld'],
   // DNS records
-  ud_dns_records_list: ['type', 'subName', 'values', 'ttl'],
+  ud_dns_records_list: ['id', 'type', 'subName', 'values', 'ttl'],
   // Cart
   ud_cart_get: ['name', 'type', 'pricing.formatted'],
   // Contacts
   ud_contacts_list: ['id', 'firstName', 'lastName', 'email'],
   // Offers
-  ud_offers_list: ['domainName', 'amount', 'status', 'createdAt'],
+  ud_offers_list: ['id', 'domainName', 'priceFormatted', 'status', 'createdAt'],
   ud_offer_respond: ['offerId', 'domainName', 'action', 'success', 'priceFormatted', 'newStatus', 'error'],
   // Leads
-  ud_leads_list: ['domainName', 'shortLatestMessageContent', 'unreadMessageCount', 'createdAt'],
+  ud_leads_list: ['id', 'domainName', 'shortLatestMessageContent', 'unreadMessageCount', 'createdAt'],
   ud_lead_messages_list: ['id', 'content', 'senderUserId', 'createdAt'],
   ud_lead_message_send: ['message.id', 'message.content', 'message.createdAt'],
   // Listings
@@ -300,8 +303,6 @@ const DETAIL_CONFIGS: Record<string, DetailConfig> = {
           { label: 'Purchased', path: 'lifecycle.purchasedAt' },
           { label: 'Expires', path: 'lifecycle.expiresAt' },
           { label: 'Transfer Status', path: 'lifecycle.transferStatus' },
-          { label: 'Externally Owned', path: 'lifecycle.isExternallyOwned' },
-          { label: 'Reverse Resolution', path: 'lifecycle.reverse' },
           { label: 'Tags', path: 'tags' },
         ],
       },
@@ -336,6 +337,7 @@ const DETAIL_CONFIGS: Record<string, DetailConfig> = {
       {
         title: 'Marketplace',
         fields: [
+          { label: 'Listing ID', path: 'marketplace.listing.id' },
           { label: 'Listing Status', path: 'marketplace.listing.status' },
           { label: 'Listing Price', path: 'marketplace.listing.price' },
           { label: 'Listing Views', path: 'marketplace.listing.views' },
@@ -376,7 +378,7 @@ const DETAIL_CONFIGS: Record<string, DetailConfig> = {
       },
     ],
     subTables: [
-      { title: 'Items', arrayPath: 'items', columns: ['domain', 'productType', 'originalPriceFormatted', 'discountAmountFormatted'] },
+      { title: 'Items', arrayPath: 'items', columns: ['productId', 'domain', 'productType', 'originalPriceFormatted', 'discountAmountFormatted'] },
       { title: 'Discounts', arrayPath: 'discounts', columns: ['title', 'type', 'amountFormatted', 'code'] },
     ],
   },
@@ -395,7 +397,7 @@ const DETAIL_CONFIGS: Record<string, DetailConfig> = {
       },
     ],
     subTables: [
-      { title: 'Records', arrayPath: 'records', columns: ['type', 'subName', 'values', 'ttl', 'readonly'] },
+      { title: 'Records', arrayPath: 'records', columns: ['id', 'type', 'subName', 'values', 'ttl', 'readonly'] },
     ],
   },
 
@@ -500,6 +502,8 @@ function formatDetail(obj: Record<string, unknown>, config: DetailConfig): strin
     parts.push('');
     parts.push(chalk.bold.underline(section.title));
     const table = new Table({
+      colWidths: [24, 62],
+      wordWrap: true,
       style: { head: [], border: [], 'padding-left': 1, 'padding-right': 1 },
     });
     for (const [label, val] of rows) {
@@ -635,10 +639,15 @@ function formatCellValue(value: unknown, useColor = true): string {
     }
   }
 
-  if (Array.isArray(value)) return value.join(', ');
-  if (typeof value === 'object') return JSON.stringify(value);
+  if (Array.isArray(value)) {
+    return useColor ? value.join('\n') : value.join(', ');
+  }
 
-  return String(value);
+  const result = typeof value === 'object' ? JSON.stringify(value) : String(value);
+  if (useColor && result.length > MAX_CELL_CHARS) {
+    return result.slice(0, MAX_CELL_CHARS - 1) + '\u2026';
+  }
+  return result;
 }
 
 /**

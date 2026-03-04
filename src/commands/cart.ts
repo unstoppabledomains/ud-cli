@@ -6,7 +6,7 @@ import type { Command } from 'commander';
 import { callAction } from '../lib/api.js';
 import { formatOutput, formatError } from '../lib/formatter.js';
 import { createSpinner } from '../lib/spinner.js';
-import { SOURCE_TO_CART_CMD } from '../lib/command-hooks.js';
+import { SOURCE_TO_CART_CMD, VIEW_CART_HINT } from '../lib/command-hooks.js';
 import type { OutputFormat } from '../lib/types.js';
 
 /** Reverse map: subcommand → tool name */
@@ -138,6 +138,10 @@ export function registerSmartCartAdd(program: Command): void {
           console.error(formatError(err));
           process.exitCode = 1;
         }
+      }
+
+      if (!quiet && process.exitCode !== 1) {
+        console.log(VIEW_CART_HINT);
       }
     });
 }

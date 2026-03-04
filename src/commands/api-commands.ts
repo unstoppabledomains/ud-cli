@@ -356,6 +356,14 @@ function registerRoute(
           if (hint) console.log(hint);
         }
 
+        // Post-call hook: post-action hint (static string or dynamic function)
+        if (hooks?.postActionHint) {
+          const hint = typeof hooks.postActionHint === 'function'
+            ? hooks.postActionHint(result)
+            : hooks.postActionHint;
+          if (hint) console.log(hint);
+        }
+
         // Show save hint when user explicitly passed --fields that differ from saved default
         if (cliFields && format === 'table') {
           const cliFieldsStr = cliFields.join(',');

@@ -165,6 +165,22 @@ describe('param-builder', () => {
       });
     });
 
+    it('coerces array-of-numbers flag values to numbers', () => {
+      const params: ParamSpec[] = [
+        { name: 'productIds', type: 'array', required: true, items: { name: 'productIds[]', type: 'number', required: false } },
+      ];
+      const result = buildParams(NO_ARGS_ROUTE, params, {}, { 'product-ids': '335038573' });
+      expect(result).toEqual({ productIds: [335038573] });
+    });
+
+    it('coerces comma-separated array-of-numbers', () => {
+      const params: ParamSpec[] = [
+        { name: 'productIds', type: 'array', required: true, items: { name: 'productIds[]', type: 'number', required: false } },
+      ];
+      const result = buildParams(NO_ARGS_ROUTE, params, {}, { 'product-ids': '123,456,789' });
+      expect(result).toEqual({ productIds: [123, 456, 789] });
+    });
+
     it('handles kebab-case flag names', () => {
       const params: ParamSpec[] = [
         { name: 'discountCode', type: 'string', required: false },
