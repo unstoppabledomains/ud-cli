@@ -226,6 +226,15 @@ main() {
 
   echo
   info "ud-cli v${VERSION} installed to ${INSTALL_PATH}"
+
+  # Install shell completions
+  info "Setting up shell completions…"
+  if "$INSTALL_PATH" install; then
+    info "Shell completions installed"
+  else
+    warn "Shell completion setup skipped (run 'ud install' later)"
+  fi
+
   echo
   info "Get started:"
   echo "  ud auth login"

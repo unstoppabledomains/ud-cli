@@ -93,6 +93,7 @@ async function loginApiKey(env: string, key?: string): Promise<void> {
 
   if (status.authenticated) {
     console.log(chalk.green(`✓ API key saved and verified for ${env}.`));
+    console.log(chalk.dim('Tip: Run "ud install" to enable shell tab completion.'));
   } else {
     console.log(chalk.yellow(`API key saved for ${env}, but verification failed: ${status.message}`));
   }
@@ -106,6 +107,7 @@ async function loginOAuth(env: string): Promise<void> {
     await performOAuthLogin();
     setEnvConfig({ authMethod: 'oauth' }, env as Environment);
     console.log(chalk.green(`✓ OAuth login successful for ${env}.`));
+    console.log(chalk.dim('Tip: Run "ud install" to enable shell tab completion.'));
   } catch (err) {
     console.error(chalk.red(`OAuth login failed: ${err instanceof Error ? err.message : String(err)}`));
     process.exitCode = 1;
