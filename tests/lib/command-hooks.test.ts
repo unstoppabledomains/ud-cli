@@ -1,4 +1,4 @@
-import { getHooks, formatOperationHint, formatCartHint, formatFailureHints } from '../../src/lib/command-hooks.js';
+import { getHooks, formatOperationHint, formatCartHint, formatFailureHints, formatLeadMessagesHint } from '../../src/lib/command-hooks.js';
 
 // Strip ANSI codes for easier assertion
 function stripAnsi(str: string): string {
@@ -176,6 +176,117 @@ describe('command-hooks', () => {
       expect(formatCartHint({ results: [] })).toBe('');
       expect(formatCartHint(null)).toBe('');
       expect(formatCartHint({})).toBe('');
+    });
+  });
+
+  describe('formatLeadMessagesHint', () => {
+    it('shows hint with first lead ID', () => {
+      const result = { results: [{ id: 'conv-123' }, { id: 'conv-456' }] };
+      const hint = stripAnsi(formatLeadMessagesHint(result));
+      expect(hint).toContain('ud marketplace leads messages list --conversation-id conv-123');
+    });
+
+    it('handles leads key', () => {
+      const result = { leads: [{ id: 'lead-1' }] };
+      const hint = stripAnsi(formatLeadMessagesHint(result));
+      expect(hint).toContain('--conversation-id lead-1');
+    });
+
+    it('returns empty string for empty results', () => {
+      expect(formatLeadMessagesHint({ results: [] })).toBe('');
+      expect(formatLeadMessagesHint(null)).toBe('');
+      expect(formatLeadMessagesHint({})).toBe('');
+    });
+  });
+
+  describe('postActionHint functions (via getHooks)', () => {
+    it('formatPostCheckoutHint shows purchased domains', () => {
+      const hooks = getHooks('ud_cart_checkout');
+      expect(typeof hooks?.postActionHint).toBe('function');
+      const hint = stripAnsi((hooks!.postActionHint as (r: unknown) => string)({
+        summary: { domains: ['example.com', 'test.com'] },
+      }));
+      expect(hint).toContain('ud domains get example.com test.com');
+    });
+
+    it('formatPostCheckoutHint returns empty for missing domains', () => {
+      const fn = getHooks('ud_cart_checkout')!.postActionHint as (r: unknown) => string;
+      expect(fn({ summary: {} })).toBe('');
+      expect(fn(null)).toBe('');
+    });
+
+    it('formatOfferRespondHint shows offer ID', () => {
+      const fn = getHooks('ud_offers_list')!.postActionHint as (r: unknown) => string;
+      const hint = stripAnsi(fn({ offers: [{ id: 'offer-42' }] }));
+      expect(hint).toContain('--offer-id offer-42');
+      expect(hint).toContain('--action accept');
+    });
+
+    it('formatOfferRespondHint handles results key', () => {
+      const fn = getHooks('ud_offers_list')!.postActionHint as (r: unknown) => string;
+      const hint = stripAnsi(fn({ results: [{ id: 'offer-99' }] }));
+      expect(hint).toContain('--offer-id offer-99');
+    });
+
+    it('formatOfferRespondHint returns empty for no offers', () => {
+      const fn = getHooks('ud_offers_list')!.postActionHint as (r: unknown) => string;
+      expect(fn({ offers: [] })).toBe('');
+      expect(fn(null)).toBe('');
+    });
+
+    it('formatOperationsNextHint shows pending message when operations pending', () => {
+      const fn = getHooks('ud_domain_pending_operations')!.postActionHint as (r: unknown) => string;
+      const hint = stripAnsi(fn({
+        summary: { domainsWithPending: ['a.com', 'b.com'] },
+      }));
+      expect(hint).toContain('Operations still pending');
+      expect(hint).toContain('ud domains operations show a.com b.com');
+    });
+
+    it('formatOperationsNextHint shows complete message when no pending', () => {
+      const fn = getHooks('ud_domain_pending_operations')!.postActionHint as (r: unknown) => string;
+      const hint = stripAnsi(fn({
+        results: [{ domain: 'done.com' }],
+        summary: {},
+      }));
+      expect(hint).toContain('All operations complete');
+      expect(hint).toContain('ud domains dns records show done.com');
+    });
+
+    it('formatDnsRecordsHint includes domain in add command', () => {
+      const fn = getHooks('ud_dns_records_list')!.postActionHint as (r: unknown) => string;
+      const hint = stripAnsi(fn({ domain: 'test.com' }));
+      expect(hint).toContain('ud domains dns records add test.com');
+    });
+
+    it('cart add hooks use postActionHint with VIEW_CART_HINT', () => {
+      const cartAddTools = [
+        'ud_cart_add_domain_registration',
+        'ud_cart_add_domain_listed',
+        'ud_cart_add_domain_afternic',
+        'ud_cart_add_domain_sedo',
+        'ud_cart_add_domain_renewal',
+      ];
+      for (const tool of cartAddTools) {
+        const hooks = getHooks(tool);
+        expect(typeof hooks?.postActionHint).toBe('string');
+        expect(stripAnsi(hooks!.postActionHint as string)).toContain('ud cart list');
+      }
+    });
+
+    it('cart get uses postActionHint with CHECKOUT_HINT', () => {
+      const hooks = getHooks('ud_cart_get');
+      expect(typeof hooks?.postActionHint).toBe('string');
+      expect(stripAnsi(hooks!.postActionHint as string)).toContain('ud cart checkout');
+    });
+
+    it('leads list uses postActionHint with formatLeadMessagesHint', () => {
+      const hooks = getHooks('ud_leads_list');
+      expect(typeof hooks?.postActionHint).toBe('function');
+      const hint = stripAnsi((hooks!.postActionHint as (r: unknown) => string)({
+        results: [{ id: 'lead-abc' }],
+      }));
+      expect(hint).toContain('--conversation-id lead-abc');
     });
   });
 

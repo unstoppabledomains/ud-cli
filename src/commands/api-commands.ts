@@ -12,7 +12,7 @@ import { callAction } from '../lib/api.js';
 import { getCommandDefaults } from '../lib/config.js';
 import { formatOutput, formatError, formatFieldsList, getKnownFields } from '../lib/formatter.js';
 import { createSpinner } from '../lib/spinner.js';
-import { getHooks, formatOperationHint, formatCartHint, formatFailureHints, VIEW_CART_HINT, CHECKOUT_HINT, formatLeadMessagesHint } from '../lib/command-hooks.js';
+import { getHooks, formatOperationHint, formatCartHint, formatFailureHints } from '../lib/command-hooks.js';
 import { promptInput, promptConfirm } from '../lib/prompt.js';
 import { readFile } from 'node:fs/promises';
 import chalk from 'chalk';
@@ -356,23 +356,7 @@ function registerRoute(
           if (hint) console.log(hint);
         }
 
-        // Post-call hook: show view-cart hint after adding items
-        if (hooks?.showViewCartHint) {
-          console.log(VIEW_CART_HINT);
-        }
-
-        // Post-call hook: show checkout hint after viewing cart
-        if (hooks?.showCheckoutHint) {
-          console.log(CHECKOUT_HINT);
-        }
-
-        // Post-call hook: show lead messages hint after listing leads
-        if (hooks?.showLeadMessagesHint) {
-          const hint = formatLeadMessagesHint(result);
-          if (hint) console.log(hint);
-        }
-
-        // Post-call hook: general post-action hint
+        // Post-call hook: post-action hint (static string or dynamic function)
         if (hooks?.postActionHint) {
           const hint = typeof hooks.postActionHint === 'function'
             ? hooks.postActionHint(result)

@@ -34,12 +34,6 @@ export interface CommandHooks {
   showFailureHints?: boolean;
   /** Show a cart-add hint using the first available result from search. */
   showCartHint?: boolean;
-  /** Show a hint to view the cart after adding items. */
-  showViewCartHint?: boolean;
-  /** Show a hint about how to checkout after viewing the cart. */
-  showCheckoutHint?: boolean;
-  /** Show a hint about viewing lead messages after listing leads. */
-  showLeadMessagesHint?: boolean;
   /** Post-action hint shown after a successful API call. Static string or dynamic function. */
   postActionHint?: string | ((result: unknown) => string);
 }
@@ -253,13 +247,13 @@ const HOOKS: Record<string, CommandHooks> = {
     transformBody: makePriceTransformer('listings'),
     postActionHint: formatVerifyDomainHint,
   },
-  ud_cart_get: { showCheckoutHint: true },
+  ud_cart_get: { postActionHint: CHECKOUT_HINT },
   ud_cart_remove: { postActionHint: VIEW_CART_HINT },
-  ud_cart_add_domain_registration: { showViewCartHint: true },
-  ud_cart_add_domain_listed: { showViewCartHint: true },
-  ud_cart_add_domain_afternic: { showViewCartHint: true },
-  ud_cart_add_domain_sedo: { showViewCartHint: true },
-  ud_cart_add_domain_renewal: { showViewCartHint: true },
+  ud_cart_add_domain_registration: { postActionHint: VIEW_CART_HINT },
+  ud_cart_add_domain_listed: { postActionHint: VIEW_CART_HINT },
+  ud_cart_add_domain_afternic: { postActionHint: VIEW_CART_HINT },
+  ud_cart_add_domain_sedo: { postActionHint: VIEW_CART_HINT },
+  ud_cart_add_domain_renewal: { postActionHint: VIEW_CART_HINT },
   // Portfolio & domain management
   ud_portfolio_list: { postActionHint: formatPortfolioNextHint },
   ud_domain_get: { postActionHint: formatDomainDetailHint },
@@ -271,7 +265,7 @@ const HOOKS: Record<string, CommandHooks> = {
   ud_dns_records_list: { postActionHint: formatDnsRecordsHint },
   ud_domain_pending_operations: { postActionHint: formatOperationsNextHint },
   // Marketplace leads
-  ud_leads_list: { showLeadMessagesHint: true },
+  ud_leads_list: { postActionHint: formatLeadMessagesHint },
   ud_lead_get: { postActionHint: formatLeadOpenHint },
   ud_lead_messages_list: { postActionHint: formatLeadReplyHint },
   ud_lead_message_send: { postActionHint: formatViewConversationHint },
