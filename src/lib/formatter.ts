@@ -303,8 +303,6 @@ const DETAIL_CONFIGS: Record<string, DetailConfig> = {
           { label: 'Purchased', path: 'lifecycle.purchasedAt' },
           { label: 'Expires', path: 'lifecycle.expiresAt' },
           { label: 'Transfer Status', path: 'lifecycle.transferStatus' },
-          { label: 'Externally Owned', path: 'lifecycle.isExternallyOwned' },
-          { label: 'Reverse Resolution', path: 'lifecycle.reverse' },
           { label: 'Tags', path: 'tags' },
         ],
       },
