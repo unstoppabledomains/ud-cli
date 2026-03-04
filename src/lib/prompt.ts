@@ -55,39 +55,43 @@ export async function promptPassword(message: string): Promise<string> {
 
     let password = '';
 
-    const onData = (char: string): void => {
-      switch (char) {
-        case '\n':
-        case '\r':
-        case '\u0004': // Ctrl+D
-          stdin.setRawMode(false);
-          stdin.pause();
-          stdin.removeListener('data', onData);
-          process.stdout.write('\n');
-          resolve(password);
-          break;
-        case '\u0003': // Ctrl+C
-          stdin.setRawMode(false);
-          stdin.pause();
-          stdin.removeListener('data', onData);
-          process.stdout.write('\n');
-          process.exitCode = 130;
-          resolve('');
-          break;
-        case '\u007F': // Backspace
-        case '\b':
-          if (password.length > 0) {
-            password = password.slice(0, -1);
-            process.stdout.write('\b \b');
-          }
-          break;
-        default:
-          // Ignore escape sequences (arrow keys, etc.) — only accept printable chars
-          if (char.length === 1 && char >= ' ') {
-            password += char;
-            process.stdout.write('*');
-          }
-          break;
+    const onData = (chunk: string): void => {
+      // Raw-mode stdin may deliver multiple characters in a single chunk
+      // (e.g. pasted text), so iterate through each character individually.
+      for (const char of chunk) {
+        switch (char) {
+          case '\n':
+          case '\r':
+          case '\u0004': // Ctrl+D
+            stdin.setRawMode(false);
+            stdin.pause();
+            stdin.removeListener('data', onData);
+            process.stdout.write('\n');
+            resolve(password);
+            return;
+          case '\u0003': // Ctrl+C
+            stdin.setRawMode(false);
+            stdin.pause();
+            stdin.removeListener('data', onData);
+            process.stdout.write('\n');
+            process.exitCode = 130;
+            resolve('');
+            return;
+          case '\u007F': // Backspace
+          case '\b':
+            if (password.length > 0) {
+              password = password.slice(0, -1);
+              process.stdout.write('\b \b');
+            }
+            break;
+          default:
+            // Ignore escape sequences (arrow keys, etc.) — only accept printable chars
+            if (char >= ' ') {
+              password += char;
+              process.stdout.write('*');
+            }
+            break;
+        }
       }
     };
 

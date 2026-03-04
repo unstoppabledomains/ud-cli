@@ -30,8 +30,14 @@ export async function startSignup(
   });
 
   if (!res.ok) {
-    const body = (await res.json()) as SignupErrorBody;
-    throw new Error(body.error_description ?? 'Signup failed');
+    const text = await res.text();
+    try {
+      const body = JSON.parse(text) as SignupErrorBody;
+      throw new Error(body.error_description ?? 'Signup failed');
+    } catch (err) {
+      if (err instanceof SyntaxError) throw new Error('Signup failed');
+      throw err;
+    }
   }
 
   return (await res.json()) as SignupResponse;
@@ -52,8 +58,14 @@ export async function verifySignup(
   });
 
   if (!res.ok) {
-    const body = (await res.json()) as SignupErrorBody;
-    throw new Error(body.error_description ?? 'Verification failed');
+    const text = await res.text();
+    try {
+      const body = JSON.parse(text) as SignupErrorBody;
+      throw new Error(body.error_description ?? 'Verification failed');
+    } catch (err) {
+      if (err instanceof SyntaxError) throw new Error('Verification failed');
+      throw err;
+    }
   }
 
   return (await res.json()) as SignupVerifyResponse;

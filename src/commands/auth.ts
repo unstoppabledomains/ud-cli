@@ -148,7 +148,7 @@ async function signupFlow(env: string): Promise<void> {
   console.log(chalk.dim('Password must be at least 8 characters with uppercase, lowercase, number, and special character.'));
   const password = await promptPassword('Password: ');
   if (!password) {
-    process.exitCode = 1;
+    process.exitCode ??= 1;
     return;
   }
 
@@ -210,7 +210,10 @@ async function signupFlow(env: string): Promise<void> {
     };
 
     await saveTokens(tokens, env as Environment);
-    setEnvConfig({ authMethod: 'oauth' }, env as Environment);
+    setEnvConfig({
+      authMethod: 'oauth',
+      oauth: { clientId: 'ud-api-signup-client' },
+    }, env as Environment);
 
     verifySpinner.succeed('Email verified');
     console.log(chalk.green(`\n✓ Account created and logged in to ${env}.`));
