@@ -47,14 +47,14 @@ describe('marketplace commands', () => {
   // --- Cart ---
 
   describe('cart', () => {
-    it('cart get calls ud_cart_get', async () => {
+    it('cart list calls ud_cart_get', async () => {
       let called = false;
       mockFetchRoute('actions/ud_cart_get', () => {
         called = true;
         return jsonResponse({ items: [], itemCount: 0, pricing: {} });
       });
 
-      await program.parseAsync(['node', 'ud', 'cart', 'get']);
+      await program.parseAsync(['node', 'ud', 'cart', 'list']);
       expect(called).toBe(true);
     });
 
@@ -148,14 +148,14 @@ describe('marketplace commands', () => {
       expect(capturedBody!.productIds).toEqual(['p1']);
     });
 
-    it('cart payment-methods calls correct endpoint', async () => {
+    it('cart payment-methods list calls correct endpoint', async () => {
       let called = false;
       mockFetchRoute('actions/ud_cart_get_payment_methods', () => {
         called = true;
         return jsonResponse({ savedCards: [{ id: 'c1', brand: 'visa', last4: '4242' }] });
       });
 
-      await program.parseAsync(['node', 'ud', 'cart', 'payment-methods']);
+      await program.parseAsync(['node', 'ud', 'cart', 'payment-methods', 'list']);
       expect(called).toBe(true);
     });
 
@@ -276,33 +276,33 @@ describe('marketplace commands', () => {
       expect(called).toBe(true);
     });
 
-    it('leads get passes domain positional', async () => {
+    it('leads open passes domain positional', async () => {
       let capturedBody: Record<string, unknown> | null = null;
       mockFetchRoute('actions/ud_lead_get', (_url, init) => {
         capturedBody = JSON.parse(init?.body as string);
         return jsonResponse({ conversation: { id: 'c1', domainName: 'lead.com' }, message: 'Started' });
       });
 
-      await program.parseAsync(['node', 'ud', 'marketplace', 'leads', 'get', 'lead.com']);
+      await program.parseAsync(['node', 'ud', 'marketplace', 'leads', 'open', 'lead.com']);
 
       expect(capturedBody).toBeTruthy();
       expect(capturedBody!.domain).toBe('lead.com');
     });
 
-    it('leads messages passes conversationId', async () => {
+    it('leads messages list passes conversationId', async () => {
       let capturedBody: Record<string, unknown> | null = null;
       mockFetchRoute('actions/ud_lead_messages_list', (_url, init) => {
         capturedBody = JSON.parse(init?.body as string);
         return jsonResponse({ messages: [{ id: 'm1', content: 'Hello' }] });
       });
 
-      await program.parseAsync(['node', 'ud', 'marketplace', 'leads', 'messages', '--conversation-id', '42']);
+      await program.parseAsync(['node', 'ud', 'marketplace', 'leads', 'messages', 'list', '--conversation-id', '42']);
 
       expect(capturedBody).toBeTruthy();
       expect(capturedBody!.conversationId).toBe(42);
     });
 
-    it('leads send passes conversationId and content', async () => {
+    it('leads messages send passes conversationId and content', async () => {
       let capturedBody: Record<string, unknown> | null = null;
       mockFetchRoute('actions/ud_lead_message_send', (_url, init) => {
         capturedBody = JSON.parse(init?.body as string);
@@ -310,7 +310,7 @@ describe('marketplace commands', () => {
       });
 
       await program.parseAsync([
-        'node', 'ud', 'marketplace', 'leads', 'send',
+        'node', 'ud', 'marketplace', 'leads', 'messages', 'send',
         '--conversation-id', '42', '--content', 'Reply',
       ]);
 

@@ -216,9 +216,9 @@ const TABLE_CONFIGS: Record<string, string[]> = {
   ud_offers_list: ['domainName', 'amount', 'status', 'createdAt'],
   ud_offer_respond: ['offerId', 'domainName', 'action', 'success', 'priceFormatted', 'newStatus', 'error'],
   // Leads
-  ud_leads_list: ['domain', 'status', 'lastMessage', 'createdAt'],
+  ud_leads_list: ['domainName', 'shortLatestMessageContent', 'unreadMessageCount', 'createdAt'],
   ud_lead_messages_list: ['id', 'content', 'senderUserId', 'createdAt'],
-  ud_lead_message_send: ['id', 'content', 'createdAt'],
+  ud_lead_message_send: ['message.id', 'message.content', 'message.createdAt'],
   // Listings
   ud_listing_create: ['domain', 'success', 'listingId'],
   ud_listing_update: ['listingId', 'domainName', 'success', 'status', 'error'],

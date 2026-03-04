@@ -5,7 +5,7 @@
 DNS record management only works when the domain uses UD default nameservers. Always check first:
 
 ```bash
-ud domains dns nameservers list example.com
+ud domains dns nameservers show example.com
 ```
 
 If the domain uses custom nameservers, switch back to UD defaults to manage records:
@@ -17,8 +17,8 @@ ud domains dns nameservers set-default --data '{"domains":["example.com"]}'
 ## Listing Records
 
 ```bash
-ud domains dns records list example.com
-ud domains dns records list example.com --format json
+ud domains dns records show example.com
+ud domains dns records show example.com --format json
 ```
 
 ## Adding Records
@@ -67,7 +67,7 @@ Without `--upsert-mode`, adding a duplicate record type returns a `NO_CHANGE` er
 
 ## Updating Records
 
-Get the record ID from `ud domains dns records list` first:
+Get the record ID from `ud domains dns records show` first:
 
 ```bash
 ud domains dns records update --data '{
@@ -92,7 +92,7 @@ ud domains dns records remove-all example.com --confirm
 DNS changes are asynchronous. Track propagation:
 
 ```bash
-ud domains operations example.com
+ud domains operations show example.com
 ```
 
 ## Custom Nameservers
@@ -114,7 +114,7 @@ Custom nameservers require 2–12 hostnames. DNSSEC DS records are optional.
 
 ```bash
 # List hosting config
-ud domains hosting redirects list example.com
+ud domains hosting redirects show example.com
 
 # Add a redirect
 ud domains hosting redirects add --data '{
@@ -134,7 +134,7 @@ ud domains hosting redirects remove --data '{
 ud domains hosting landers generate example.com
 
 # Check status (pending → generating → hosted)
-ud domains hosting landers status example.com
+ud domains hosting landers show example.com
 
 # Remove (destructive — deletes content and hosting config)
 ud domains hosting landers remove example.com

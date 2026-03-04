@@ -50,9 +50,9 @@ describe('command-registry', () => {
     expect(get.positionalArgs[0].variadic).toBe(true);
   });
 
-  it('dns records list has single domain arg', () => {
+  it('dns records show has single domain arg', () => {
     const list = COMMAND_ROUTES.find((r) => r.toolName === 'ud_dns_records_list')!;
-    expect(list.path).toEqual(['domains', 'dns', 'records', 'list']);
+    expect(list.path).toEqual(['domains', 'dns', 'records', 'show']);
     expect(list.positionalArgs).toHaveLength(1);
     expect(list.positionalArgs[0].name).toBe('domain');
     expect(list.positionalArgs[0].variadic).toBe(false);

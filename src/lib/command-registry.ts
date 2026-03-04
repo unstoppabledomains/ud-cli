@@ -62,7 +62,7 @@ export const COMMAND_ROUTES: CommandRoute[] = [
   },
   {
     toolName: 'ud_domain_pending_operations',
-    path: ['domains', 'operations'],
+    path: ['domains', 'operations', 'show'],
     positionalArgs: [
       { name: 'domains', description: 'Domain name(s)', required: true, variadic: true },
     ],
@@ -99,7 +99,7 @@ export const COMMAND_ROUTES: CommandRoute[] = [
   // --- DNS Records ---
   {
     toolName: 'ud_dns_records_list',
-    path: ['domains', 'dns', 'records', 'list'],
+    path: ['domains', 'dns', 'records', 'show'],
     positionalArgs: [
       { name: 'domain', description: 'Domain name', required: true, variadic: false },
     ],
@@ -132,7 +132,7 @@ export const COMMAND_ROUTES: CommandRoute[] = [
   // --- DNS Nameservers ---
   {
     toolName: 'ud_dns_nameservers_list',
-    path: ['domains', 'dns', 'nameservers', 'list'],
+    path: ['domains', 'dns', 'nameservers', 'show'],
     positionalArgs: [
       { name: 'domain', description: 'Domain name', required: true, variadic: false },
     ],
@@ -151,7 +151,7 @@ export const COMMAND_ROUTES: CommandRoute[] = [
   // --- Hosting: Redirects ---
   {
     toolName: 'ud_dns_hosting_list',
-    path: ['domains', 'hosting', 'redirects', 'list'],
+    path: ['domains', 'hosting', 'redirects', 'show'],
     positionalArgs: [
       { name: 'domain', description: 'Domain name', required: true, variadic: false },
     ],
@@ -178,7 +178,7 @@ export const COMMAND_ROUTES: CommandRoute[] = [
   },
   {
     toolName: 'ud_domain_lander_status',
-    path: ['domains', 'hosting', 'landers', 'status'],
+    path: ['domains', 'hosting', 'landers', 'show'],
     positionalArgs: [
       { name: 'domains', description: 'Domain name(s)', required: true, variadic: true },
     ],
@@ -196,7 +196,7 @@ export const COMMAND_ROUTES: CommandRoute[] = [
   // --- Cart ---
   {
     toolName: 'ud_cart_get',
-    path: ['cart', 'get'],
+    path: ['cart', 'list'],
     positionalArgs: [],
   },
   {
@@ -216,12 +216,12 @@ export const COMMAND_ROUTES: CommandRoute[] = [
   },
   {
     toolName: 'ud_cart_get_payment_methods',
-    path: ['cart', 'payment-methods'],
+    path: ['cart', 'payment-methods', 'list'],
     positionalArgs: [],
   },
   {
     toolName: 'ud_cart_add_payment_method_url',
-    path: ['cart', 'add-payment-method'],
+    path: ['cart', 'payment-methods', 'add'],
     positionalArgs: [],
   },
   {
@@ -311,19 +311,20 @@ export const COMMAND_ROUTES: CommandRoute[] = [
   },
   {
     toolName: 'ud_lead_get',
-    path: ['marketplace', 'leads', 'get'],
+    path: ['marketplace', 'leads', 'open'],
     positionalArgs: [
       { name: 'domain', description: 'Domain name', required: true, variadic: false },
     ],
+    description: 'Inquire about a domain',
   },
   {
     toolName: 'ud_lead_messages_list',
-    path: ['marketplace', 'leads', 'messages'],
+    path: ['marketplace', 'leads', 'messages', 'list'],
     positionalArgs: [],
   },
   {
     toolName: 'ud_lead_message_send',
-    path: ['marketplace', 'leads', 'send'],
+    path: ['marketplace', 'leads', 'messages', 'send'],
     positionalArgs: [],
   },
 ];

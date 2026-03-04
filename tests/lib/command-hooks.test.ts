@@ -78,7 +78,7 @@ describe('command-hooks', () => {
       expect(hint).toContain('DNS changes are async');
       expect(hint).toContain('a.com');
       expect(hint).toContain('b.com');
-      expect(hint).toContain('ud domains operations');
+      expect(hint).toContain('ud domains operations show');
     });
 
     it('returns empty string when no operationId found', () => {
@@ -117,7 +117,7 @@ describe('command-hooks', () => {
         results: [{ operationId: 'op-1' }],
       };
       const hint = stripAnsi(formatOperationHint(result));
-      expect(hint).toContain('ud domains operations <domain>');
+      expect(hint).toContain('ud domains operations show <domain>');
     });
   });
 
