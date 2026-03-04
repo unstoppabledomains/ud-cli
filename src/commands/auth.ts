@@ -12,6 +12,7 @@ import type { Environment, TokenData } from '../lib/types.js';
 const API_KEY_PATTERN = /^ud_mcp_[0-9a-f]{64}$/;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/;
+const SIGNUP_CLIENT_ID = 'ud-api-signup-client';
 
 export function registerAuthCommands(program: Command): void {
   const auth = program.command('auth').description('Manage authentication');
@@ -161,7 +162,7 @@ async function signupFlow(env: string): Promise<void> {
   // 3. Confirm password
   const confirm = await promptPassword('Confirm password: ');
   if (!confirm) {
-    process.exitCode = 1;
+    process.exitCode ??= 1;
     return;
   }
   if (password !== confirm) {
@@ -212,7 +213,7 @@ async function signupFlow(env: string): Promise<void> {
     await saveTokens(tokens, env as Environment);
     setEnvConfig({
       authMethod: 'oauth',
-      oauth: { clientId: 'ud-api-signup-client' },
+      oauth: { clientId: SIGNUP_CLIENT_ID },
     }, env as Environment);
 
     verifySpinner.succeed('Email verified');

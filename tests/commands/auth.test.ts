@@ -303,6 +303,24 @@ describe('signup', () => {
     expect(process.exitCode).toBe(1);
   });
 
+  it('preserves exitCode 130 on Ctrl+C during confirm password', async () => {
+    mockStdinTTY(true);
+
+    promptInputMock.mockResolvedValueOnce('user@example.com');
+    promptPasswordMock
+      .mockResolvedValueOnce('SecurePass1!')
+      .mockImplementationOnce(async () => {
+        // Simulate Ctrl+C: promptPassword sets exitCode 130 and returns ''
+        process.exitCode = 130;
+        return '';
+      });
+
+    const prog = await createSignupProgram();
+    await prog.parseAsync(['node', 'ud', 'auth', 'signup']);
+
+    expect(process.exitCode).toBe(130);
+  });
+
   it('exits early in non-TTY', async () => {
     mockStdinTTY(false);
 
