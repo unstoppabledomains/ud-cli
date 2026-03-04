@@ -160,6 +160,10 @@ async function signupFlow(env: string): Promise<void> {
 
   // 3. Confirm password
   const confirm = await promptPassword('Confirm password: ');
+  if (!confirm) {
+    process.exitCode = 1;
+    return;
+  }
   if (password !== confirm) {
     console.error(chalk.red('Passwords do not match.'));
     process.exitCode = 1;
@@ -196,7 +200,7 @@ async function signupFlow(env: string): Promise<void> {
   verifySpinner.start();
 
   try {
-    const tokenResponse = await verifySignup(sessionToken, code);
+    const tokenResponse = await verifySignup(sessionToken, code.toUpperCase());
 
     const tokens: TokenData = {
       accessToken: tokenResponse.access_token,

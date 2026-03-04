@@ -82,8 +82,11 @@ export async function promptPassword(message: string): Promise<string> {
           }
           break;
         default:
-          password += char;
-          process.stdout.write('*');
+          // Ignore escape sequences (arrow keys, etc.) — only accept printable chars
+          if (char.length === 1 && char >= ' ') {
+            password += char;
+            process.stdout.write('*');
+          }
           break;
       }
     };
