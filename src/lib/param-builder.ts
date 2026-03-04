@@ -149,10 +149,17 @@ function coerceValue(value: unknown, spec: ParamSpec): unknown {
       return Boolean(value);
     case 'array': {
       // Handle comma-separated values: "x,crypto" → ["x", "crypto"]
+      let arr: unknown[];
       if (typeof value === 'string') {
-        return value.split(',').map((v) => v.trim());
+        arr = value.split(',').map((v) => v.trim());
+      } else {
+        arr = Array.isArray(value) ? value : [value];
       }
-      return Array.isArray(value) ? value : [value];
+      // Coerce individual items to the spec's item type (e.g., number[])
+      if (spec.items?.type === 'number') {
+        return arr.map((v) => Number(v));
+      }
+      return arr;
     }
     default:
       return value;
