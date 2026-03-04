@@ -82,7 +82,7 @@ const HOOKS: Record<string, CommandHooks> = {
   },
   ud_cart_checkout: {
     requireConfirm: {
-      message: 'Are you sure you want to complete this purchase? Review your cart with: ud cart get',
+      message: 'Are you sure you want to complete this purchase? Review your cart with: ud cart list',
     },
   },
   ud_listing_cancel: {
@@ -142,8 +142,8 @@ export function formatOperationHint(result: unknown): string {
 
   const domainList = [...domains].join(' ');
   const trackCmd = domainList
-    ? `ud domains operations ${domainList}`
-    : 'ud domains operations <domain>';
+    ? `ud domains operations show ${domainList}`
+    : 'ud domains operations show <domain>';
 
   return chalk.dim(`Tip: DNS changes are async. Track with: ${trackCmd}`);
 }

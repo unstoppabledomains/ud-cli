@@ -110,7 +110,8 @@ ud
 │   ├── list                          List portfolio domains
 │   ├── get <domains...>              Get detailed domain info
 │   ├── push <domains...>             Push domains to another user
-│   ├── operations <domains...>       Get pending operations
+│   ├── operations
+│   │   └── show <domains...>         Show pending operations
 │   ├── tags
 │   │   ├── add <domains...>          Add tags to domains
 │   │   └── remove <domains...>       Remove tags from domains
@@ -123,31 +124,32 @@ ud
 │   │   └── create                    Create ICANN contact
 │   ├── dns
 │   │   ├── records
-│   │   │   ├── list <domain>         List DNS records
+│   │   │   ├── show <domain>         Show DNS records
 │   │   │   ├── add <domain>          Add DNS records
 │   │   │   ├── update                Update DNS records
 │   │   │   ├── remove                Remove DNS records
 │   │   │   └── remove-all <domains...>  Remove all DNS records
 │   │   └── nameservers
-│   │       ├── list <domain>         List nameservers
+│   │       ├── show <domain>         Show nameservers
 │   │       ├── set-custom            Set custom nameservers
 │   │       └── set-default           Reset to default nameservers
 │   └── hosting
 │       ├── redirects
-│       │   ├── list <domain>         List redirect configurations
+│       │   ├── show <domain>         Show redirect configurations
 │       │   ├── add                   Add redirect configuration
 │       │   └── remove                Remove redirect configuration
 │       └── landers
 │           ├── generate <domains...> Generate AI landing page
-│           ├── status <domains...>   Check lander generation status
+│           ├── show <domains...>     Show lander status
 │           └── remove <domains...>   Remove AI landing page
 ├── cart
-│   ├── get                           Get shopping cart with pricing
+│   ├── list                          List shopping cart with pricing
 │   ├── remove                        Remove items from cart
 │   ├── checkout                      Complete cart checkout
 │   ├── url                           Get checkout URL
-│   ├── payment-methods               Get available payment methods
-│   ├── add-payment-method            Get URL to add payment method
+│   ├── payment-methods
+│   │   ├── list                      List available payment methods
+│   │   └── add                       Get URL to add payment method
 │   └── add [domain...]               Smart add (auto-detects source)
 │       ├── registration <domains...> Add domains for registration
 │       ├── listed <domains...>       Add marketplace-listed domains
@@ -164,9 +166,10 @@ ud
 │   │   └── respond                   Respond to marketplace offers
 │   └── leads
 │       ├── list                      List domain conversation leads
-│       ├── get <domain>              Get or create domain conversation
-│       ├── messages                  List messages in a conversation
-│       └── send                      Send a message in a conversation
+│       ├── open <domain>             Inquire about a domain
+│       └── messages
+│           ├── list                  List messages in a conversation
+│           └── send                  Send a message in a conversation
 ├── config
 │   ├── set <command> <key> <value>   Save a default option
 │   ├── get [command]                 Show saved defaults
@@ -193,7 +196,7 @@ ud tlds                               List available TLDs
 ud domains list                       List portfolio domains
 ud domains get <domains...>           Get detailed domain info
 ud domains push <domains...>          Push domains to another user
-ud domains operations <domains...>    Get pending operations
+ud domains operations show <domains...>  Show pending operations
 ud domains tags add <domains...>      Add tags to domains
 ud domains tags remove <domains...>   Remove tags from domains
 ud domains flags update <domains...>  Update domain flags
@@ -205,12 +208,12 @@ ud domains contacts create            Create ICANN contact
 #### DNS (`ud domains dns`)
 
 ```
-ud domains dns records list <domain>          List DNS records
+ud domains dns records show <domain>          Show DNS records
 ud domains dns records add <domain>           Add DNS records
 ud domains dns records update                 Update DNS records
 ud domains dns records remove                 Remove DNS records
 ud domains dns records remove-all <domains...>  Remove all DNS records
-ud domains dns nameservers list <domain>      List nameservers
+ud domains dns nameservers show <domain>      Show nameservers
 ud domains dns nameservers set-custom         Set custom nameservers
 ud domains dns nameservers set-default        Reset to default nameservers
 ```
@@ -218,23 +221,23 @@ ud domains dns nameservers set-default        Reset to default nameservers
 #### Hosting (`ud domains hosting`)
 
 ```
-ud domains hosting redirects list <domain>             List redirect configurations
+ud domains hosting redirects show <domain>             Show redirect configurations
 ud domains hosting redirects add                       Add redirect configuration
 ud domains hosting redirects remove                    Remove redirect configuration
 ud domains hosting landers generate <domains...>       Generate AI landing page
-ud domains hosting landers status <domains...>         Check lander generation status
+ud domains hosting landers show <domains...>           Show lander status
 ud domains hosting landers remove <domains...>         Remove AI landing page
 ```
 
 ### Cart
 
 ```
-ud cart get                           Get shopping cart with pricing
+ud cart list                          List shopping cart with pricing
 ud cart remove                        Remove items from cart
 ud cart checkout                      Complete cart checkout (requires --confirm)
 ud cart url                           Get checkout URL
-ud cart payment-methods               Get available payment methods
-ud cart add-payment-method            Get URL to add payment method
+ud cart payment-methods list          List available payment methods
+ud cart payment-methods add           Get URL to add payment method
 ud cart add [domain...]               Smart add — auto-detects source and routes
 ud cart add registration <domains...> Add domains for registration
 ud cart add listed <domains...>       Add marketplace-listed domains
@@ -254,9 +257,9 @@ ud marketplace listings cancel                    Cancel listings (requires --co
 ud marketplace offers list                        List marketplace offers
 ud marketplace offers respond                     Respond to marketplace offers
 ud marketplace leads list                         List domain conversation leads
-ud marketplace leads get <domain>                 Get or create domain conversation
-ud marketplace leads messages                     List messages in a conversation
-ud marketplace leads send                         Send a message in a conversation
+ud marketplace leads open <domain>                Inquire about a domain
+ud marketplace leads messages list                List messages in a conversation
+ud marketplace leads messages send                Send a message in a conversation
 ```
 
 ### Config
@@ -280,7 +283,7 @@ ud domains list
 ud domains list --fields name,expiresAt
 
 # Save a default output format
-ud config set "domains dns records list" format json
+ud config set "domains dns records show" format json
 
 # View all saved defaults
 ud config get
@@ -310,7 +313,7 @@ ud cart add registration mybusiness.com mybusiness.io
 ud cart add --type renewal mysite.com
 
 # Review cart and checkout
-ud cart get
+ud cart list
 ud cart checkout --confirm
 ```
 
@@ -318,7 +321,7 @@ ud cart checkout --confirm
 
 ```bash
 # List current records
-ud domains dns records list example.com --format json
+ud domains dns records show example.com --format json
 
 # Add an A record (single-item shorthand)
 ud domains dns records add example.com --type A --values 1.2.3.4
@@ -350,9 +353,9 @@ ud marketplace offers respond --data '{"offers":[{"offerId":"o123","action":"acc
 
 # Manage leads
 ud marketplace leads list
-ud marketplace leads get mydomain.com
-ud marketplace leads messages --conversation-id 42
-ud marketplace leads send --conversation-id 42 --content "Thanks for your interest!"
+ud marketplace leads open mydomain.com
+ud marketplace leads messages list --conversation-id 42
+ud marketplace leads messages send --conversation-id 42 --content "Thanks for your interest!"
 ```
 
 ### Advanced usage

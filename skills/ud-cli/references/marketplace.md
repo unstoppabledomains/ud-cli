@@ -63,20 +63,20 @@ Leads are buyer-seller conversations about domains.
 # List all conversation leads
 ud marketplace leads list
 
-# Get or create a conversation for a domain
-ud marketplace leads get mydomain.com
+# Inquire about a domain
+ud marketplace leads open mydomain.com
 
 # List messages in a conversation
-ud marketplace leads messages --conversation-id 42
+ud marketplace leads messages list --conversation-id 42
 
 # Send a message
-ud marketplace leads send --conversation-id 42 --content "Thanks for your interest!"
+ud marketplace leads messages send --conversation-id 42 --content "Thanks for your interest!"
 ```
 
 ### When to Use Leads
 
 - When a domain is `registered-listed-for-offers`, direct users to the `purchaseUrl` or use leads to contact the seller.
-- When a domain is `registered-not-for-sale` and `listingSettings.contactSellerEnabled` is true, use `ud marketplace leads get <domain>` to contact the owner.
+- When a domain is `registered-not-for-sale` and `listingSettings.contactSellerEnabled` is true, use `ud marketplace leads open <domain>` to contact the owner.
 
 ## Workflow: List → Sell
 
@@ -108,6 +108,6 @@ ud search premium-name --format json
 ud cart add premium-name.com
 
 # 4. Checkout
-ud cart get
+ud cart list
 ud cart checkout --confirm
 ```

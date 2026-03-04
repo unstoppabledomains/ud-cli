@@ -144,16 +144,16 @@ describe('domain commands', () => {
     expect(capturedBody!.domains).toEqual(['a.com', 'b.com']);
   });
 
-  // --- domains operations ---
+  // --- domains operations show ---
 
-  it('domains operations passes variadic domains', async () => {
+  it('domains operations show passes variadic domains', async () => {
     let capturedBody: Record<string, unknown> | null = null;
     mockFetchRoute('actions/ud_domain_pending_operations', (_url, init) => {
       capturedBody = JSON.parse(init?.body as string);
       return jsonResponse({ results: [{ domain: 'test.com', hasPendingOperations: false }] });
     });
 
-    await program.parseAsync(['node', 'ud', 'domains', 'operations', 'test.com']);
+    await program.parseAsync(['node', 'ud', 'domains', 'operations', 'show', 'test.com']);
 
     expect(capturedBody).toBeTruthy();
     // ud_domain_pending_operations spec: domains is object[] with {name}

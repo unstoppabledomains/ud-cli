@@ -42,7 +42,7 @@ ud tlds                                  # List available TLDs
 ud domains list                          # List your domains
 ud domains get <domains...>              # Detailed domain info
 ud domains push <domains...>             # Transfer to another user (requires --otp-code)
-ud domains operations <domains...>       # Check pending operations
+ud domains operations show <domains...>  # Show pending operations
 ```
 
 ### Domain Settings
@@ -57,7 +57,7 @@ ud domains auto-renewal update <domains...> --enabled true|false
 ### DNS Records
 
 ```bash
-ud domains dns records list <domain>
+ud domains dns records show <domain>
 ud domains dns records add <domain> --type A --values 1.2.3.4
 ud domains dns records update            # Update by record ID (use --data)
 ud domains dns records remove            # Remove by record ID (use --data)
@@ -67,7 +67,7 @@ ud domains dns records remove-all <domains...> --confirm
 ### DNS Nameservers
 
 ```bash
-ud domains dns nameservers list <domain>
+ud domains dns nameservers show <domain>
 ud domains dns nameservers set-custom    # 2-12 hostnames (use --data)
 ud domains dns nameservers set-default   # Re-enable UD DNS management
 ```
@@ -75,11 +75,11 @@ ud domains dns nameservers set-default   # Re-enable UD DNS management
 ### Hosting
 
 ```bash
-ud domains hosting redirects list <domain>
+ud domains hosting redirects show <domain>
 ud domains hosting redirects add         # 301/302 redirects (use --data)
 ud domains hosting redirects remove      # Remove redirect config
 ud domains hosting landers generate <domains...>   # AI landing page
-ud domains hosting landers status <domains...>     # Check generation
+ud domains hosting landers show <domains...>       # Show lander status
 ud domains hosting landers remove <domains...>     # Remove landing page
 ```
 
@@ -99,12 +99,12 @@ ud cart add listed <domains...>          # UD marketplace listing
 ud cart add afternic <domains...>        # Afternic marketplace
 ud cart add sedo <domains...>            # Sedo marketplace
 ud cart add renewal <domains...>         # Renew owned domains
-ud cart get                              # View cart with pricing
+ud cart list                             # View cart with pricing
 ud cart remove                           # Remove items
 ud cart checkout --confirm               # Complete purchase
 ud cart url                              # Get browser checkout URL
-ud cart payment-methods                  # List payment methods
-ud cart add-payment-method               # Get URL to add payment method
+ud cart payment-methods list              # List payment methods
+ud cart payment-methods add              # Get URL to add payment method
 ```
 
 ### Marketplace
@@ -116,9 +116,9 @@ ud marketplace listings cancel --confirm
 ud marketplace offers list
 ud marketplace offers respond            # Accept/reject offers (use --data)
 ud marketplace leads list
-ud marketplace leads get <domain>        # Get or create conversation
-ud marketplace leads messages            # List messages (--conversation-id)
-ud marketplace leads send                # Send message (--conversation-id --content)
+ud marketplace leads open <domain>       # Inquire about a domain
+ud marketplace leads messages list       # List messages (--conversation-id)
+ud marketplace leads messages send       # Send message (--conversation-id --content)
 ```
 
 ## Key Workflows
@@ -131,7 +131,7 @@ Quick version with smart add:
 ```bash
 ud search mybusiness --format json       # Check availability + marketplace info
 ud cart add mybusiness.com mybusiness.io  # Auto-detects correct cart type
-ud cart get                              # Review pricing
+ud cart list                             # Review pricing
 ud cart checkout --confirm               # Purchase
 ```
 
@@ -148,10 +148,10 @@ ud cart checkout --confirm
 ### DNS Setup
 
 ```bash
-ud domains dns nameservers list example.com   # Verify UD nameservers
-ud domains dns records list example.com
+ud domains dns nameservers show example.com   # Verify UD nameservers
+ud domains dns records show example.com
 ud domains dns records add example.com --type A --values 1.2.3.4
-ud domains operations example.com             # Track propagation
+ud domains operations show example.com        # Track propagation
 ```
 
 See detailed guides:
@@ -185,5 +185,5 @@ See detailed guides:
 - **401/403**: Re-authenticate with `ud auth login`
 - **Wrong cart tool**: Most common error. Check `marketplace.source` from search results. Use `ud cart add` (smart) to avoid this.
 - **Missing ICANN contact**: Required for DNS domains. Create with `ud domains contacts create`.
-- **DNS changes not appearing**: Changes are async. Check with `ud domains operations`.
-- **Checkout fails with no payment**: Use `ud cart payment-methods` to check, or `ud cart add-payment-method` to add one.
+- **DNS changes not appearing**: Changes are async. Check with `ud domains operations show`.
+- **Checkout fails with no payment**: Use `ud cart payment-methods list` to check, or `ud cart payment-methods add` to add one.

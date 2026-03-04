@@ -3,11 +3,11 @@
 ## Cart Operations
 
 ```bash
-ud cart get                    # View cart contents and pricing
+ud cart list                    # View cart contents and pricing
 ud cart remove                 # Remove items (use --data for item IDs)
 ud cart url                    # Get browser checkout URL
-ud cart payment-methods        # List saved cards and account balance
-ud cart add-payment-method     # Get URL to add a payment method
+ud cart payment-methods list        # List saved cards and account balance
+ud cart payment-methods add     # Get URL to add a payment method
 ```
 
 ## Adding to Cart
@@ -95,7 +95,7 @@ ud cart add renewal mysite.com --quantity 2
 ud cart add renewal mysite.com othersite.com
 
 # Check payment and complete
-ud cart payment-methods
+ud cart payment-methods list
 ud cart checkout --confirm
 ```
 
@@ -104,5 +104,5 @@ ud cart checkout --confirm
 - **Wrong cart tool**: Check `marketplace.source` from search results. Use smart `ud cart add` to avoid this.
 - **Missing ICANN contact**: Create one with `ud domains contacts create` before checkout.
 - **Contact in draft**: ID starts with `draft-`. Wait a few seconds and re-check with `ud domains contacts list`.
-- **No payment method**: Use `ud cart payment-methods` to verify, or `ud cart add-payment-method` to add one.
+- **No payment method**: Use `ud cart payment-methods list` to verify, or `ud cart payment-methods add` to add one.
 - **Insufficient balance**: Pass `paymentMethodId` in checkout `--data`.

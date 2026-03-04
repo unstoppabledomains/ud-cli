@@ -9,7 +9,7 @@ The most common workflow: search for domains, add to cart, and purchase.
 ```bash
 ud search mybusiness --format json
 ud cart add mybusiness.com mybusiness.io
-ud cart get
+ud cart list
 ud cart checkout --confirm
 ```
 
@@ -24,7 +24,7 @@ After `ud search`, each result includes `marketplace.source` and `marketplace.st
 | `unstoppable_domains` | `registered-listed-for-offers` | Cannot cart. Direct user to `purchaseUrl` to make an offer. |
 | `afternic` | `registered-listed-for-sale` | `ud cart add afternic <domain>` |
 | `sedo` | `registered-listed-for-sale` | `ud cart add sedo <domain>` |
-| any | `registered-not-for-sale` | Not purchasable. Contact seller via `ud marketplace leads get <domain>`. |
+| any | `registered-not-for-sale` | Not purchasable. Contact seller via `ud marketplace leads open <domain>`. |
 | any | `unavailable` or `invalid` | Not purchasable. Suggest alternatives. |
 
 Using the wrong cart command is the most common error. Smart `ud cart add` avoids this.
@@ -68,7 +68,7 @@ ud cart add registration mybusiness.com --quantity 3
 ### 3. Review Cart
 
 ```bash
-ud cart get
+ud cart list
 ```
 
 All prices are in **cents (USD)**: `5000` = $50.00.
@@ -77,10 +77,10 @@ All prices are in **cents (USD)**: `5000` = $50.00.
 
 ```bash
 # Check available payment methods
-ud cart payment-methods
+ud cart payment-methods list
 
 # Add a payment method if needed
-ud cart add-payment-method    # Returns URL to add card in browser
+ud cart payment-methods add   # Returns URL to add card in browser
 ```
 
 ### 5. Checkout

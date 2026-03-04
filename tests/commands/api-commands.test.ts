@@ -153,14 +153,14 @@ describe('api-commands integration', () => {
     expect(errorSpy).toHaveBeenCalled();
   });
 
-  it('cart get calls ud_cart_get', async () => {
+  it('cart list calls ud_cart_get', async () => {
     let called = false;
     mockFetchRoute('actions/ud_cart_get', () => {
       called = true;
       return jsonResponse({ items: [], total: 0 });
     });
 
-    await program.parseAsync(['node', 'ud', 'cart', 'get']);
+    await program.parseAsync(['node', 'ud', 'cart', 'list']);
     expect(called).toBe(true);
   });
 
@@ -178,14 +178,14 @@ describe('api-commands integration', () => {
     expect(capturedBody).toEqual({ includeDisabled: true });
   });
 
-  it('dns records list passes domain positional', async () => {
+  it('dns records show passes domain positional', async () => {
     let capturedBody: Record<string, unknown> | null = null;
     mockFetchRoute('actions/ud_dns_records_list', (_url, init) => {
       capturedBody = JSON.parse(init?.body as string);
       return jsonResponse({ records: [] });
     });
 
-    await program.parseAsync(['node', 'ud', 'domains', 'dns', 'records', 'list', 'example.com']);
+    await program.parseAsync(['node', 'ud', 'domains', 'dns', 'records', 'show', 'example.com']);
 
     expect(capturedBody).toBeTruthy();
     expect(capturedBody!.domain).toBe('example.com');
