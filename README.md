@@ -100,85 +100,85 @@ Invalid field names are rejected with an error and a hint to run `--fields` for 
 
 ```
 ud
-├── search <query>                    Search for available domains
-├── tlds                              List available TLDs
 ├── auth
 │   ├── login                         Authenticate (OAuth or API key)
 │   ├── logout                        Clear stored credentials
 │   └── status                        Check current auth status
+├── cart
+│   ├── add [domain...]               Smart add (auto-detects source)
+│   │   ├── afternic <domains...>     Add Afternic marketplace domains
+│   │   ├── listed <domains...>       Add marketplace-listed domains
+│   │   ├── registration <domains...> Add domains for registration
+│   │   ├── renewal <domains...>      Add domain renewals
+│   │   └── sedo <domains...>         Add Sedo marketplace domains
+│   ├── checkout                      Complete cart checkout
+│   ├── list                          List shopping cart with pricing
+│   ├── payment-methods
+│   │   ├── add                       Get URL to add payment method
+│   │   └── list                      List available payment methods
+│   ├── remove                        Remove items from cart
+│   └── url                           Get checkout URL
+├── completion                        Generate shell completion scripts
+├── config
+│   ├── get [command]                 Show saved defaults
+│   ├── reset <command> [key]         Remove saved defaults
+│   └── set <command> <key> <value>   Save a default option
 ├── domains
-│   ├── list                          List portfolio domains
-│   ├── get <domains...>              Get detailed domain info
-│   ├── push <domains...>             Push domains to another user
-│   ├── operations
-│   │   └── show <domains...>         Show pending operations
-│   ├── tags
-│   │   ├── add <domains...>          Add tags to domains
-│   │   └── remove <domains...>       Remove tags from domains
-│   ├── flags
-│   │   └── update <domains...>       Update domain flags
 │   ├── auto-renewal
 │   │   └── update <domains...>       Toggle auto-renewal
 │   ├── contacts
-│   │   ├── list                      List ICANN contacts
-│   │   └── create                    Create ICANN contact
+│   │   ├── create                    Create ICANN contact
+│   │   └── list                      List ICANN contacts
 │   ├── dns
-│   │   ├── records
-│   │   │   ├── show <domain>         Show DNS records
-│   │   │   ├── add <domain>          Add DNS records
-│   │   │   ├── update                Update DNS records
-│   │   │   ├── remove                Remove DNS records
-│   │   │   └── remove-all <domains...>  Remove all DNS records
-│   │   └── nameservers
-│   │       ├── show <domain>         Show nameservers
-│   │       ├── set-custom            Set custom nameservers
-│   │       └── set-default           Reset to default nameservers
-│   └── hosting
-│       ├── redirects
-│       │   ├── show <domain>         Show redirect configurations
-│       │   ├── add                   Add redirect configuration
-│       │   └── remove                Remove redirect configuration
-│       └── landers
-│           ├── generate <domains...> Generate AI landing page
-│           ├── show <domains...>     Show lander status
-│           └── remove <domains...>   Remove AI landing page
-├── cart
-│   ├── list                          List shopping cart with pricing
-│   ├── remove                        Remove items from cart
-│   ├── checkout                      Complete cart checkout
-│   ├── url                           Get checkout URL
-│   ├── payment-methods
-│   │   ├── list                      List available payment methods
-│   │   └── add                       Get URL to add payment method
-│   └── add [domain...]               Smart add (auto-detects source)
-│       ├── registration <domains...> Add domains for registration
-│       ├── listed <domains...>       Add marketplace-listed domains
-│       ├── afternic <domains...>     Add Afternic marketplace domains
-│       ├── sedo <domains...>         Add Sedo marketplace domains
-│       └── renewal <domains...>      Add domain renewals
-├── marketplace
-│   ├── listings
-│   │   ├── create <domains...>       Create marketplace listings
-│   │   ├── update                    Update marketplace listings
-│   │   └── cancel                    Cancel listings
-│   ├── offers
-│   │   ├── list                      List marketplace offers
-│   │   └── respond                   Respond to marketplace offers
-│   └── leads
-│       ├── list                      List domain conversation leads
-│       ├── open <domain>             Inquire about a domain
-│       └── messages
-│           ├── list                  List messages in a conversation
-│           └── send                  Send a message in a conversation
-├── config
-│   ├── set <command> <key> <value>   Save a default option
-│   ├── get [command]                 Show saved defaults
-│   └── reset <command> [key]         Remove saved defaults
-├── skill
-│   └── install                       Install Claude Code skill
+│   │   ├── nameservers
+│   │   │   ├── set-custom            Set custom nameservers
+│   │   │   ├── set-default           Reset to default nameservers
+│   │   │   └── show <domain>         Show nameservers
+│   │   └── records
+│   │       ├── add <domain>          Add DNS records
+│   │       ├── remove                Remove DNS records
+│   │       ├── remove-all <domains...>  Remove all DNS records
+│   │       ├── show <domain>         Show DNS records
+│   │       └── update                Update DNS records
+│   ├── flags
+│   │   └── update <domains...>       Update domain flags
+│   ├── get <domains...>              Get detailed domain info
+│   ├── hosting
+│   │   ├── landers
+│   │   │   ├── generate <domains...> Generate AI landing page
+│   │   │   ├── remove <domains...>   Remove AI landing page
+│   │   │   └── show <domains...>     Show lander status
+│   │   └── redirects
+│   │       ├── add                   Add redirect configuration
+│   │       ├── remove                Remove redirect configuration
+│   │       └── show <domain>         Show redirect configurations
+│   ├── list                          List portfolio domains
+│   ├── operations
+│   │   └── show <domains...>         Show pending operations
+│   ├── push <domains...>             Push domains to another user
+│   └── tags
+│       ├── add <domains...>          Add tags to domains
+│       └── remove <domains...>       Remove tags from domains
 ├── env
-│   ├── show                          Show current environment
-│   └── set <environment>             Switch default environment
+│   ├── set <environment>             Switch default environment
+│   └── show                          Show current environment
+├── install                           Install shell completions (+ --skills for agent skill)
+├── marketplace
+│   ├── leads
+│   │   ├── list                      List domain conversation leads
+│   │   ├── messages
+│   │   │   ├── list                  List messages in a conversation
+│   │   │   └── send                  Send a message in a conversation
+│   │   └── open <domain>             Inquire about a domain
+│   ├── listings
+│   │   ├── cancel                    Cancel listings
+│   │   ├── create <domains...>       Create marketplace listings
+│   │   └── update                    Update marketplace listings
+│   └── offers
+│       ├── list                      List marketplace offers
+│       └── respond                   Respond to marketplace offers
+├── search <query>                    Search for available domains
+├── tlds                              List available TLDs
 └── update
     └── check                         Check for updates
 ```
@@ -398,10 +398,12 @@ npx skills add unstoppabledomains/ud-cli
 If you already have the CLI installed:
 
 ```bash
-ud skill install
+ud install --skills
 ```
 
 Both methods copy the skill to `.claude/skills/ud-cli/` (or the equivalent for your agent). The skill covers search, DNS, cart, marketplace, and all other ud-cli workflows.
+
+The `ud install` command also sets up shell tab-completion (auto-detects your shell). Use `--skills-target <dir>` to install to a specific directory instead of the current one.
 
 For skills-less operation, agents can also read `ud --help` directly.
 
