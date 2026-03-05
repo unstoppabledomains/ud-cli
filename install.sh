@@ -237,8 +237,9 @@ main() {
 
   echo
   info "Get started:"
-  echo "  ud auth login"
-  echo "  ud domains list"
+  echo "  ud auth login              # sign in with existing account"
+  echo "  ud auth signup             # or create a new account"
+  echo "  ud search my-domain.com    # search for domains"
 }
 
 main
