@@ -274,10 +274,33 @@ describe('command-hooks', () => {
       }
     });
 
-    it('cart get uses postActionHint with CHECKOUT_HINT', () => {
+    it('cart get uses postActionHint with checkout and payment tips', () => {
       const hooks = getHooks('ud_cart_get');
+      expect(typeof hooks?.postActionHint).toBe('function');
+      const hint = stripAnsi((hooks!.postActionHint as () => string)());
+      expect(hint).toContain('ud cart checkout');
+      expect(hint).toContain('ud cart payment-methods add');
+    });
+
+    it('payment methods list uses postActionHint with add payment tip', () => {
+      const hooks = getHooks('ud_cart_get_payment_methods');
       expect(typeof hooks?.postActionHint).toBe('string');
-      expect(stripAnsi(hooks!.postActionHint as string)).toContain('ud cart checkout');
+      expect(stripAnsi(hooks!.postActionHint as string)).toContain('ud cart payment-methods add');
+    });
+
+    it('cart get url has magicLinkFields for checkoutUrl', () => {
+      const hooks = getHooks('ud_cart_get_url');
+      expect(hooks?.magicLinkFields).toEqual(['checkoutUrl']);
+    });
+
+    it('cart add payment method url has magicLinkFields for url', () => {
+      const hooks = getHooks('ud_cart_add_payment_method_url');
+      expect(hooks?.magicLinkFields).toEqual(['url']);
+    });
+
+    it('cart checkout has preAction hook', () => {
+      const hooks = getHooks('ud_cart_checkout');
+      expect(typeof hooks?.preAction).toBe('function');
     });
 
     it('leads list uses postActionHint with formatLeadMessagesHint', () => {

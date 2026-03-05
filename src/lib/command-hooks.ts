@@ -5,6 +5,12 @@
 
 import chalk from 'chalk';
 
+/** Context passed to preAction hooks for dependency injection. */
+export interface PreActionContext {
+  callAction: (toolName: string, params: Record<string, unknown>) => Promise<unknown>;
+  createMagicLinkUrl: (url: string) => Promise<string>;
+}
+
 export interface CommandHooks {
   /** Require --confirm flag or interactive prompt before executing. */
   requireConfirm?: {
@@ -36,6 +42,10 @@ export interface CommandHooks {
   showCartHint?: boolean;
   /** Post-action hint shown after a successful API call. Static string or dynamic function. */
   postActionHint?: string | ((result: unknown) => string);
+  /** Response field paths containing URLs to wrap in magic links for session handoff. */
+  magicLinkFields?: string[];
+  /** Async pre-action check that runs before confirmation. Can abort the command. */
+  preAction?: (ctx: PreActionContext) => Promise<{ message?: string; abort?: boolean } | void>;
 }
 
 /**
@@ -93,8 +103,53 @@ function extractFirstDomain(result: unknown): string | undefined {
 
 export const VIEW_CART_HINT = chalk.dim('\nTip: View your cart with: ud cart list');
 export const CHECKOUT_HINT = chalk.dim('\nTip: Ready to buy? Run: ud cart checkout');
+const ADD_PAYMENT_HINT = chalk.dim('\nTip: Add a payment method: ud cart payment-methods add');
 const VERIFY_PORTFOLIO_HINT = chalk.dim('\nTip: Verify your portfolio: ud domains list');
 const OFFERS_LIST_HINT = chalk.dim('\nTip: View your offers: ud marketplace offers list');
+
+/** cart list → checkout + payment method tips */
+function formatCartViewHint(): string {
+  return CHECKOUT_HINT + ADD_PAYMENT_HINT;
+}
+
+/** checkout pre-action: check for payment methods / credits before proceeding */
+async function checkoutPreAction(
+  ctx: PreActionContext,
+): Promise<{ message?: string; abort?: boolean } | void> {
+  try {
+    const result = await ctx.callAction('ud_cart_get_payment_methods', {}) as Record<string, unknown>;
+    const savedCards = result.savedCards as unknown[] | undefined;
+    const summary = result.summary as Record<string, unknown> | undefined;
+    const totalCredits = (summary?.totalCredits as number) ?? 0;
+
+    const hasCards = Array.isArray(savedCards) && savedCards.length > 0;
+    const hasCredits = totalCredits > 0;
+
+    if (!hasCards && !hasCredits) {
+      // No payment method or credits — redirect to browser checkout
+      let checkoutLine = '';
+      try {
+        const urlResult = await ctx.callAction('ud_cart_get_url', {}) as Record<string, unknown>;
+        const checkoutUrl = urlResult.checkoutUrl as string | undefined;
+        if (checkoutUrl) {
+          const magicUrl = await ctx.createMagicLinkUrl(checkoutUrl);
+          checkoutLine = `\n\n  ${magicUrl}`;
+        }
+      } catch {
+        // Fall through without checkout link
+      }
+
+      return {
+        abort: true,
+        message: chalk.yellow('No saved payment method or account credits found.') +
+          '\nCheckout requires a visit to the website.' + checkoutLine +
+          chalk.dim('\n\nTo skip this step next time, save a card: ud cart payment-methods add'),
+      };
+    }
+  } catch {
+    // If the pre-check fails, let checkout proceed normally
+  }
+}
 
 /** domains list → get details */
 function formatPortfolioNextHint(result: unknown): string {
@@ -230,6 +285,7 @@ const HOOKS: Record<string, CommandHooks> = {
       message: 'Are you sure you want to complete this purchase? Review your cart with: ud cart list',
     },
     postActionHint: formatPostCheckoutHint,
+    preAction: checkoutPreAction,
   },
   ud_listing_cancel: {
     requireConfirm: {
@@ -247,7 +303,10 @@ const HOOKS: Record<string, CommandHooks> = {
     transformBody: makePriceTransformer('listings'),
     postActionHint: formatVerifyDomainHint,
   },
-  ud_cart_get: { postActionHint: CHECKOUT_HINT },
+  ud_cart_get: { postActionHint: formatCartViewHint },
+  ud_cart_get_url: { magicLinkFields: ['checkoutUrl'] },
+  ud_cart_add_payment_method_url: { magicLinkFields: ['url'] },
+  ud_cart_get_payment_methods: { postActionHint: ADD_PAYMENT_HINT },
   ud_cart_remove: { postActionHint: VIEW_CART_HINT },
   ud_cart_add_domain_registration: { postActionHint: VIEW_CART_HINT },
   ud_cart_add_domain_listed: { postActionHint: VIEW_CART_HINT },

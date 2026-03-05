@@ -192,4 +192,4 @@ export async function verifyAuth(): Promise<AuthStatus> {
   }
 }
 
-export { apiBaseUrl, mcpBaseUrl };
+export { apiBaseUrl, mcpBaseUrl, request as apiRequest };

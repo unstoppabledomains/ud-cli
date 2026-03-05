@@ -485,6 +485,23 @@ const DETAIL_CONFIGS: Record<string, DetailConfig> = {
       { title: 'Operations', arrayPath: 'operations', columns: ['id', 'type', 'status', 'createdAt', 'updatedAt', 'errorCode'] },
     ],
   },
+
+  ud_cart_get_payment_methods: {
+    source: 'response',
+    sections: [
+      {
+        title: 'Account Credits',
+        fields: [
+          { label: 'Account Balance', path: 'accountBalance.amountFormatted' },
+          { label: 'Promo Credits', path: 'promoCredits.amountFormatted' },
+          { label: 'Total Credits', path: 'summary.totalCreditsFormatted' },
+        ],
+      },
+    ],
+    subTables: [
+      { title: 'Saved Cards', arrayPath: 'savedCards', columns: ['id', 'brand', 'last4', 'expMonth', 'expYear', 'isDefault'] },
+    ],
+  },
 };
 
 function formatDetail(obj: Record<string, unknown>, config: DetailConfig): string {

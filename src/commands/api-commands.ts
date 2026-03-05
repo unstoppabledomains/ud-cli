@@ -13,6 +13,8 @@ import { getCommandDefaults } from '../lib/config.js';
 import { formatOutput, formatError, formatFieldsList, getKnownFields } from '../lib/formatter.js';
 import { createSpinner } from '../lib/spinner.js';
 import { getHooks, formatOperationHint, formatCartHint, formatFailureHints } from '../lib/command-hooks.js';
+import type { PreActionContext } from '../lib/command-hooks.js';
+import { applyMagicLinks, createMagicLinkUrl } from '../lib/magic-link.js';
 import { promptInput, promptConfirm } from '../lib/prompt.js';
 import { readFile } from 'node:fs/promises';
 import chalk from 'chalk';
@@ -293,6 +295,14 @@ function registerRoute(
       }
     }
 
+    // Pre-call hooks: preAction (e.g., checkout payment method check)
+    if (hooks?.preAction) {
+      const ctx: PreActionContext = { callAction, createMagicLinkUrl };
+      const preResult = await hooks.preAction(ctx);
+      if (preResult?.message) console.log(preResult.message);
+      if (preResult?.abort) return;
+    }
+
     // Pre-call hooks: requireConfirm
     if (hooks?.requireConfirm && !opts.confirm) {
       const confirmed = await promptConfirm(hooks.requireConfirm.message);
@@ -328,6 +338,11 @@ function registerRoute(
     try {
       const result = await callAction(route.toolName, body);
       spinner.stop();
+
+      // Post-call hook: wrap URL fields in magic links for session handoff
+      if (hooks?.magicLinkFields && typeof result === 'object' && result !== null) {
+        await applyMagicLinks(result as Record<string, unknown>, hooks.magicLinkFields);
+      }
 
       if (!quiet) {
         const output = formatOutput(result, {
