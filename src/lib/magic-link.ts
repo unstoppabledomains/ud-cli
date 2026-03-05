@@ -6,6 +6,7 @@
  * Falls back to the raw URL on any error (auth, rate-limit, network).
  */
 
+import { spawn } from 'node:child_process';
 import { apiBaseUrl, apiRequest } from './api.js';
 
 /**
@@ -53,8 +54,18 @@ export async function createMagicLinkUrl(redirectUrl: string): Promise<string> {
 }
 
 /**
+ * Open a URL in the user's default browser. Fire-and-forget.
+ */
+export function openInBrowser(url: string): void {
+  const cmd = process.platform === 'win32' ? 'start' : process.platform === 'darwin' ? 'open' : 'xdg-open';
+  spawn(cmd, [url], { stdio: 'ignore', detached: true }).unref();
+}
+
+/**
  * Walk an API result object and replace URL values at the given field paths
  * with magic link URLs. Paths support dot notation (e.g., 'nested.url').
+ *
+ * Automatically opens converted magic links in the user's default browser.
  */
 export async function applyMagicLinks(
   result: Record<string, unknown>,
@@ -64,11 +75,11 @@ export async function applyMagicLinks(
     const segments = path.split('.');
     const lastSeg = segments.pop()!;
 
-    let obj: Record<string, unknown> = result;
+    let obj: Record<string, unknown> | undefined = result;
     for (const seg of segments) {
       const next = obj[seg];
       if (!next || typeof next !== 'object') {
-        obj = undefined as unknown as Record<string, unknown>;
+        obj = undefined;
         break;
       }
       obj = next as Record<string, unknown>;
@@ -86,6 +97,12 @@ export async function applyMagicLinks(
       continue;
     }
 
-    obj[lastSeg] = await createMagicLinkUrl(value);
+    const converted = await createMagicLinkUrl(value);
+    obj[lastSeg] = converted;
+
+    // Auto-open magic links in the browser to reduce friction
+    if (converted !== value && isMagicLinkUrl(converted)) {
+      openInBrowser(converted);
+    }
   }
 }

@@ -1,8 +1,19 @@
+import { jest } from '@jest/globals';
 import { config, clearEnvOverride } from '../../src/lib/config.js';
 import { _setStore } from '../../src/lib/credentials.js';
 import { createMemoryStore } from '../helpers/memoryStore.js';
 import { setupMockFetch, teardownMockFetch, mockFetchRoute, jsonResponse } from '../helpers/mockFetch.js';
-import { isMagicLinkUrl, createMagicLinkUrl, applyMagicLinks } from '../../src/lib/magic-link.js';
+
+// Mock child_process.spawn before importing magic-link (which uses it)
+const unrefMock = jest.fn();
+const spawnMock = jest.fn(() => ({ unref: unrefMock }));
+jest.unstable_mockModule('node:child_process', () => ({
+  spawn: spawnMock,
+}));
+
+// Dynamic import so the module picks up the child_process mock
+const { isMagicLinkUrl, createMagicLinkUrl, applyMagicLinks, openInBrowser } =
+  await import('../../src/lib/magic-link.js');
 
 describe('magic-link', () => {
   let memStore: ReturnType<typeof createMemoryStore>;
@@ -15,6 +26,8 @@ describe('magic-link', () => {
     memStore = createMemoryStore();
     _setStore(memStore);
     setupMockFetch();
+    spawnMock.mockClear();
+    unrefMock.mockClear();
   });
 
   afterEach(() => {
@@ -105,6 +118,20 @@ describe('magic-link', () => {
     });
   });
 
+  describe('openInBrowser', () => {
+    it('spawns the platform-appropriate command', () => {
+      openInBrowser('https://example.com');
+      expect(spawnMock).toHaveBeenCalledTimes(1);
+      const [cmd, args, opts] = spawnMock.mock.calls[0] as unknown as [string, string[], Record<string, unknown>];
+      // On macOS (darwin) it should use 'open'
+      expect(['open', 'xdg-open', 'start']).toContain(cmd);
+      expect(args).toEqual(['https://example.com']);
+      expect(opts.stdio).toBe('ignore');
+      expect(opts.detached).toBe(true);
+      expect(unrefMock).toHaveBeenCalled();
+    });
+  });
+
   describe('applyMagicLinks', () => {
     beforeEach(async () => {
       await memStore.saveApiKey('ud_mcp_' + 'a'.repeat(64), 'production');
@@ -122,6 +149,30 @@ describe('magic-link', () => {
 
       expect(result.checkoutUrl).toContain('token=tok');
       expect(result.otherField).toBe('keep');
+    });
+
+    it('auto-opens converted magic links in the browser', async () => {
+      const result: Record<string, unknown> = {
+        checkoutUrl: 'https://ud.me/checkout/abc',
+      };
+      await applyMagicLinks(result, ['checkoutUrl']);
+
+      expect(spawnMock).toHaveBeenCalledTimes(1);
+      const [, args] = spawnMock.mock.calls[0] as unknown as [string, string[]];
+      expect(args[0]).toContain('token=tok');
+    });
+
+    it('does not open browser when URL is unchanged (fallback)', async () => {
+      // No auth → magic link creation falls back to raw URL
+      teardownMockFetch();
+      setupMockFetch();
+      // No route mocked → will fail and return raw URL
+      const result: Record<string, unknown> = {
+        checkoutUrl: 'https://ud.me/checkout/abc',
+      };
+      await applyMagicLinks(result, ['checkoutUrl']);
+
+      expect(spawnMock).not.toHaveBeenCalled();
     });
 
     it('handles dotted paths', async () => {
