@@ -7,7 +7,7 @@ import { parseSpec } from '../lib/spec-parser.js';
 import type { CommandSpec } from '../lib/spec-parser.js';
 import { COMMAND_ROUTES } from '../lib/command-registry.js';
 import type { CommandRoute } from '../lib/command-registry.js';
-import { buildParams, specParamToOption } from '../lib/param-builder.js';
+import { buildParams, specParamToOption, specParamToNestedOptions } from '../lib/param-builder.js';
 import { callAction } from '../lib/api.js';
 import { getCommandDefaults } from '../lib/config.js';
 import { formatOutput, formatError, formatFieldsList, getKnownFields } from '../lib/formatter.js';
@@ -178,6 +178,13 @@ function registerRoute(
         }
       }
     }
+
+    // Add flattened flags for nested object params (e.g., phone → --phone-dialing-prefix)
+    for (const param of spec.params) {
+      for (const nested of specParamToNestedOptions(param, skipNames)) {
+        cmd.option(nested.flags, nested.description);
+      }
+    }
   }
 
   // --data and --file escape hatches
@@ -297,7 +304,7 @@ function registerRoute(
 
     // Pre-call hooks: preAction (e.g., checkout payment method check)
     if (hooks?.preAction) {
-      const ctx: PreActionContext = { callAction, createMagicLinkUrl, promptInput };
+      const ctx: PreActionContext = { callAction, createMagicLinkUrl, promptInput, body };
       const preResult = await hooks.preAction(ctx);
       if (preResult?.message) console.log(preResult.message);
       if (preResult?.abort) return;
@@ -345,12 +352,14 @@ function registerRoute(
       }
 
       if (!quiet) {
-        const output = formatOutput(result, {
-          format,
-          responsePattern: spec?.responsePattern,
-          toolName: route.toolName,
-          fields,
-        });
+        const output = (hooks?.formatResult && format === 'table')
+          ? hooks.formatResult(result)
+          : formatOutput(result, {
+              format,
+              responsePattern: spec?.responsePattern,
+              toolName: route.toolName,
+              fields,
+            });
         console.log(output);
 
         // Post-call hook: show failure hints for known error codes

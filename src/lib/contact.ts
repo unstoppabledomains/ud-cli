@@ -20,10 +20,13 @@ export interface ContactPromptContext {
 export async function promptContactCreation(
   ctx: ContactPromptContext,
   accountEmailHint?: string | null,
+  opts?: { skipHeader?: boolean },
 ): Promise<boolean> {
-  console.log(chalk.yellow('\nNo ICANN contact found.'));
-  console.log('DNS domains (.com, .org, etc.) require contact information for registration.');
-  console.log("Let's create one now.\n");
+  if (!opts?.skipHeader) {
+    console.log(chalk.yellow('\nNo ICANN contact found.'));
+    console.log('DNS domains (.com, .org, etc.) require contact information for registration.');
+    console.log("Let's create one now.\n");
+  }
 
   if (accountEmailHint) {
     console.log(chalk.dim(accountEmailHint) + '\n');

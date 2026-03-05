@@ -11,6 +11,7 @@ export interface PreActionContext {
   callAction: (toolName: string, params: Record<string, unknown>) => Promise<unknown>;
   createMagicLinkUrl: (url: string) => Promise<string>;
   promptInput: (message: string, opts?: { validate?: RegExp }) => Promise<string>;
+  body: Record<string, unknown>;
 }
 
 export interface CommandHooks {
@@ -46,6 +47,8 @@ export interface CommandHooks {
   postActionHint?: string | ((result: unknown) => string);
   /** Response field paths containing URLs to wrap in magic links for session handoff. */
   magicLinkFields?: string[];
+  /** Custom result formatter that replaces the default table/detail output. */
+  formatResult?: (result: unknown) => string;
   /** Async pre-action check that runs before confirmation. Can abort the command. */
   preAction?: (ctx: PreActionContext) => Promise<{ message?: string; abort?: boolean } | void>;
 }
@@ -198,6 +201,31 @@ async function checkoutPreAction(
   }
 }
 
+/**
+ * Pre-action for `ud domains contacts create`: run interactive prompts in TTY mode.
+ * In non-TTY mode, falls through to normal CLI-flag handling.
+ */
+async function contactCreatePreAction(
+  ctx: PreActionContext,
+): Promise<{ message?: string; abort?: boolean } | void> {
+  // Skip interactive prompts if CLI params were provided or non-TTY
+  const hasParams = Object.keys(ctx.body).length > 0;
+  if (!process.stdin.isTTY || hasParams) return;
+
+  const { promptContactCreation } = await import('./contact.js');
+  const created = await promptContactCreation(
+    { promptInput: ctx.promptInput, callAction: ctx.callAction },
+    undefined,
+    { skipHeader: true },
+  );
+
+  if (created) {
+    return { abort: true };
+  }
+
+  return { abort: true, message: 'Contact creation cancelled.' };
+}
+
 /** domains list → get details */
 function formatPortfolioNextHint(result: unknown): string {
   const domain = extractFirstDomain(result);
@@ -284,6 +312,25 @@ function formatLanderCheckHint(result: unknown): string {
   return chalk.dim(`\nTip: Check lander status: ud domains hosting landers show ${domain}`);
 }
 
+/** payment-methods add → browser-friendly message instead of raw URL table */
+function formatPaymentMethodResult(result: unknown): string {
+  const url = (result && typeof result === 'object')
+    ? (result as Record<string, unknown>).url as string | undefined
+    : undefined;
+
+  const lines: string[] = [
+    chalk.green('Opening payment method setup in your browser...'),
+  ];
+
+  if (url) {
+    lines.push(`\n\n  ${url}\n`);
+  }
+
+  lines.push(chalk.dim('\nOnce saved, check out from the CLI: ud cart checkout'));
+
+  return lines.join('');
+}
+
 /** operations show → conditional next step */
 function formatOperationsNextHint(result: unknown): string {
   if (!result || typeof result !== 'object') return '';
@@ -352,7 +399,8 @@ const HOOKS: Record<string, CommandHooks> = {
   },
   ud_cart_get: { postActionHint: formatCartViewHint },
   ud_cart_get_url: { magicLinkFields: ['checkoutUrl'] },
-  ud_cart_add_payment_method_url: { magicLinkFields: ['url'] },
+  ud_cart_add_payment_method_url: { magicLinkFields: ['url'], formatResult: formatPaymentMethodResult },
+  ud_contact_create: { preAction: contactCreatePreAction },
   ud_cart_get_payment_methods: { postActionHint: ADD_PAYMENT_HINT },
   ud_cart_remove: { postActionHint: VIEW_CART_HINT },
   ud_cart_add_domain_registration: { postActionHint: VIEW_CART_HINT },

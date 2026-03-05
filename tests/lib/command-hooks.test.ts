@@ -335,6 +335,7 @@ describe('command-hooks', () => {
         },
         createMagicLinkUrl: async (url: string) => `https://magic.example.com?token=tok&redirect=${encodeURIComponent(url)}`,
         promptInput: noopPrompt,
+        body: {},
       };
       const result = await preAction(ctx);
       expect(result).toBeDefined();
@@ -356,6 +357,7 @@ describe('command-hooks', () => {
         },
         createMagicLinkUrl: async (url: string) => url,
         promptInput: noopPrompt,
+        body: {},
       };
       const result = await preAction(ctx);
       expect(result).toBeUndefined();
@@ -374,6 +376,7 @@ describe('command-hooks', () => {
         },
         createMagicLinkUrl: async (url: string) => url,
         promptInput: noopPrompt,
+        body: {},
       };
       const result = await preAction(ctx);
       expect(result).toBeUndefined();
@@ -384,6 +387,7 @@ describe('command-hooks', () => {
         callAction: async () => { throw new Error('network error'); },
         createMagicLinkUrl: async (url: string) => url,
         promptInput: noopPrompt,
+        body: {},
       };
       const result = await preAction(ctx);
       expect(result).toBeUndefined();
@@ -405,6 +409,7 @@ describe('command-hooks', () => {
         },
         createMagicLinkUrl: async (url: string) => url,
         promptInput: noopPrompt,
+        body: {},
       };
       const result = await preAction(ctx);
       expect(result).toBeDefined();
@@ -428,6 +433,7 @@ describe('command-hooks', () => {
         },
         createMagicLinkUrl: async (url: string) => url,
         promptInput: noopPrompt,
+        body: {},
       };
       const result = await preAction(ctx);
       expect(result).toBeUndefined();
@@ -451,6 +457,7 @@ describe('command-hooks', () => {
         },
         createMagicLinkUrl: async (url: string) => url,
         promptInput: noopPrompt,
+        body: {},
       };
       const result = await preAction(ctx);
       expect(result!.abort).toBe(true);
