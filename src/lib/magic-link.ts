@@ -58,10 +58,13 @@ export async function createMagicLinkUrl(redirectUrl: string): Promise<string> {
 
 /**
  * Open a URL in the user's default browser. Fire-and-forget.
+ * No-ops in non-interactive (headless/CI) environments.
  */
 export function openInBrowser(url: string): void {
-  const cmd = process.platform === 'win32' ? 'start' : process.platform === 'darwin' ? 'open' : 'xdg-open';
-  spawn(cmd, [url], { stdio: 'ignore', detached: true }).unref();
+  if (!process.stdout.isTTY) return;
+  const isWin = process.platform === 'win32';
+  const cmd = isWin ? 'start' : process.platform === 'darwin' ? 'open' : 'xdg-open';
+  spawn(cmd, [url], { stdio: 'ignore', detached: true, shell: isWin }).unref();
 }
 
 /**

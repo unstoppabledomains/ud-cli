@@ -277,7 +277,7 @@ describe('command-hooks', () => {
     it('cart get uses postActionHint with checkout and payment tips', () => {
       const hooks = getHooks('ud_cart_get');
       expect(typeof hooks?.postActionHint).toBe('function');
-      const hint = stripAnsi((hooks!.postActionHint as () => string)());
+      const hint = stripAnsi((hooks!.postActionHint as (r: unknown) => string)({}));
       expect(hint).toContain('ud cart checkout');
       expect(hint).toContain('ud cart payment-methods add');
     });

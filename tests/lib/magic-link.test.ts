@@ -17,6 +17,7 @@ const { isMagicLinkUrl, createMagicLinkUrl, applyMagicLinks, openInBrowser } =
 
 describe('magic-link', () => {
   let memStore: ReturnType<typeof createMemoryStore>;
+  const origIsTTY = process.stdout.isTTY;
 
   beforeEach(() => {
     clearEnvOverride();
@@ -28,10 +29,13 @@ describe('magic-link', () => {
     setupMockFetch();
     spawnMock.mockClear();
     unrefMock.mockClear();
+    // Simulate interactive terminal so openInBrowser fires
+    Object.defineProperty(process.stdout, 'isTTY', { value: true, configurable: true });
   });
 
   afterEach(() => {
     teardownMockFetch();
+    Object.defineProperty(process.stdout, 'isTTY', { value: origIsTTY, configurable: true });
   });
 
   describe('isMagicLinkUrl', () => {
@@ -129,6 +133,12 @@ describe('magic-link', () => {
       expect(opts.stdio).toBe('ignore');
       expect(opts.detached).toBe(true);
       expect(unrefMock).toHaveBeenCalled();
+    });
+
+    it('no-ops in non-TTY environments', () => {
+      Object.defineProperty(process.stdout, 'isTTY', { value: false, configurable: true });
+      openInBrowser('https://example.com');
+      expect(spawnMock).not.toHaveBeenCalled();
     });
   });
 

@@ -109,7 +109,7 @@ const VERIFY_PORTFOLIO_HINT = chalk.dim('\nTip: Verify your portfolio: ud domain
 const OFFERS_LIST_HINT = chalk.dim('\nTip: View your offers: ud marketplace offers list');
 
 /** cart list → checkout + payment method tips */
-function formatCartViewHint(): string {
+function formatCartViewHint(_result: unknown): string {
   return CHECKOUT_HINT + ADD_PAYMENT_HINT;
 }
 
