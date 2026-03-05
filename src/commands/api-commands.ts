@@ -7,12 +7,14 @@ import { parseSpec } from '../lib/spec-parser.js';
 import type { CommandSpec } from '../lib/spec-parser.js';
 import { COMMAND_ROUTES } from '../lib/command-registry.js';
 import type { CommandRoute } from '../lib/command-registry.js';
-import { buildParams, specParamToOption } from '../lib/param-builder.js';
+import { buildParams, specParamToOption, specParamToNestedOptions } from '../lib/param-builder.js';
 import { callAction } from '../lib/api.js';
 import { getCommandDefaults } from '../lib/config.js';
 import { formatOutput, formatError, formatFieldsList, getKnownFields } from '../lib/formatter.js';
 import { createSpinner } from '../lib/spinner.js';
 import { getHooks, formatOperationHint, formatCartHint, formatFailureHints } from '../lib/command-hooks.js';
+import type { PreActionContext } from '../lib/command-hooks.js';
+import { applyMagicLinks, createMagicLinkUrl } from '../lib/magic-link.js';
 import { promptInput, promptConfirm } from '../lib/prompt.js';
 import { readFile } from 'node:fs/promises';
 import chalk from 'chalk';
@@ -176,6 +178,13 @@ function registerRoute(
         }
       }
     }
+
+    // Add flattened flags for nested object params (e.g., phone → --phone-dialing-prefix)
+    for (const param of spec.params) {
+      for (const nested of specParamToNestedOptions(param, skipNames)) {
+        cmd.option(nested.flags, nested.description);
+      }
+    }
   }
 
   // --data and --file escape hatches
@@ -293,6 +302,14 @@ function registerRoute(
       }
     }
 
+    // Pre-call hooks: preAction (e.g., checkout payment method check)
+    if (hooks?.preAction) {
+      const ctx: PreActionContext = { callAction, createMagicLinkUrl, promptInput, body };
+      const preResult = await hooks.preAction(ctx);
+      if (preResult?.message) console.log(preResult.message);
+      if (preResult?.abort) return;
+    }
+
     // Pre-call hooks: requireConfirm
     if (hooks?.requireConfirm && !opts.confirm) {
       const confirmed = await promptConfirm(hooks.requireConfirm.message);
@@ -329,13 +346,20 @@ function registerRoute(
       const result = await callAction(route.toolName, body);
       spinner.stop();
 
+      // Post-call hook: wrap URL fields in magic links for session handoff
+      if (hooks?.magicLinkFields && typeof result === 'object' && result !== null) {
+        await applyMagicLinks(result as Record<string, unknown>, hooks.magicLinkFields);
+      }
+
       if (!quiet) {
-        const output = formatOutput(result, {
-          format,
-          responsePattern: spec?.responsePattern,
-          toolName: route.toolName,
-          fields,
-        });
+        const output = (hooks?.formatResult && format === 'table')
+          ? hooks.formatResult(result)
+          : formatOutput(result, {
+              format,
+              responsePattern: spec?.responsePattern,
+              toolName: route.toolName,
+              fields,
+            });
         console.log(output);
 
         // Post-call hook: show failure hints for known error codes

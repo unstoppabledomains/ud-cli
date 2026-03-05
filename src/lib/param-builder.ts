@@ -85,6 +85,28 @@ export function buildParams(
     body[spec.name] = coerceValue(rawValue, spec);
   }
 
+  // Reconstruct nested objects from flattened flags (e.g., --phone-dialing-prefix → phone.dialingPrefix)
+  for (const spec of specParams) {
+    if (spec.type !== 'object' || !spec.properties || spec.properties.length === 0) continue;
+    if (body[spec.name] !== undefined) continue;
+
+    const nested: Record<string, unknown> = {};
+    let hasAny = false;
+
+    for (const child of spec.properties) {
+      const flatFlagName = `${specParamToFlagName(spec.name)}${child.name.charAt(0).toUpperCase()}${child.name.slice(1)}`;
+      const rawValue = flags[flatFlagName];
+      if (rawValue !== undefined) {
+        nested[child.name] = coerceValue(rawValue, child);
+        hasAny = true;
+      }
+    }
+
+    if (hasAny) {
+      body[spec.name] = nested;
+    }
+  }
+
   // Handle single-item shorthand for array-of-objects params.
   // If a param expects records: [{domain, type, values}] but the user
   // passed --type A --values 1.2.3.4 along with a positional domain,
@@ -168,10 +190,18 @@ function coerceValue(value: unknown, spec: ParamSpec): unknown {
 
 /**
  * Convert a camelCase spec param name to kebab-case flag name.
- * e.g. "pageSize" → "page-size", "discountCode" → "discount-code"
+ * e.g. "pageSize" → "page-size", "dialingPrefix" → "dialing-prefix"
+ *
+ * Also handles underscores (replaced with dashes) so names like "some_flag"
+ * become "some-flag". Not intended for UPPER_SNAKE_CASE — those top-level
+ * object properties are skipped by specParamToNestedOptions.
  */
 function specParamToFlagName(name: string): string {
-  return name.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase());
+  return name
+    .replace(/_/g, '-')
+    .replace(/[A-Z]/g, (m) => '-' + m.toLowerCase())
+    .replace(/^-/, '')    // strip leading dash from names starting with uppercase
+    .replace(/-{2,}/g, '-'); // collapse consecutive dashes
 }
 
 /**
@@ -184,7 +214,8 @@ export function specParamToOption(
 ): { flags: string; description: string } | null {
   if (skipNames.has(spec.name)) return null;
 
-  // Skip complex nested objects that should use --data
+  // Nested objects are flattened into prefixed flags (e.g., phone.dialingPrefix → --phone-dialing-prefix)
+  // so they are handled by specParamToNestedOptions below; skip the parent here.
   if (spec.type === 'object' && spec.properties && spec.properties.length > 0) return null;
   // Skip array-of-objects (handled by single-item shorthand or --data)
   if (spec.type === 'array' && spec.items?.type === 'object') return null;
@@ -202,4 +233,27 @@ export function specParamToOption(
   }
 
   return { flags, description };
+}
+
+/**
+ * Generate Commander option flags for nested object properties.
+ * e.g., phone: { dialingPrefix, number } → --phone-dialing-prefix, --phone-number
+ */
+export function specParamToNestedOptions(
+  spec: ParamSpec,
+  skipNames: Set<string>,
+): { flags: string; description: string; parentName: string; childName: string }[] {
+  if (skipNames.has(spec.name)) return [];
+  if (spec.type !== 'object' || !spec.properties || spec.properties.length === 0) return [];
+
+  return spec.properties.map((child) => {
+    const flagName = `${specParamToFlagName(spec.name)}-${specParamToFlagName(child.name)}`;
+    const flags = child.type === 'boolean' ? `--${flagName}` : `--${flagName} <${child.name}>`;
+    return {
+      flags,
+      description: child.description ?? '',
+      parentName: spec.name,
+      childName: child.name,
+    };
+  });
 }

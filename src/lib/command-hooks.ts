@@ -4,6 +4,15 @@
  */
 
 import chalk from 'chalk';
+import { openInBrowser, isMagicLinkUrl } from './magic-link.js';
+
+/** Context passed to preAction hooks for dependency injection. */
+export interface PreActionContext {
+  callAction: (toolName: string, params: Record<string, unknown>) => Promise<unknown>;
+  createMagicLinkUrl: (url: string) => Promise<string>;
+  promptInput: (message: string, opts?: { validate?: RegExp }) => Promise<string>;
+  body: Record<string, unknown>;
+}
 
 export interface CommandHooks {
   /** Require --confirm flag or interactive prompt before executing. */
@@ -36,6 +45,12 @@ export interface CommandHooks {
   showCartHint?: boolean;
   /** Post-action hint shown after a successful API call. Static string or dynamic function. */
   postActionHint?: string | ((result: unknown) => string);
+  /** Response field paths containing URLs to wrap in magic links for session handoff. */
+  magicLinkFields?: string[];
+  /** Custom result formatter that replaces the default table/detail output. */
+  formatResult?: (result: unknown) => string;
+  /** Async pre-action check that runs before confirmation. Can abort the command. */
+  preAction?: (ctx: PreActionContext) => Promise<{ message?: string; abort?: boolean } | void>;
 }
 
 /**
@@ -93,8 +108,123 @@ function extractFirstDomain(result: unknown): string | undefined {
 
 export const VIEW_CART_HINT = chalk.dim('\nTip: View your cart with: ud cart list');
 export const CHECKOUT_HINT = chalk.dim('\nTip: Ready to buy? Run: ud cart checkout');
+const ADD_PAYMENT_HINT = chalk.dim('\nTip: Add a payment method: ud cart payment-methods add');
 const VERIFY_PORTFOLIO_HINT = chalk.dim('\nTip: Verify your portfolio: ud domains list');
 const OFFERS_LIST_HINT = chalk.dim('\nTip: View your offers: ud marketplace offers list');
+
+/** cart list → checkout + payment method tips */
+function formatCartViewHint(_result: unknown): string {
+  return CHECKOUT_HINT + ADD_PAYMENT_HINT;
+}
+
+/**
+ * Checkout pre-action: verify payment methods and ICANN contacts before proceeding.
+ *
+ * 1. Payment check: abort with magic link if no cards/credits
+ * 2. Contact check: prompt for inline creation (TTY) or abort with hint (non-TTY)
+ *
+ * Fail-open design: if any check fails, checkout proceeds normally so users
+ * are never blocked by a pre-check error.
+ */
+async function checkoutPreAction(
+  ctx: PreActionContext,
+): Promise<{ message?: string; abort?: boolean } | void> {
+  try {
+    const result = await ctx.callAction('ud_cart_get_payment_methods', {}) as Record<string, unknown>;
+    const savedCards = result.savedCards as unknown[] | undefined;
+    const summary = result.summary as Record<string, unknown> | undefined;
+    const totalCredits = (summary?.totalCredits as number) ?? 0;
+
+    const hasCards = Array.isArray(savedCards) && savedCards.length > 0;
+    const hasCredits = totalCredits > 0;
+
+    if (!hasCards && !hasCredits) {
+      // No payment method or credits — redirect to browser checkout
+      let checkoutLine = '';
+      try {
+        const urlResult = await ctx.callAction('ud_cart_get_url', {}) as Record<string, unknown>;
+        const checkoutUrl = urlResult.checkoutUrl as string | undefined;
+        if (checkoutUrl) {
+          const magicUrl = await ctx.createMagicLinkUrl(checkoutUrl);
+          checkoutLine = `\n\n  ${magicUrl}`;
+          if (magicUrl !== checkoutUrl && isMagicLinkUrl(magicUrl)) {
+            openInBrowser(magicUrl);
+          }
+        }
+      } catch {
+        // Fall through without checkout link
+      }
+
+      return {
+        abort: true,
+        message: chalk.yellow('No saved payment method or account credits found.') +
+          '\nCheckout requires a visit to the website.' + checkoutLine +
+          chalk.dim('\n\nTo skip this step next time, save a card: ud cart payment-methods add'),
+      };
+    }
+  } catch {
+    // Fail-open: if the pre-check fails (network, auth, etc.), let checkout proceed normally
+  }
+
+  // --- ICANN contact check ---
+  try {
+    const contactResult = await ctx.callAction('ud_contacts_list', {}) as Record<string, unknown>;
+    const contacts = contactResult.contacts as unknown[] | undefined;
+
+    if (!Array.isArray(contacts) || contacts.length === 0) {
+      if (!process.stdin.isTTY) {
+        return {
+          abort: true,
+          message: chalk.yellow('No ICANN contact found.') +
+            '\nDNS domains (.com, .org, etc.) require contact information for registration.' +
+            chalk.dim('\n\nCreate a contact first: ud domains contacts create'),
+        };
+      }
+
+      // Interactive: prompt for inline contact creation
+      const { promptContactCreation } = await import('./contact.js');
+      const created = await promptContactCreation(
+        { promptInput: ctx.promptInput, callAction: ctx.callAction },
+        contactResult.accountEmailHint as string | undefined,
+      );
+
+      if (!created) {
+        return {
+          abort: true,
+          message: chalk.yellow('ICANN contact is required for DNS domain checkout.') +
+            chalk.dim('\nCreate one with: ud domains contacts create'),
+        };
+      }
+    }
+  } catch {
+    // Fail-open: let checkout proceed (API will catch missing contact)
+  }
+}
+
+/**
+ * Pre-action for `ud domains contacts create`: run interactive prompts in TTY mode.
+ * In non-TTY mode, falls through to normal CLI-flag handling.
+ */
+async function contactCreatePreAction(
+  ctx: PreActionContext,
+): Promise<{ message?: string; abort?: boolean } | void> {
+  // Skip interactive prompts if CLI params were provided or non-TTY
+  const hasParams = Object.keys(ctx.body).length > 0;
+  if (!process.stdin.isTTY || hasParams) return;
+
+  const { promptContactCreation } = await import('./contact.js');
+  const created = await promptContactCreation(
+    { promptInput: ctx.promptInput, callAction: ctx.callAction },
+    undefined,
+    { skipHeader: true },
+  );
+
+  if (created) {
+    return { abort: true, message: chalk.dim('\nTip: Check out your cart: ud cart checkout') };
+  }
+
+  return { abort: true, message: 'Contact creation cancelled.' };
+}
 
 /** domains list → get details */
 function formatPortfolioNextHint(result: unknown): string {
@@ -182,6 +312,25 @@ function formatLanderCheckHint(result: unknown): string {
   return chalk.dim(`\nTip: Check lander status: ud domains hosting landers show ${domain}`);
 }
 
+/** payment-methods add → browser-friendly message instead of raw URL table */
+function formatPaymentMethodResult(result: unknown): string {
+  const url = (result && typeof result === 'object')
+    ? (result as Record<string, unknown>).url as string | undefined
+    : undefined;
+
+  const lines: string[] = [
+    chalk.green('Opening payment method setup in your browser...'),
+  ];
+
+  if (url) {
+    lines.push(`\n\n  ${url}\n`);
+  }
+
+  lines.push(chalk.dim('\nOnce saved, check out from the CLI: ud cart checkout'));
+
+  return lines.join('');
+}
+
 /** operations show → conditional next step */
 function formatOperationsNextHint(result: unknown): string {
   if (!result || typeof result !== 'object') return '';
@@ -230,6 +379,7 @@ const HOOKS: Record<string, CommandHooks> = {
       message: 'Are you sure you want to complete this purchase? Review your cart with: ud cart list',
     },
     postActionHint: formatPostCheckoutHint,
+    preAction: checkoutPreAction,
   },
   ud_listing_cancel: {
     requireConfirm: {
@@ -247,7 +397,11 @@ const HOOKS: Record<string, CommandHooks> = {
     transformBody: makePriceTransformer('listings'),
     postActionHint: formatVerifyDomainHint,
   },
-  ud_cart_get: { postActionHint: CHECKOUT_HINT },
+  ud_cart_get: { postActionHint: formatCartViewHint },
+  ud_cart_get_url: { magicLinkFields: ['checkoutUrl'] },
+  ud_cart_add_payment_method_url: { magicLinkFields: ['url'], formatResult: formatPaymentMethodResult },
+  ud_contact_create: { preAction: contactCreatePreAction },
+  ud_cart_get_payment_methods: { postActionHint: ADD_PAYMENT_HINT },
   ud_cart_remove: { postActionHint: VIEW_CART_HINT },
   ud_cart_add_domain_registration: { postActionHint: VIEW_CART_HINT },
   ud_cart_add_domain_listed: { postActionHint: VIEW_CART_HINT },

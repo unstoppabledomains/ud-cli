@@ -1,4 +1,4 @@
-import { getHooks, formatOperationHint, formatCartHint, formatFailureHints, formatLeadMessagesHint } from '../../src/lib/command-hooks.js';
+import { getHooks, formatOperationHint, formatCartHint, formatFailureHints, formatLeadMessagesHint, type PreActionContext } from '../../src/lib/command-hooks.js';
 
 // Strip ANSI codes for easier assertion
 function stripAnsi(str: string): string {
@@ -274,10 +274,33 @@ describe('command-hooks', () => {
       }
     });
 
-    it('cart get uses postActionHint with CHECKOUT_HINT', () => {
+    it('cart get uses postActionHint with checkout and payment tips', () => {
       const hooks = getHooks('ud_cart_get');
+      expect(typeof hooks?.postActionHint).toBe('function');
+      const hint = stripAnsi((hooks!.postActionHint as (r: unknown) => string)({}));
+      expect(hint).toContain('ud cart checkout');
+      expect(hint).toContain('ud cart payment-methods add');
+    });
+
+    it('payment methods list uses postActionHint with add payment tip', () => {
+      const hooks = getHooks('ud_cart_get_payment_methods');
       expect(typeof hooks?.postActionHint).toBe('string');
-      expect(stripAnsi(hooks!.postActionHint as string)).toContain('ud cart checkout');
+      expect(stripAnsi(hooks!.postActionHint as string)).toContain('ud cart payment-methods add');
+    });
+
+    it('cart get url has magicLinkFields for checkoutUrl', () => {
+      const hooks = getHooks('ud_cart_get_url');
+      expect(hooks?.magicLinkFields).toEqual(['checkoutUrl']);
+    });
+
+    it('cart add payment method url has magicLinkFields for url', () => {
+      const hooks = getHooks('ud_cart_add_payment_method_url');
+      expect(hooks?.magicLinkFields).toEqual(['url']);
+    });
+
+    it('cart checkout has preAction hook', () => {
+      const hooks = getHooks('ud_cart_checkout');
+      expect(typeof hooks?.preAction).toBe('function');
     });
 
     it('leads list uses postActionHint with formatLeadMessagesHint', () => {
@@ -287,6 +310,156 @@ describe('command-hooks', () => {
         results: [{ id: 'lead-abc' }],
       }));
       expect(hint).toContain('--conversation-id lead-abc');
+    });
+  });
+
+  describe('checkoutPreAction', () => {
+    const preAction = getHooks('ud_cart_checkout')!.preAction!;
+    const noopPrompt = async () => '';
+    const origStdinTTY = process.stdin.isTTY;
+
+    afterEach(() => {
+      Object.defineProperty(process.stdin, 'isTTY', { value: origStdinTTY, configurable: true });
+    });
+
+    it('aborts with message when no cards and no credits', async () => {
+      const ctx: PreActionContext = {
+        callAction: async (tool: string) => {
+          if (tool === 'ud_cart_get_payment_methods') {
+            return { savedCards: [], summary: { totalCredits: 0 } };
+          }
+          if (tool === 'ud_cart_get_url') {
+            return { checkoutUrl: 'https://ud.me/checkout/abc' };
+          }
+          return {};
+        },
+        createMagicLinkUrl: async (url: string) => `https://magic.example.com?token=tok&redirect=${encodeURIComponent(url)}`,
+        promptInput: noopPrompt,
+        body: {},
+      };
+      const result = await preAction(ctx);
+      expect(result).toBeDefined();
+      expect(result!.abort).toBe(true);
+      expect(stripAnsi(result!.message!)).toContain('No saved payment method');
+      expect(result!.message!).toContain('https://magic.example.com');
+    });
+
+    it('does not abort when user has saved cards and contacts', async () => {
+      const ctx: PreActionContext = {
+        callAction: async (tool: string) => {
+          if (tool === 'ud_cart_get_payment_methods') {
+            return { savedCards: [{ id: 'card-1' }], summary: { totalCredits: 0 } };
+          }
+          if (tool === 'ud_contacts_list') {
+            return { contacts: [{ id: 'ct-1' }], count: 1 };
+          }
+          return {};
+        },
+        createMagicLinkUrl: async (url: string) => url,
+        promptInput: noopPrompt,
+        body: {},
+      };
+      const result = await preAction(ctx);
+      expect(result).toBeUndefined();
+    });
+
+    it('does not abort when user has account credits but no cards', async () => {
+      const ctx: PreActionContext = {
+        callAction: async (tool: string) => {
+          if (tool === 'ud_cart_get_payment_methods') {
+            return { savedCards: [], summary: { totalCredits: 500 } };
+          }
+          if (tool === 'ud_contacts_list') {
+            return { contacts: [{ id: 'ct-1' }], count: 1 };
+          }
+          return {};
+        },
+        createMagicLinkUrl: async (url: string) => url,
+        promptInput: noopPrompt,
+        body: {},
+      };
+      const result = await preAction(ctx);
+      expect(result).toBeUndefined();
+    });
+
+    it('lets checkout proceed when payment pre-check API fails (fail-open)', async () => {
+      const ctx: PreActionContext = {
+        callAction: async () => { throw new Error('network error'); },
+        createMagicLinkUrl: async (url: string) => url,
+        promptInput: noopPrompt,
+        body: {},
+      };
+      const result = await preAction(ctx);
+      expect(result).toBeUndefined();
+    });
+
+    // --- ICANN contact check tests ---
+
+    it('aborts with hint in non-TTY when no contacts exist', async () => {
+      Object.defineProperty(process.stdin, 'isTTY', { value: false, configurable: true });
+      const ctx: PreActionContext = {
+        callAction: async (tool: string) => {
+          if (tool === 'ud_cart_get_payment_methods') {
+            return { savedCards: [{ id: 'card-1' }], summary: { totalCredits: 0 } };
+          }
+          if (tool === 'ud_contacts_list') {
+            return { contacts: [], count: 0 };
+          }
+          return {};
+        },
+        createMagicLinkUrl: async (url: string) => url,
+        promptInput: noopPrompt,
+        body: {},
+      };
+      const result = await preAction(ctx);
+      expect(result).toBeDefined();
+      expect(result!.abort).toBe(true);
+      expect(stripAnsi(result!.message!)).toContain('No ICANN contact');
+      expect(stripAnsi(result!.message!)).toContain('ud domains contacts create');
+    });
+
+    it('lets checkout proceed when contacts API fails (fail-open)', async () => {
+      const ctx: PreActionContext = {
+        callAction: async (tool: string) => {
+          if (tool === 'ud_cart_get_payment_methods') {
+            return { savedCards: [{ id: 'card-1' }], summary: { totalCredits: 0 } };
+          }
+          if (tool === 'ud_contacts_list') {
+            throw new Error('contacts API down');
+          }
+          return {};
+        },
+        createMagicLinkUrl: async (url: string) => url,
+        promptInput: noopPrompt,
+        body: {},
+      };
+      const result = await preAction(ctx);
+      expect(result).toBeUndefined();
+    });
+
+    it('skips contact check when payment check already aborts', async () => {
+      let contactsCalled = false;
+      const ctx: PreActionContext = {
+        callAction: async (tool: string) => {
+          if (tool === 'ud_cart_get_payment_methods') {
+            return { savedCards: [], summary: { totalCredits: 0 } };
+          }
+          if (tool === 'ud_contacts_list') {
+            contactsCalled = true;
+            return { contacts: [], count: 0 };
+          }
+          if (tool === 'ud_cart_get_url') {
+            return { checkoutUrl: 'https://ud.me/checkout' };
+          }
+          return {};
+        },
+        createMagicLinkUrl: async (url: string) => url,
+        promptInput: noopPrompt,
+        body: {},
+      };
+      const result = await preAction(ctx);
+      expect(result!.abort).toBe(true);
+      expect(contactsCalled).toBe(false);
     });
   });
 
