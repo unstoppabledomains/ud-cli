@@ -36,6 +36,9 @@ export async function createMagicLinkUrl(redirectUrl: string): Promise<string> {
   if (isMagicLinkUrl(redirectUrl)) return redirectUrl;
 
   try {
+    // POST /api/oauth/link requires only a Bearer token (no body).
+    // The endpoint returns a one-time link_token; the redirect destination
+    // is added as a query param on the constructed magic URL, not sent to the API.
     const url = `${apiBaseUrl()}/api/oauth/link`;
     const res = await apiRequest(url, { method: 'POST' });
 

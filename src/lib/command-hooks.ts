@@ -113,7 +113,13 @@ function formatCartViewHint(): string {
   return CHECKOUT_HINT + ADD_PAYMENT_HINT;
 }
 
-/** checkout pre-action: check for payment methods / credits before proceeding */
+/**
+ * Checkout pre-action: check for payment methods / credits before proceeding.
+ *
+ * Makes two quick reads (payment methods, then cart URL) which are expected to
+ * be fast on a warm session. Fail-open design: if either call fails, checkout
+ * proceeds normally so users are never blocked by a pre-check error.
+ */
 async function checkoutPreAction(
   ctx: PreActionContext,
 ): Promise<{ message?: string; abort?: boolean } | void> {
@@ -151,7 +157,7 @@ async function checkoutPreAction(
       };
     }
   } catch {
-    // If the pre-check fails, let checkout proceed normally
+    // Fail-open: if the pre-check fails (network, auth, etc.), let checkout proceed normally
   }
 }
 

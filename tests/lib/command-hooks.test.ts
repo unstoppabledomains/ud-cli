@@ -1,4 +1,4 @@
-import { getHooks, formatOperationHint, formatCartHint, formatFailureHints, formatLeadMessagesHint } from '../../src/lib/command-hooks.js';
+import { getHooks, formatOperationHint, formatCartHint, formatFailureHints, formatLeadMessagesHint, type PreActionContext } from '../../src/lib/command-hooks.js';
 
 // Strip ANSI codes for easier assertion
 function stripAnsi(str: string): string {
@@ -310,6 +310,63 @@ describe('command-hooks', () => {
         results: [{ id: 'lead-abc' }],
       }));
       expect(hint).toContain('--conversation-id lead-abc');
+    });
+  });
+
+  describe('checkoutPreAction', () => {
+    const preAction = getHooks('ud_cart_checkout')!.preAction!;
+
+    it('aborts with message when no cards and no credits', async () => {
+      const ctx: PreActionContext = {
+        callAction: async (tool: string) => {
+          if (tool === 'ud_cart_get_payment_methods') {
+            return { savedCards: [], summary: { totalCredits: 0 } };
+          }
+          if (tool === 'ud_cart_get_url') {
+            return { checkoutUrl: 'https://ud.me/checkout/abc' };
+          }
+          return {};
+        },
+        createMagicLinkUrl: async (url: string) => `https://magic.example.com?token=tok&redirect=${encodeURIComponent(url)}`,
+      };
+      const result = await preAction(ctx);
+      expect(result).toBeDefined();
+      expect(result!.abort).toBe(true);
+      expect(stripAnsi(result!.message!)).toContain('No saved payment method');
+      expect(result!.message!).toContain('https://magic.example.com');
+    });
+
+    it('does not abort when user has saved cards', async () => {
+      const ctx: PreActionContext = {
+        callAction: async () => ({
+          savedCards: [{ id: 'card-1', brand: 'visa', last4: '4242' }],
+          summary: { totalCredits: 0 },
+        }),
+        createMagicLinkUrl: async (url: string) => url,
+      };
+      const result = await preAction(ctx);
+      expect(result).toBeUndefined();
+    });
+
+    it('does not abort when user has account credits but no cards', async () => {
+      const ctx: PreActionContext = {
+        callAction: async () => ({
+          savedCards: [],
+          summary: { totalCredits: 500 },
+        }),
+        createMagicLinkUrl: async (url: string) => url,
+      };
+      const result = await preAction(ctx);
+      expect(result).toBeUndefined();
+    });
+
+    it('lets checkout proceed when pre-check API fails (fail-open)', async () => {
+      const ctx: PreActionContext = {
+        callAction: async () => { throw new Error('network error'); },
+        createMagicLinkUrl: async (url: string) => url,
+      };
+      const result = await preAction(ctx);
+      expect(result).toBeUndefined();
     });
   });
 
