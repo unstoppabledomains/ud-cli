@@ -297,7 +297,7 @@ function registerRoute(
 
     // Pre-call hooks: preAction (e.g., checkout payment method check)
     if (hooks?.preAction) {
-      const ctx: PreActionContext = { callAction, createMagicLinkUrl };
+      const ctx: PreActionContext = { callAction, createMagicLinkUrl, promptInput };
       const preResult = await hooks.preAction(ctx);
       if (preResult?.message) console.log(preResult.message);
       if (preResult?.abort) return;

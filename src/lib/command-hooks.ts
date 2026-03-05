@@ -10,6 +10,7 @@ import { openInBrowser, isMagicLinkUrl } from './magic-link.js';
 export interface PreActionContext {
   callAction: (toolName: string, params: Record<string, unknown>) => Promise<unknown>;
   createMagicLinkUrl: (url: string) => Promise<string>;
+  promptInput: (message: string, opts?: { validate?: RegExp }) => Promise<string>;
 }
 
 export interface CommandHooks {
@@ -114,11 +115,13 @@ function formatCartViewHint(_result: unknown): string {
 }
 
 /**
- * Checkout pre-action: check for payment methods / credits before proceeding.
+ * Checkout pre-action: verify payment methods and ICANN contacts before proceeding.
  *
- * Makes two quick reads (payment methods, then cart URL) which are expected to
- * be fast on a warm session. Fail-open design: if either call fails, checkout
- * proceeds normally so users are never blocked by a pre-check error.
+ * 1. Payment check: abort with magic link if no cards/credits
+ * 2. Contact check: prompt for inline creation (TTY) or abort with hint (non-TTY)
+ *
+ * Fail-open design: if any check fails, checkout proceeds normally so users
+ * are never blocked by a pre-check error.
  */
 async function checkoutPreAction(
   ctx: PreActionContext,
@@ -158,6 +161,40 @@ async function checkoutPreAction(
     }
   } catch {
     // Fail-open: if the pre-check fails (network, auth, etc.), let checkout proceed normally
+  }
+
+  // --- ICANN contact check ---
+  try {
+    const contactResult = await ctx.callAction('ud_contacts_list', {}) as Record<string, unknown>;
+    const contacts = contactResult.contacts as unknown[] | undefined;
+
+    if (!Array.isArray(contacts) || contacts.length === 0) {
+      if (!process.stdin.isTTY) {
+        return {
+          abort: true,
+          message: chalk.yellow('No ICANN contact found.') +
+            '\nDNS domains (.com, .org, etc.) require contact information for registration.' +
+            chalk.dim('\n\nCreate a contact first: ud domains contacts create'),
+        };
+      }
+
+      // Interactive: prompt for inline contact creation
+      const { promptContactCreation } = await import('./contact.js');
+      const created = await promptContactCreation(
+        { promptInput: ctx.promptInput, callAction: ctx.callAction },
+        contactResult.accountEmailHint as string | undefined,
+      );
+
+      if (!created) {
+        return {
+          abort: true,
+          message: chalk.yellow('ICANN contact is required for DNS domain checkout.') +
+            chalk.dim('\nCreate one with: ud domains contacts create'),
+        };
+      }
+    }
+  } catch {
+    // Fail-open: let checkout proceed (API will catch missing contact)
   }
 }
 
