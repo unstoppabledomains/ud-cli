@@ -419,7 +419,6 @@ describe('command-hooks', () => {
     });
 
     it('lets checkout proceed when contacts API fails (fail-open)', async () => {
-      let callCount = 0;
       const ctx: PreActionContext = {
         callAction: async (tool: string) => {
           if (tool === 'ud_cart_get_payment_methods') {
@@ -428,7 +427,6 @@ describe('command-hooks', () => {
           if (tool === 'ud_contacts_list') {
             throw new Error('contacts API down');
           }
-          callCount++;
           return {};
         },
         createMagicLinkUrl: async (url: string) => url,
