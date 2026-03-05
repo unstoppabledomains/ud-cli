@@ -4,7 +4,7 @@
  */
 
 import chalk from 'chalk';
-import { openInBrowser, isMagicLinkUrl } from './magic-link.js';
+import { openInBrowser } from './magic-link.js';
 
 /** Context passed to preAction hooks for dependency injection. */
 export interface PreActionContext {
@@ -147,9 +147,7 @@ async function checkoutPreAction(
         if (checkoutUrl) {
           const magicUrl = await ctx.createMagicLinkUrl(checkoutUrl);
           checkoutLine = `\n\n  ${magicUrl}`;
-          if (magicUrl !== checkoutUrl && isMagicLinkUrl(magicUrl)) {
-            openInBrowser(magicUrl);
-          }
+          openInBrowser(magicUrl);
         }
       } catch {
         // Fall through without checkout link
