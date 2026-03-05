@@ -189,8 +189,12 @@ function coerceValue(value: unknown, spec: ParamSpec): unknown {
 }
 
 /**
- * Convert a camelCase or UPPER_SNAKE_CASE spec param name to kebab-case flag name.
- * e.g. "pageSize" → "page-size", "DNS_TRANSFER_OUT" → "dns-transfer-out"
+ * Convert a camelCase spec param name to kebab-case flag name.
+ * e.g. "pageSize" → "page-size", "dialingPrefix" → "dialing-prefix"
+ *
+ * Also handles underscores (replaced with dashes) so names like "some_flag"
+ * become "some-flag". Not intended for UPPER_SNAKE_CASE — those top-level
+ * object properties are skipped by specParamToNestedOptions.
  */
 function specParamToFlagName(name: string): string {
   return name

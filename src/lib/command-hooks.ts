@@ -220,7 +220,7 @@ async function contactCreatePreAction(
   );
 
   if (created) {
-    return { abort: true };
+    return { abort: true, message: chalk.dim('\nTip: Check out your cart: ud cart checkout') };
   }
 
   return { abort: true, message: 'Contact creation cancelled.' };
