@@ -9,20 +9,27 @@ allowed-tools: Bash(ud:*)
 ## Prerequisites
 
 ```bash
-ud auth signup               # Create account (no browser needed — recommended for agents)
+ud auth signup               # Create account interactively
 ud auth login                # OAuth sign-in (opens browser)
 ud auth login -k <key>       # API key (ud_mcp_ + 64 hex chars)
 ud auth status               # Check current auth
 ```
 
-### Account Creation (headless)
+### Account Creation
 
-`ud auth signup` creates an account interactively:
-1. Prompts for email and password (min 8 chars, uppercase, lowercase, number, special character)
-2. Sends a 6-character verification code to the email
-3. Prompts for the code, then signs you in automatically
+**Interactive** — `ud auth signup` with no arguments prompts for email, password, and verification code.
 
-This is the fastest path to onboard — no browser or dashboard needed.
+**Headless (recommended for agents)** — two-step flow, no TTY required:
+```bash
+# Step 1: Create account — prints the verify command to stdout
+ud auth signup --email user@example.com --password 'SecurePass1!'
+
+# Step 2: Verify with the code from the user's email
+ud auth signup --token <session_token> --code ABC123
+```
+
+Step 1 outputs a ready-to-run verify command with the session token pre-filled.
+Password requirements: min 8 chars, uppercase, lowercase, number, special character.
 
 ## Global Options
 
