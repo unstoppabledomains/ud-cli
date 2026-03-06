@@ -4,6 +4,8 @@
  */
 
 import chalk from 'chalk';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { openInBrowser } from './magic-link.js';
 
 /** Context passed to preAction hooks for dependency injection. */
@@ -51,6 +53,11 @@ export interface CommandHooks {
   formatResult?: (result: unknown) => string;
   /** Async pre-action check that runs before confirmation. Can abort the command. */
   preAction?: (ctx: PreActionContext) => Promise<{ message?: string; abort?: boolean } | void>;
+  /** Additional Commander options to register on the command (e.g., --html-file, --output-dir). */
+  additionalOptions?: Array<{ flags: string; description: string }>;
+  /** Async post-action hook that runs after API call, before formatting.
+   *  Can perform side effects (e.g., file writing) and return a modified result for display. */
+  postAction?: (result: unknown, opts: Record<string, unknown>) => Promise<unknown>;
 }
 
 /**
@@ -426,6 +433,88 @@ const HOOKS: Record<string, CommandHooks> = {
   ud_offer_respond: { postActionHint: OFFERS_LIST_HINT },
   // Landers
   ud_domain_generate_lander: { postActionHint: formatLanderCheckHint },
+  ud_domain_upload_lander: {
+    additionalOptions: [
+      { flags: '--html-file <path>', description: 'Path to HTML file to upload as landing page' },
+      { flags: '--zip-file <path>', description: 'Path to ZIP file to upload as landing page (base64-encoded automatically)' },
+    ],
+    transformBody: (body, opts) => {
+      const htmlFile = opts.htmlFile as string | undefined;
+      const zipFile = opts.zipFile as string | undefined;
+
+      if (htmlFile && zipFile) {
+        throw new Error('Cannot specify both --html-file and --zip-file. Use one or the other.');
+      }
+
+      if (!htmlFile && !zipFile) return body;
+
+      const domains = body.domains as Array<Record<string, unknown>> | undefined;
+      if (!Array.isArray(domains)) return body;
+
+      if (htmlFile) {
+        const content = readFileSync(htmlFile, 'utf-8');
+        for (const d of domains) {
+          if (!d.htmlContent) d.htmlContent = content;
+        }
+      }
+
+      if (zipFile) {
+        const content = readFileSync(zipFile).toString('base64');
+        for (const d of domains) {
+          if (!d.zipContent) d.zipContent = content;
+        }
+      }
+
+      return body;
+    },
+    postActionHint: formatLanderCheckHint,
+  },
+  ud_domain_download_lander: {
+    additionalOptions: [
+      { flags: '--output-dir <path>', description: 'Directory to save downloaded files (default: current directory)' },
+    ],
+    postAction: async (result: unknown, opts: Record<string, unknown>) => {
+      if (!result || typeof result !== 'object') return result;
+      const obj = result as Record<string, unknown>;
+      const results = obj.results as Array<Record<string, unknown>> | undefined;
+      if (!Array.isArray(results)) return result;
+
+      const { mkdirSync, writeFileSync } = await import('node:fs');
+      const outputDir = (opts.outputDir as string) || process.cwd();
+      mkdirSync(outputDir, { recursive: true });
+
+      const summary: Array<Record<string, unknown>> = [];
+
+      for (const item of results) {
+        if (!item.success) {
+          summary.push({ domain: item.domain, success: false, error: item.error });
+          continue;
+        }
+
+        const domain = item.domain as string;
+        let filename: string;
+        let content: Buffer | string;
+
+        if (item.format === 'zip' && item.zipContent) {
+          filename = `${domain}.zip`;
+          content = Buffer.from(item.zipContent as string, 'base64');
+        } else if (item.htmlContent) {
+          filename = `${domain}.html`;
+          content = item.htmlContent as string;
+        } else {
+          summary.push({ domain, success: false, error: 'No content returned' });
+          continue;
+        }
+
+        const filePath = join(outputDir, filename);
+        writeFileSync(filePath, content);
+        summary.push({ domain, success: true, format: item.format, file: filePath });
+      }
+
+      return { ...obj, results: summary };
+    },
+    postActionHint: formatLanderCheckHint,
+  },
   // Search & DNS ops
   ud_domains_search: { showCartHint: true },
   ud_dns_record_add: { showOperationHint: true, showFailureHints: true },

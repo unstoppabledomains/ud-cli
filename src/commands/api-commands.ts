@@ -208,6 +208,13 @@ function registerRoute(
     }
   }
 
+  // Hook-driven additional options (e.g., --html-file, --output-dir)
+  if (hooks?.additionalOptions) {
+    for (const opt of hooks.additionalOptions) {
+      cmd.option(opt.flags, opt.description);
+    }
+  }
+
   // --domains-file for commands with variadic domains positional arg
   const hasVariadicDomains = route.positionalArgs.some((a) => a.name === 'domains' && a.variadic);
   if (hasVariadicDomains) {
@@ -346,6 +353,12 @@ function registerRoute(
       const result = await callAction(route.toolName, body);
       spinner.stop();
 
+      // Post-call hook: postAction (side effects like file writing + optional result transform)
+      let displayResult = result;
+      if (hooks?.postAction) {
+        displayResult = (await hooks.postAction(result, opts)) ?? result;
+      }
+
       // Post-call hook: wrap URL fields in magic links for session handoff
       if (hooks?.magicLinkFields && typeof result === 'object' && result !== null) {
         await applyMagicLinks(result as Record<string, unknown>, hooks.magicLinkFields);
@@ -353,8 +366,8 @@ function registerRoute(
 
       if (!quiet) {
         const output = (hooks?.formatResult && format === 'table')
-          ? hooks.formatResult(result)
-          : formatOutput(result, {
+          ? hooks.formatResult(displayResult)
+          : formatOutput(displayResult, {
               format,
               responsePattern: spec?.responsePattern,
               toolName: route.toolName,
