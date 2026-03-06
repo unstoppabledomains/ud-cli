@@ -4,8 +4,8 @@
  */
 
 import chalk from 'chalk';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFile, mkdir, writeFile } from 'node:fs/promises';
+import { join, basename } from 'node:path';
 import { openInBrowser } from './magic-link.js';
 
 /** Context passed to preAction hooks for dependency injection. */
@@ -36,7 +36,7 @@ export interface CommandHooks {
     validate?: RegExp;
   };
   /** Transform the request body before sending (e.g., price conversion). */
-  transformBody?: (body: Record<string, unknown>, opts: Record<string, unknown>) => Record<string, unknown>;
+  transformBody?: (body: Record<string, unknown>, opts: Record<string, unknown>) => Record<string, unknown> | Promise<Record<string, unknown>>;
   /** Register a --price <dollars> option for this command. */
   priceOption?: boolean;
   /** Show an operation-tracking hint after the API call completes. */
@@ -438,7 +438,7 @@ const HOOKS: Record<string, CommandHooks> = {
       { flags: '--html-file <path>', description: 'Path to HTML file to upload as landing page' },
       { flags: '--zip-file <path>', description: 'Path to ZIP file to upload as landing page (base64-encoded automatically)' },
     ],
-    transformBody: (body, opts) => {
+    transformBody: async (body, opts) => {
       const htmlFile = opts.htmlFile as string | undefined;
       const zipFile = opts.zipFile as string | undefined;
 
@@ -452,14 +452,14 @@ const HOOKS: Record<string, CommandHooks> = {
       if (!Array.isArray(domains)) return body;
 
       if (htmlFile) {
-        const content = readFileSync(htmlFile, 'utf-8');
+        const content = await readFile(htmlFile, 'utf-8');
         for (const d of domains) {
           if (!d.htmlContent) d.htmlContent = content;
         }
       }
 
       if (zipFile) {
-        const content = readFileSync(zipFile).toString('base64');
+        const content = (await readFile(zipFile)).toString('base64');
         for (const d of domains) {
           if (!d.zipContent) d.zipContent = content;
         }
@@ -479,8 +479,6 @@ const HOOKS: Record<string, CommandHooks> = {
       const results = obj.results as Array<Record<string, unknown>> | undefined;
       if (!Array.isArray(results)) return result;
 
-      const { mkdir, writeFile } = await import('node:fs/promises');
-      const { basename } = await import('node:path');
       const outputDir = (opts.outputDir as string) || process.cwd();
       await mkdir(outputDir, { recursive: true });
 
@@ -493,7 +491,12 @@ const HOOKS: Record<string, CommandHooks> = {
         }
 
         // Sanitize domain to prevent path traversal from server response
-        const domain = basename(item.domain as string);
+        const rawDomain = item.domain;
+        if (typeof rawDomain !== 'string' || !rawDomain) {
+          summary.push({ domain: rawDomain, success: false, error: 'Missing domain name' });
+          continue;
+        }
+        const domain = basename(rawDomain);
         let filename: string;
         let content: Buffer | string;
 

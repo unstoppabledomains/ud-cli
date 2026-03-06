@@ -298,10 +298,10 @@ function registerRoute(
     // Build request body
     let body = buildParams(route, spec?.params ?? [], positionalValues, opts);
 
-    // Pre-call hooks: transformBody (e.g., price conversion)
+    // Pre-call hooks: transformBody (e.g., price conversion, file reading)
     if (hooks?.transformBody) {
       try {
-        body = hooks.transformBody(body, opts);
+        body = await hooks.transformBody(body, opts);
       } catch (err) {
         console.error(formatError(err));
         process.exitCode = 1;
@@ -360,8 +360,8 @@ function registerRoute(
       }
 
       // Post-call hook: wrap URL fields in magic links for session handoff
-      if (hooks?.magicLinkFields && typeof result === 'object' && result !== null) {
-        await applyMagicLinks(result as Record<string, unknown>, hooks.magicLinkFields);
+      if (hooks?.magicLinkFields && typeof displayResult === 'object' && displayResult !== null) {
+        await applyMagicLinks(displayResult as Record<string, unknown>, hooks.magicLinkFields);
       }
 
       if (!quiet) {
