@@ -479,9 +479,10 @@ const HOOKS: Record<string, CommandHooks> = {
       const results = obj.results as Array<Record<string, unknown>> | undefined;
       if (!Array.isArray(results)) return result;
 
-      const { mkdirSync, writeFileSync } = await import('node:fs');
+      const { mkdir, writeFile } = await import('node:fs/promises');
+      const { basename } = await import('node:path');
       const outputDir = (opts.outputDir as string) || process.cwd();
-      mkdirSync(outputDir, { recursive: true });
+      await mkdir(outputDir, { recursive: true });
 
       const summary: Array<Record<string, unknown>> = [];
 
@@ -491,7 +492,8 @@ const HOOKS: Record<string, CommandHooks> = {
           continue;
         }
 
-        const domain = item.domain as string;
+        // Sanitize domain to prevent path traversal from server response
+        const domain = basename(item.domain as string);
         let filename: string;
         let content: Buffer | string;
 
@@ -507,7 +509,7 @@ const HOOKS: Record<string, CommandHooks> = {
         }
 
         const filePath = join(outputDir, filename);
-        writeFileSync(filePath, content);
+        await writeFile(filePath, content);
         summary.push({ domain, success: true, format: item.format, file: filePath });
       }
 
