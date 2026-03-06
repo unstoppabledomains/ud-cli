@@ -40,6 +40,16 @@ ud auth signup
 
 Creates a new account directly from the terminal. Prompts for email and password, sends a verification code to your email, and signs you in — no browser needed.
 
+For scripting or headless environments, pass credentials as flags:
+
+```bash
+# Step 1: Create account (outputs the verify command to stdout)
+ud auth signup --email user@example.com --password 'SecurePass1!'
+
+# Step 2: Verify with the code from your email
+ud auth signup --token <session_token> --code ABC123
+```
+
 ### OAuth (browser-based)
 
 ```bash
