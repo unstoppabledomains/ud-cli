@@ -37,7 +37,7 @@ export function registerAuthCommands(program: Command): void {
     .command('signup')
     .description('Create a new Unstoppable Domains account')
     .option('-e, --email <email>', 'Email address')
-    .option('-p, --password <password>', 'Password')
+    .option('-p, --password <password>', 'Password (visible in shell history; use with care)')
     .option('-c, --code <code>', 'Verification code')
     .option('-t, --token <token>', 'Session token from signup (for verification step)')
     .action(async (options: { email?: string; password?: string; code?: string; token?: string }) => {
@@ -151,10 +151,20 @@ async function signupFlow(env: string, options: SignupOptions = {}): Promise<voi
     return;
   }
 
+  // Warn if --code is passed without --token (it has no effect during signup)
+  if (options.code && !options.token) {
+    console.error(chalk.yellow('Warning: --code is ignored without --token. Use --token and --code together to verify.'));
+  }
+
   const headless = !!(options.email && options.password);
 
   if (!headless && !process.stdin.isTTY) {
-    console.error(chalk.red('Signup requires an interactive terminal, or pass --email and --password.'));
+    const missing = !options.email && !options.password
+      ? '--email and --password are required for headless mode.'
+      : !options.email
+        ? 'Missing --email; both --email and --password are required for headless mode.'
+        : 'Missing --password; both --email and --password are required for headless mode.';
+    console.error(chalk.red(missing));
     process.exitCode = 1;
     return;
   }
@@ -232,10 +242,10 @@ async function signupFlow(env: string, options: SignupOptions = {}): Promise<voi
   }
 
   // 4. Verification code
-  if (!process.stdin.isTTY) {
-    // Headless: print hint and the verify command
-    console.log(`\nCheck your email for a 6-character verification code, then run:\n`);
-    console.log(`  ud auth signup --token ${sessionToken} --code <CODE>`);
+  if (headless) {
+    // Headless: hint to stderr, actionable command to stdout
+    console.error(`\nCheck your email for a 6-character verification code, then run:\n`);
+    console.log(`ud auth signup --token ${sessionToken} --code <CODE>`);
     return;
   }
 

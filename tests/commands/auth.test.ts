@@ -328,7 +328,7 @@ describe('signup', () => {
     await prog.parseAsync(['node', 'ud', 'auth', 'signup']);
 
     expect(errorSpy).toHaveBeenCalledWith(
-      expect.stringContaining('interactive terminal'),
+      expect.stringContaining('required for headless mode'),
     );
     expect(process.exitCode).toBe(1);
   });
@@ -351,6 +351,9 @@ describe('signup', () => {
         '--password', 'SecurePass1!',
       ]);
 
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Check your email'),
+      );
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining('ud auth signup --token session_headless --code <CODE>'),
       );
@@ -371,6 +374,59 @@ describe('signup', () => {
         expect.stringContaining('Invalid email'),
       );
       expect(process.exitCode).toBe(1);
+    });
+
+    it('errors when --email provided without --password in non-TTY', async () => {
+      mockStdinTTY(false);
+
+      const prog = await createSignupProgram();
+      await prog.parseAsync([
+        'node', 'ud', 'auth', 'signup',
+        '--email', 'user@example.com',
+      ]);
+
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Missing --password'),
+      );
+      expect(process.exitCode).toBe(1);
+    });
+
+    it('errors when --password provided without --email in non-TTY', async () => {
+      mockStdinTTY(false);
+
+      const prog = await createSignupProgram();
+      await prog.parseAsync([
+        'node', 'ud', 'auth', 'signup',
+        '--password', 'SecurePass1!',
+      ]);
+
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Missing --email'),
+      );
+      expect(process.exitCode).toBe(1);
+    });
+
+    it('warns when --code is passed without --token', async () => {
+      mockStdinTTY(false);
+
+      mockFetchRoute('api/oauth/signup', () =>
+        jsonResponse({
+          signup_session_token: 'session_warn',
+          expires_in: 900,
+        }),
+      );
+
+      const prog = await createSignupProgram();
+      await prog.parseAsync([
+        'node', 'ud', 'auth', 'signup',
+        '--email', 'user@example.com',
+        '--password', 'SecurePass1!',
+        '--code', 'AB12CD',
+      ]);
+
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('--code is ignored without --token'),
+      );
     });
 
     it('rejects weak password via --password', async () => {
