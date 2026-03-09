@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
-import { getDefaultEnv, setDefaultEnv, apiBaseUrl } from '../lib/config.js';
+import { getDefaultEnv, setDefaultEnv, apiBaseUrl, getActiveEnv, getApiUrlOverride } from '../lib/config.js';
 import type { Environment } from '../lib/types.js';
 
 const VALID_ENVS: Environment[] = ['production', 'sandbox', 'staging'];
@@ -13,9 +13,17 @@ export function registerEnvCommands(program: Command): void {
     .description('Show current environment')
     .action(() => {
       const current = getDefaultEnv();
-      const url = apiBaseUrl(current);
-      console.log(`Environment: ${chalk.bold(current)}`);
-      console.log(`Base URL:    ${chalk.dim(url)}`);
+      const active = getActiveEnv();
+      const url = apiBaseUrl();
+      const urlOverride = getApiUrlOverride();
+      console.log(`Environment: ${chalk.bold(active)}`);
+      const urlLabel = urlOverride
+        ? `${chalk.dim(url)} ${chalk.yellow('(--api-url override)')}`
+        : chalk.dim(url);
+      console.log(`Base URL:    ${urlLabel}`);
+      if (active !== current) {
+        console.log(chalk.dim(`(default: ${current})`));
+      }
     });
 
   env
