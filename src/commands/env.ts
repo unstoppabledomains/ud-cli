@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
-import { getDefaultEnv, setDefaultEnv, apiBaseUrl } from '../lib/config.js';
+import { getDefaultEnv, setDefaultEnv, apiBaseUrl, getActiveEnv } from '../lib/config.js';
 import type { Environment } from '../lib/types.js';
 
 const VALID_ENVS: Environment[] = ['production', 'sandbox', 'staging'];
@@ -13,9 +13,13 @@ export function registerEnvCommands(program: Command): void {
     .description('Show current environment')
     .action(() => {
       const current = getDefaultEnv();
-      const url = apiBaseUrl(current);
-      console.log(`Environment: ${chalk.bold(current)}`);
+      const active = getActiveEnv();
+      const url = apiBaseUrl();
+      console.log(`Environment: ${chalk.bold(active)}`);
       console.log(`Base URL:    ${chalk.dim(url)}`);
+      if (active !== current) {
+        console.log(chalk.dim(`(default: ${current})`));
+      }
     });
 
   env

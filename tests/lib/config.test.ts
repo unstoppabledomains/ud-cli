@@ -4,6 +4,8 @@ import {
   setDefaultEnv,
   setEnvOverride,
   clearEnvOverride,
+  setApiUrlOverride,
+  clearApiUrlOverride,
   apiBaseUrl,
   mcpBaseUrl,
   getEnvConfig,
@@ -15,6 +17,7 @@ import {
 describe('config', () => {
   beforeEach(() => {
     clearEnvOverride();
+    clearApiUrlOverride();
     config.clear();
   });
 
@@ -57,6 +60,29 @@ describe('config', () => {
 
     it('returns staging URL', () => {
       expect(apiBaseUrl('staging')).toBe('https://api.ud-staging.com');
+    });
+  });
+
+  describe('apiUrlOverride', () => {
+    it('overrides apiBaseUrl when set', () => {
+      setApiUrlOverride('http://localhost:3000');
+      expect(apiBaseUrl()).toBe('http://localhost:3000');
+    });
+
+    it('overrides even when env is explicitly passed', () => {
+      setApiUrlOverride('http://localhost:3000');
+      expect(apiBaseUrl('sandbox')).toBe('http://localhost:3000');
+    });
+
+    it('clearApiUrlOverride restores normal resolution', () => {
+      setApiUrlOverride('http://localhost:3000');
+      clearApiUrlOverride();
+      expect(apiBaseUrl()).toBe('https://api.unstoppabledomains.com');
+    });
+
+    it('overrides mcpBaseUrl as well', () => {
+      setApiUrlOverride('http://localhost:3000');
+      expect(mcpBaseUrl()).toBe('http://localhost:3000/mcp/v1');
     });
   });
 

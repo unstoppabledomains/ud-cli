@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module';
 import { Command, Help } from 'commander';
-import { setEnvOverride } from './lib/config.js';
+import { setEnvOverride, setApiUrlOverride } from './lib/config.js';
 import { registerAuthCommands } from './commands/auth.js';
 import { registerEnvCommands } from './commands/env.js';
 import { registerApiCommands } from './commands/api-commands.js';
@@ -86,18 +86,27 @@ program
   .helpOption('-h, --help', 'Display help for command')
   .helpCommand('help [command]', 'Display help for command')
   .option('--env <environment>', 'Override active environment (production or sandbox)')
+  .option('--api-url <url>', 'Override the API base URL (e.g. http://localhost:3000)')
   .option('--format <format>', 'Output format (table, json, csv)')
   .option('--quiet', 'Suppress output except errors')
   .option('--verbose', 'Show detailed output')
   .option('--fields [columns]', 'Show available fields, or specify columns to display (e.g., name,expiresAt,listing.price)')
   .option('--profile <name>', 'Configuration profile to use')
   .hook('preAction', (thisCommand) => {
-    const opts = thisCommand.opts<{ env?: string; format?: string }>();
+    const opts = thisCommand.opts<{ env?: string; apiUrl?: string; format?: string }>();
     if (opts.env) {
       if (!VALID_ENVS.includes(opts.env)) {
         thisCommand.error(`Invalid environment: ${opts.env}. Must be one of: ${VALID_ENVS.join(', ')}`);
       }
       setEnvOverride(opts.env as Environment);
+    }
+    if (opts.apiUrl) {
+      try {
+        new URL(opts.apiUrl);
+      } catch {
+        thisCommand.error(`Invalid URL: ${opts.apiUrl}`);
+      }
+      setApiUrlOverride(opts.apiUrl.replace(/\/+$/, ''));
     }
     if (opts.format && !(VALID_FORMATS as string[]).includes(opts.format)) {
       thisCommand.error(`Invalid format: ${opts.format}. Must be one of: ${VALID_FORMATS.join(', ')}`);

@@ -42,12 +42,23 @@ const config = new Conf<AppConfig>({
 // Stash for the --env override so library code can read it
 let envOverride: Environment | undefined;
 
+// Stash for the --api-url override so library code can read it
+let apiUrlOverride: string | undefined;
+
 export function setEnvOverride(env: Environment): void {
   envOverride = env;
 }
 
 export function clearEnvOverride(): void {
   envOverride = undefined;
+}
+
+export function setApiUrlOverride(url: string): void {
+  apiUrlOverride = url;
+}
+
+export function clearApiUrlOverride(): void {
+  apiUrlOverride = undefined;
 }
 
 export function getActiveEnv(): Environment {
@@ -63,6 +74,7 @@ export function setDefaultEnv(env: Environment): void {
 }
 
 export function apiBaseUrl(env?: Environment): string {
+  if (apiUrlOverride) return apiUrlOverride;
   return BASE_URLS[env ?? getActiveEnv()];
 }
 
