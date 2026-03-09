@@ -10,13 +10,13 @@
       "email": "support@unstoppabledomains.com"
     },
     "x-logo": {
-      "url": "https://unstoppabledomains.com/images/logos/ud-logo-icon.svg"
+      "url": "https://pr-12268.www.ud-staging.com/images/logos/ud-logo-icon.svg"
     }
   },
   "servers": [
     {
-      "url": "https://api.unstoppabledomains.com",
-      "description": "Production server"
+      "url": "https://pr-12268.api.ud-staging.com",
+      "description": "staging server"
     }
   ],
   "paths": {
@@ -2340,7 +2340,7 @@
       "post": {
         "operationId": "dnsHostingList",
         "summary": "List hosting configurations",
-        "description": "List hosting/forwarding configurations (UD Profile, redirects).",
+        "description": "List hosting/forwarding configurations (redirects, reverse proxy, hosted sites, UD Profile).",
         "tags": [
           "DNS Management"
         ],
@@ -2393,7 +2393,7 @@
       "post": {
         "operationId": "dnsHostingAdd",
         "summary": "Add hosting configuration (bulk)",
-        "description": "Configure hosting for one or more domains: for-sale listing page, permanent redirect (301), or temporary redirect (302). Supports up to 50 domains per request.",
+        "description": "Configure hosting for one or more domains: for-sale listing page, permanent redirect (301), temporary redirect (302), or reverse proxy. Supports up to 50 domains per request.",
         "tags": [
           "DNS Management"
         ],
@@ -2430,13 +2430,14 @@
                           "enum": [
                             "LISTING_PAGE",
                             "REDIRECT_301",
-                            "REDIRECT_302"
+                            "REDIRECT_302",
+                            "REVERSE_PROXY"
                           ],
                           "description": "Hosting type"
                         },
                         "targetUrl": {
                           "type": "string",
-                          "description": "Redirect URL (required for redirects)"
+                          "description": "Destination URL (required for REDIRECT_301, REDIRECT_302, REVERSE_PROXY)"
                         },
                         "subName": {
                           "type": "string",
@@ -3110,7 +3111,7 @@
       "post": {
         "operationId": "landerStatus",
         "summary": "Check AI lander generation status",
-        "description": "Check the status of AI landing page generation for one or more domains. Returns pending, generating, hosted, failed, or none.",
+        "description": "Check the status of AI landing page generation for one or more domains. Returns pending, generating, processing, hosted, failed, or none.",
         "tags": [
           "AI Lander"
         ],
@@ -3174,6 +3175,7 @@
                             "enum": [
                               "pending",
                               "generating",
+                              "processing",
                               "hosted",
                               "failed",
                               "none"
@@ -3187,98 +3189,6 @@
                           }
                         }
                       }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Authentication required"
-          }
-        }
-      }
-    },
-    "/mcp/v1/actions/ud_domain_remove_lander": {
-      "post": {
-        "operationId": "removeLander",
-        "summary": "Remove AI landing page from domains",
-        "description": "Remove AI-generated landing pages and hosting configuration from one or more domains. Deletes GCS content and removes hosting config.",
-        "tags": [
-          "AI Lander"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": [
-                  "domains"
-                ],
-                "properties": {
-                  "domains": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "required": [
-                        "name"
-                      ],
-                      "properties": {
-                        "name": {
-                          "type": "string",
-                          "minLength": 1,
-                          "description": "Domain name to remove lander from (e.g., \"example.com\")"
-                        }
-                      }
-                    },
-                    "minItems": 1,
-                    "maxItems": 50,
-                    "description": "Array of domains (1-50)"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Lander removal results",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "results": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "domain": {
-                            "type": "string"
-                          },
-                          "success": {
-                            "type": "boolean"
-                          },
-                          "operationId": {
-                            "type": "string"
-                          },
-                          "error": {
-                            "type": "string"
-                          }
-                        }
-                      }
-                    },
-                    "successCount": {
-                      "type": "number"
-                    },
-                    "failureCount": {
-                      "type": "number"
                     }
                   }
                 }
@@ -3330,7 +3240,7 @@
                         "htmlContent": {
                           "type": "string",
                           "minLength": 1,
-                          "description": "Raw HTML string for a single-page lander (max 1MB). Provide this OR zipContent."
+                          "description": "Raw HTML string for a single-page lander (max 1MB). Preferred for AI-generated content. Provide this OR zipContent."
                         },
                         "zipContent": {
                           "type": "string",
@@ -3498,6 +3408,236 @@
           },
           "401": {
             "description": "Authentication required"
+          }
+        }
+      }
+    },
+    "/mcp/v1/actions/ud_domain_remove_lander": {
+      "post": {
+        "operationId": "removeLander",
+        "summary": "Remove AI landing page from domains",
+        "description": "Remove AI-generated landing pages and hosting configuration from one or more domains. Deletes GCS content and removes hosting config.",
+        "tags": [
+          "AI Lander"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "domains"
+                ],
+                "properties": {
+                  "domains": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "name"
+                      ],
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "description": "Domain name to remove lander from (e.g., \"example.com\")"
+                        }
+                      }
+                    },
+                    "minItems": 1,
+                    "maxItems": 50,
+                    "description": "Array of domains (1-50)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Lander removal results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "domain": {
+                            "type": "string"
+                          },
+                          "success": {
+                            "type": "boolean"
+                          },
+                          "operationId": {
+                            "type": "string"
+                          },
+                          "error": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "successCount": {
+                      "type": "number"
+                    },
+                    "failureCount": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          }
+        }
+      }
+    },
+    "/api/oauth/signup": {
+      "post": {
+        "operationId": "oauthSignup",
+        "summary": "Create an account via email and password (headless)",
+        "description": "Step 1 of headless account creation. Registers a new user with email and password, sends a verification code via email, and returns a signup_session_token. Use POST /api/oauth/signup/verify with the token and code to get OAuth tokens. Returns identical responses for new and existing users to prevent account enumeration.",
+        "tags": [
+          "Account"
+        ],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "password"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "Email address for the new account"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 8,
+                    "description": "Password with at least 8 characters, one uppercase, one lowercase, one digit, and one special character"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Signup session created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "signup_session_token": {
+                      "type": "string",
+                      "description": "Token to use with /api/oauth/signup/verify"
+                    },
+                    "expires_in": {
+                      "type": "number",
+                      "description": "Session TTL in seconds (900)"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid email, password, or disposable email"
+          },
+          "429": {
+            "description": "Rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/oauth/signup/verify": {
+      "post": {
+        "operationId": "oauthSignupVerify",
+        "summary": "Verify signup code and get OAuth tokens",
+        "description": "Step 2 of headless account creation. Exchanges the signup_session_token and the 6-character verification code (sent via email) for OAuth access and refresh tokens.",
+        "tags": [
+          "Account"
+        ],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "signup_session_token",
+                  "verification_code"
+                ],
+                "properties": {
+                  "signup_session_token": {
+                    "type": "string",
+                    "description": "Token from POST /api/oauth/signup"
+                  },
+                  "verification_code": {
+                    "type": "string",
+                    "description": "6-character alphanumeric code from the verification email"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OAuth tokens issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "access_token": {
+                      "type": "string"
+                    },
+                    "token_type": {
+                      "type": "string",
+                      "enum": [
+                        "Bearer"
+                      ]
+                    },
+                    "expires_in": {
+                      "type": "number"
+                    },
+                    "refresh_token": {
+                      "type": "string"
+                    },
+                    "scope": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or expired session, wrong code, or too many attempts"
+          },
+          "429": {
+            "description": "Rate limit exceeded"
           }
         }
       }
@@ -4341,6 +4481,10 @@
           "checkoutUrl": {
             "type": "string"
           },
+          "expiresIn": {
+            "type": "number",
+            "description": "Seconds until the magic link expires (URL is single-use)"
+          },
           "cartSummary": {
             "type": "object",
             "properties": {
@@ -4377,7 +4521,11 @@
         "properties": {
           "url": {
             "type": "string",
-            "description": "URL to the payment management page"
+            "description": "Authenticated magic link URL to the payment management page (single-use, valid for 60 seconds)"
+          },
+          "expiresIn": {
+            "type": "number",
+            "description": "Seconds until the magic link expires (URL is single-use)"
           },
           "instructions": {
             "type": "string",
@@ -4951,7 +5099,7 @@
           },
           "transferStatus": {
             "type": "string",
-            "description": "Domain transfer status:\n• \"none\" - No active transfer\n• \"pending\" - Transfer in progress"
+            "description": "Domain transfer status:\n\u2022 \"none\" - No active transfer\n\u2022 \"pending\" - Transfer in progress"
           },
           "isExternallyOwned": {
             "type": "boolean",
@@ -4997,7 +5145,7 @@
               },
               "status": {
                 "type": "string",
-                "description": "Listing status:\n• \"open\" - Live on marketplace, ready for purchase (user-custodied domains)\n• \"open-not-signed\" - Live on marketplace, ready for purchase (UD-custodied domains, no user action needed)\n• \"open-on-request\" - Accepting offers only, no fixed price\n• \"draft\" - Not yet published\n• \"waiting-for-approval\" - Pending wallet signature from owner\n• \"pending-admin-approval\" - Under review (high-value listings)\n• \"pending\" - Sale in progress\n• \"canceled\" - Listing was canceled\nNote: Both \"open\" and \"open-not-signed\" mean the listing is active and purchasable."
+                "description": "Listing status:\n\u2022 \"open\" - Live on marketplace, ready for purchase (user-custodied domains)\n\u2022 \"open-not-signed\" - Live on marketplace, ready for purchase (UD-custodied domains, no user action needed)\n\u2022 \"open-on-request\" - Accepting offers only, no fixed price\n\u2022 \"draft\" - Not yet published\n\u2022 \"waiting-for-approval\" - Pending wallet signature from owner\n\u2022 \"pending-admin-approval\" - Under review (high-value listings)\n\u2022 \"pending\" - Sale in progress\n\u2022 \"canceled\" - Listing was canceled\nNote: Both \"open\" and \"open-not-signed\" mean the listing is active and purchasable."
               },
               "createdAt": {
                 "type": "string",
@@ -5022,7 +5170,7 @@
             "properties": {
               "status": {
                 "type": "string",
-                "description": "Auto-renewal subscription status:\n• \"active\" - Subscription active, will auto-renew\n• \"pending\" - Payment collected, waiting for domain registration\n• \"update_required\" - Payment method needs updating (card expired/declined)\n• \"expired\" - Subscription expired, domain renewal overdue\n• \"cancelled\" - Subscription cancelled, will not auto-renew"
+                "description": "Auto-renewal subscription status:\n\u2022 \"active\" - Subscription active, will auto-renew\n\u2022 \"pending\" - Payment collected, waiting for domain registration\n\u2022 \"update_required\" - Payment method needs updating (card expired/declined)\n\u2022 \"expired\" - Subscription expired, domain renewal overdue\n\u2022 \"cancelled\" - Subscription cancelled, will not auto-renew"
               },
               "expiresAt": {
                 "type": [
@@ -5716,9 +5864,11 @@
                 "type": {
                   "type": "string",
                   "enum": [
+                    "GCS_HOSTED",
                     "LISTING_PAGE",
                     "REDIRECT_301",
                     "REDIRECT_302",
+                    "REVERSE_PROXY",
                     "UD_PROFILE",
                     "STOREFRONT"
                   ]
@@ -5735,7 +5885,7 @@
                     "string",
                     "null"
                   ],
-                  "description": "Redirect target URL"
+                  "description": "Destination URL (for redirects and reverse proxy)"
                 },
                 "status": {
                   "type": "string"

@@ -77,7 +77,8 @@ function formatTable(data: unknown, options: FormatOptions): string {
   }
 
   // Find the primary data array in the response
-  const { rows, columns } = extractTableData(obj, options);
+  const { rows: rawRows, columns } = extractTableData(obj, options);
+  const rows = filterEmptyRows(rawRows, columns);
 
   if (rows.length === 0) {
     return chalk.dim('No results.');
@@ -99,7 +100,8 @@ function formatTable(data: unknown, options: FormatOptions): string {
 
 function formatCsv(data: unknown, options: FormatOptions): string {
   const obj = data as Record<string, unknown>;
-  const { rows, columns } = extractTableData(obj, options);
+  const { rows: rawRows, columns } = extractTableData(obj, options);
+  const rows = filterEmptyRows(rawRows, columns);
 
   if (rows.length === 0) return '';
 
@@ -618,6 +620,19 @@ function extractTableData(
   return { rows, columns };
 }
 
+/**
+ * Remove rows where every displayed column is null, undefined, or empty string.
+ * Prevents rendering tables with headers but no meaningful data.
+ */
+function filterEmptyRows(rows: Record<string, unknown>[], columns: string[]): Record<string, unknown>[] {
+  return rows.filter((row) =>
+    columns.some((col) => {
+      const val = getNestedValue(row, col);
+      return val !== null && val !== undefined && val !== '';
+    }),
+  );
+}
+
 function autoDetectColumns(row: Record<string, unknown>, maxCols: number): string[] {
   const cols: string[] = [];
   for (const [key, value] of Object.entries(row)) {
@@ -717,7 +732,7 @@ const HEADER_OVERRIDES: Record<string, string> = {
   'marketplace.status': 'Status',
   'operationId': 'Operation ID',
   'pricing.formatted': 'Price',
-  'subName': 'Record',
+  'subName': 'Subdomain',
   'targetUrl': 'Target URL',
   'tld': 'TLD',
   'ttl': 'TTL',
