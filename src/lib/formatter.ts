@@ -69,9 +69,13 @@ function formatTable(data: unknown, options: FormatOptions): string {
       return formatDetail(obj, detailConfig);
     }
     // Item-level detail: only for single-item responses
-    const { rows } = extractTableData(obj, options);
-    if (rows.length === 1) {
-      return formatDetail(rows[0], detailConfig);
+    const { rows: detailRawRows, columns: detailColumns } = extractTableData(obj, options);
+    const detailRows = filterEmptyRows(detailRawRows, detailColumns);
+    if (detailRows.length === 1) {
+      return formatDetail(detailRows[0], detailConfig);
+    }
+    if (detailRows.length === 0) {
+      return chalk.dim('No results.');
     }
     // Multiple items — fall through to normal table
   }

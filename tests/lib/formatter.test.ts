@@ -40,6 +40,14 @@ describe('formatter', () => {
       expect(result).toContain('No results.');
     });
 
+    it('renders "No results." when all row column values are null', () => {
+      const data = { results: [{ name: null, available: null }] };
+      const result = stripAnsi(
+        formatOutput(data, { format: 'table', toolName: 'ud_domains_search' }),
+      );
+      expect(result).toContain('No results.');
+    });
+
     it('uses configured columns for known tools', () => {
       const data = {
         results: [

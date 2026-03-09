@@ -10,13 +10,13 @@
       "email": "support@unstoppabledomains.com"
     },
     "x-logo": {
-      "url": "https://pr-12268.www.ud-staging.com/images/logos/ud-logo-icon.svg"
+      "url": "https://unstoppabledomains.com/images/logos/ud-logo-icon.svg"
     }
   },
   "servers": [
     {
-      "url": "https://pr-12268.api.ud-staging.com",
-      "description": "staging server"
+      "url": "https://api.unstoppabledomains.com",
+      "description": "Production server"
     }
   ],
   "paths": {
