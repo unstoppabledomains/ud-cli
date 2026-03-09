@@ -101,10 +101,15 @@ program
       setEnvOverride(opts.env as Environment);
     }
     if (opts.apiUrl) {
+      let parsed: URL;
       try {
-        new URL(opts.apiUrl);
+        parsed = new URL(opts.apiUrl);
       } catch {
         thisCommand.error(`Invalid URL: ${opts.apiUrl}`);
+        return; // unreachable; satisfies TS control-flow
+      }
+      if (!['http:', 'https:'].includes(parsed.protocol)) {
+        thisCommand.error(`Invalid URL scheme: ${parsed.protocol}. Must be http or https.`);
       }
       setApiUrlOverride(opts.apiUrl.replace(/\/+$/, ''));
     }

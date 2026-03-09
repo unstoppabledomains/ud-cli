@@ -57,6 +57,10 @@ export function setApiUrlOverride(url: string): void {
   apiUrlOverride = url;
 }
 
+export function getApiUrlOverride(): string | undefined {
+  return apiUrlOverride;
+}
+
 export function clearApiUrlOverride(): void {
   apiUrlOverride = undefined;
 }
