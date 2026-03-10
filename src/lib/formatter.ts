@@ -157,7 +157,7 @@ function formatPaginationHint(
   if (!pagination.hasMore) return parts.join('\n');
 
   // Compute next offset for the actionable hint
-  if (pattern === 'paginated-page' || pattern === 'paginated-offset') {
+  if (pattern === 'paginated-offset') {
     const nextOffset = typeof pagination.nextOffset === 'number'
       ? pagination.nextOffset
       : undefined;
