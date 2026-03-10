@@ -5514,14 +5514,6 @@
             "type": "number",
             "description": "Total number of conversations matching filters"
           },
-          "skip": {
-            "type": "number",
-            "description": "Number of items skipped"
-          },
-          "take": {
-            "type": "number",
-            "description": "Number of items returned"
-          },
           "pagination": {
             "type": "object",
             "properties": {
