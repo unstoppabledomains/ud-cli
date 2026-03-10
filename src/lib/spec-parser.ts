@@ -17,7 +17,7 @@ export interface ParamSpec {
   properties?: ParamSpec[]; // for object children
 }
 
-export type ResponsePattern = 'bulk' | 'paginated-page' | 'paginated-offset' | 'simple';
+export type ResponsePattern = 'bulk' | 'paginated-offset' | 'simple';
 
 export interface CommandSpec {
   toolName: string;
@@ -193,7 +193,6 @@ function detectResponsePattern(spec: OpenAPISpec, operation: OperationObject): R
   if (props.pagination) {
     const pag = resolveSchema(spec, props.pagination);
     const pagProps = pag.properties ?? {};
-    if (pagProps.page) return 'paginated-page';
     if (pagProps.offset || pagProps.nextOffset) return 'paginated-offset';
   }
 

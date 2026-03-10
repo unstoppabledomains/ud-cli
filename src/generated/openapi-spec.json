@@ -170,19 +170,6 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "page": {
-                    "type": "number",
-                    "minimum": 1,
-                    "description": "Page number, 1-indexed (default: 1)",
-                    "example": 1
-                  },
-                  "pageSize": {
-                    "type": "number",
-                    "minimum": 1,
-                    "maximum": 100,
-                    "description": "Number of domains per page, 1-100 (default: 50)",
-                    "example": 50
-                  },
                   "searchTerm": {
                     "type": "string",
                     "description": "Optional search term to filter domains by name"
@@ -261,6 +248,19 @@
                       "desc"
                     ],
                     "description": "Sort direction: \"asc\" (ascending, default) or \"desc\" (descending)"
+                  },
+                  "offset": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Number of items to skip for pagination (default: 0)",
+                    "example": 0
+                  },
+                  "limit": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 100,
+                    "description": "Maximum number of items to return (1-100, default: 50)",
+                    "example": 50
                   }
                 }
               }
@@ -1448,9 +1448,18 @@
                     ],
                     "description": "Filter by group: \"active\" (pending) or \"sold\" (completed)"
                   },
-                  "page": {
+                  "offset": {
                     "type": "number",
-                    "description": "Page number (1-indexed)"
+                    "minimum": 0,
+                    "description": "Number of items to skip for pagination (default: 0)",
+                    "example": 0
+                  },
+                  "limit": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 100,
+                    "description": "Maximum number of items to return (1-100, default: 50)",
+                    "example": 50
                   }
                 }
               }
@@ -1573,18 +1582,18 @@
                     "description": "Skip conversations with no messages (default: true)",
                     "default": true
                   },
-                  "skip": {
-                    "type": "integer",
-                    "description": "Number of conversations to skip (pagination offset, default: 0)",
-                    "default": 0,
-                    "minimum": 0
+                  "offset": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Number of items to skip for pagination (default: 0)",
+                    "example": 0
                   },
-                  "take": {
-                    "type": "integer",
-                    "description": "Number of conversations to return (1-100, default: 20)",
-                    "default": 20,
+                  "limit": {
+                    "type": "number",
                     "minimum": 1,
-                    "maximum": 100
+                    "maximum": 100,
+                    "description": "Maximum number of items to return (1-100, default: 20)",
+                    "example": 20
                   }
                 }
               }
@@ -4637,32 +4646,32 @@
           "pagination": {
             "type": "object",
             "properties": {
-              "page": {
-                "type": "number",
-                "description": "Current page number"
-              },
-              "pageSize": {
-                "type": "number",
-                "description": "Items per page"
-              },
-              "totalPages": {
-                "type": "number",
-                "description": "Total number of pages"
-              },
               "total": {
                 "type": "number",
-                "description": "Total number of domains"
+                "description": "Total number of matching items"
+              },
+              "count": {
+                "type": "number",
+                "description": "Number of items returned in this response"
+              },
+              "offset": {
+                "type": "number",
+                "description": "Current offset"
+              },
+              "limit": {
+                "type": "number",
+                "description": "Maximum items per response"
               },
               "hasMore": {
                 "type": "boolean",
-                "description": "Whether more pages exist"
+                "description": "Whether more results are available"
               },
-              "nextPage": {
+              "nextOffset": {
                 "type": [
                   "number",
                   "null"
                 ],
-                "description": "Next page number if more results exist, null otherwise"
+                "description": "Offset for next page, null if no more pages"
               }
             }
           },
@@ -5354,20 +5363,32 @@
           "pagination": {
             "type": "object",
             "properties": {
-              "page": {
-                "type": "number"
-              },
-              "pageSize": {
-                "type": "number"
-              },
-              "totalPages": {
-                "type": "number"
-              },
               "total": {
-                "type": "number"
+                "type": "number",
+                "description": "Total number of matching items"
+              },
+              "count": {
+                "type": "number",
+                "description": "Number of items returned in this response"
+              },
+              "offset": {
+                "type": "number",
+                "description": "Current offset"
+              },
+              "limit": {
+                "type": "number",
+                "description": "Maximum items per response"
               },
               "hasMore": {
-                "type": "boolean"
+                "type": "boolean",
+                "description": "Whether more results are available"
+              },
+              "nextOffset": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Offset for next page, null if no more pages"
               }
             }
           },
@@ -5493,13 +5514,37 @@
             "type": "number",
             "description": "Total number of conversations matching filters"
           },
-          "skip": {
-            "type": "number",
-            "description": "Number of items skipped"
-          },
-          "take": {
-            "type": "number",
-            "description": "Number of items returned"
+          "pagination": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "number",
+                "description": "Total number of matching items"
+              },
+              "count": {
+                "type": "number",
+                "description": "Number of items returned in this response"
+              },
+              "offset": {
+                "type": "number",
+                "description": "Current offset"
+              },
+              "limit": {
+                "type": "number",
+                "description": "Maximum items per response"
+              },
+              "hasMore": {
+                "type": "boolean",
+                "description": "Whether more results are available"
+              },
+              "nextOffset": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Offset for next page, null if no more pages"
+              }
+            }
           }
         }
       },

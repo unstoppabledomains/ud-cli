@@ -156,17 +156,7 @@ function formatPaginationHint(
 
   if (!pagination.hasMore) return parts.join('\n');
 
-  // Compute next page/offset for the actionable hint
-  if (pattern === 'paginated-page') {
-    const nextPage = typeof pagination.nextPage === 'number'
-      ? pagination.nextPage
-      : typeof pagination.page === 'number' ? pagination.page + 1 : undefined;
-    if (nextPage !== undefined) {
-      parts.push(chalk.dim(`Next page: --page ${nextPage}`));
-      return parts.join('\n');
-    }
-  }
-
+  // Compute next offset for the actionable hint
   if (pattern === 'paginated-offset') {
     const nextOffset = typeof pagination.nextOffset === 'number'
       ? pagination.nextOffset
@@ -182,17 +172,19 @@ function formatPaginationHint(
 }
 
 function formatPaginationContext(pagination: Record<string, unknown>): string {
-  const page = pagination.page as number | undefined;
-  const totalPages = pagination.totalPages as number | undefined;
   const total = pagination.total as number | undefined;
+  const count = pagination.count as number | undefined;
+  const offset = pagination.offset as number | undefined;
 
-  if (typeof page === 'number' && typeof totalPages === 'number') {
-    const suffix = typeof total === 'number' ? ` (${total} total)` : '';
-    return `Page ${page} of ${totalPages}${suffix}`;
+  if (typeof offset === 'number' && typeof total === 'number') {
+    const from = offset + 1;
+    const to = typeof count === 'number' ? Math.min(offset + count, total) : undefined;
+    const range = typeof to === 'number' ? `${from}–${to}` : `${from}+`;
+    return `Showing ${range} of ${total}`;
   }
 
-  if (typeof page === 'number' && typeof total === 'number') {
-    return `Page ${page} (${total} total)`;
+  if (typeof total === 'number') {
+    return `${total} total`;
   }
 
   return '';

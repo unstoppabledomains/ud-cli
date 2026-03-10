@@ -191,31 +191,31 @@ describe('formatter', () => {
   });
 
   describe('pagination hints', () => {
-    it('shows page-based pagination hint with context', () => {
+    it('shows offset-based pagination hint with context', () => {
       const data = {
         domains: [{ name: 'test.com' }],
-        pagination: { page: 1, totalPages: 3, total: 150, hasMore: true, nextPage: 2 },
+        pagination: { total: 150, count: 50, offset: 0, limit: 50, hasMore: true, nextOffset: 50 },
       };
       const result = stripAnsi(
-        formatOutput(data, { format: 'table', responsePattern: 'paginated-page' }),
+        formatOutput(data, { format: 'table', responsePattern: 'paginated-offset' }),
       );
-      expect(result).toContain('Page 1 of 3 (150 total)');
-      expect(result).toContain('Next page: --page 2');
+      expect(result).toContain('Showing 1–50 of 150');
+      expect(result).toContain('Next page: --offset 50');
     });
 
-    it('computes next page from current page when nextPage is absent', () => {
+    it('shows correct range for non-zero offset', () => {
       const data = {
         domains: [{ name: 'test.com' }],
-        pagination: { page: 2, totalPages: 5, total: 250, hasMore: true },
+        pagination: { total: 150, count: 50, offset: 50, limit: 50, hasMore: true, nextOffset: 100 },
       };
       const result = stripAnsi(
-        formatOutput(data, { format: 'table', responsePattern: 'paginated-page' }),
+        formatOutput(data, { format: 'table', responsePattern: 'paginated-offset' }),
       );
-      expect(result).toContain('Page 2 of 5 (250 total)');
-      expect(result).toContain('Next page: --page 3');
+      expect(result).toContain('Showing 51–100 of 150');
+      expect(result).toContain('Next page: --offset 100');
     });
 
-    it('shows offset-based pagination hint', () => {
+    it('shows offset-based hint without count', () => {
       const data = {
         results: [{ name: 'test.com' }],
         pagination: { offset: 0, hasMore: true, nextOffset: 20 },
@@ -229,12 +229,12 @@ describe('formatter', () => {
     it('shows context without next-page hint when hasMore is false', () => {
       const data = {
         results: [{ name: 'test.com' }],
-        pagination: { page: 3, totalPages: 3, total: 150, hasMore: false },
+        pagination: { total: 150, count: 50, offset: 100, limit: 50, hasMore: false },
       };
       const result = stripAnsi(
-        formatOutput(data, { format: 'table', responsePattern: 'paginated-page' }),
+        formatOutput(data, { format: 'table', responsePattern: 'paginated-offset' }),
       );
-      expect(result).toContain('Page 3 of 3 (150 total)');
+      expect(result).toContain('Showing 101–150 of 150');
       expect(result).not.toContain('Next page');
     });
 
@@ -244,9 +244,9 @@ describe('formatter', () => {
         pagination: { hasMore: false },
       };
       const result = stripAnsi(
-        formatOutput(data, { format: 'table', responsePattern: 'paginated-page' }),
+        formatOutput(data, { format: 'table', responsePattern: 'paginated-offset' }),
       );
-      expect(result).not.toContain('Page');
+      expect(result).not.toContain('Showing');
       expect(result).not.toContain('Next page');
     });
   });
