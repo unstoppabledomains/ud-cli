@@ -312,7 +312,7 @@ describe('spec-parser', () => {
       expect(cmd.responsePattern).toBe('bulk');
     });
 
-    it('detects page-based pagination', () => {
+    it('detects offset-based pagination from offset property', () => {
       const spec = makeSpec(
         makeEndpoint('ud_test', {
           responseSchema: {
@@ -322,10 +322,12 @@ describe('spec-parser', () => {
               pagination: {
                 type: 'object',
                 properties: {
-                  page: { type: 'number' },
-                  pageSize: { type: 'number' },
                   total: { type: 'number' },
+                  count: { type: 'number' },
+                  offset: { type: 'number' },
+                  limit: { type: 'number' },
                   hasMore: { type: 'boolean' },
+                  nextOffset: { type: 'number' },
                 },
               },
             },
@@ -334,7 +336,7 @@ describe('spec-parser', () => {
       );
 
       const [cmd] = parseSpec(spec);
-      expect(cmd.responsePattern).toBe('paginated-page');
+      expect(cmd.responsePattern).toBe('paginated-offset');
     });
 
     it('detects offset-based pagination', () => {
@@ -464,9 +466,9 @@ describe('spec-parser', () => {
       expect(add.responsePattern).toBe('bulk');
     });
 
-    it('ud_portfolio_list uses page-based pagination', () => {
+    it('ud_portfolio_list uses offset-based pagination', () => {
       const list = specs.find((s) => s.toolName === 'ud_portfolio_list')!;
-      expect(list.responsePattern).toBe('paginated-page');
+      expect(list.responsePattern).toBe('paginated-offset');
     });
   });
 });

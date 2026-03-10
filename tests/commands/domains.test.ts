@@ -89,17 +89,17 @@ describe('domain commands', () => {
 
   // --- domains list ---
 
-  it('domains list passes --page flag', async () => {
+  it('domains list passes --offset flag', async () => {
     let capturedBody: Record<string, unknown> | null = null;
     mockFetchRoute('actions/ud_portfolio_list', (_url, init) => {
       capturedBody = JSON.parse(init?.body as string);
       return jsonResponse({ domains: [], pagination: { hasMore: false } });
     });
 
-    await program.parseAsync(['node', 'ud', 'domains', 'list', '--page', '2']);
+    await program.parseAsync(['node', 'ud', 'domains', 'list', '--offset', '50']);
 
     expect(capturedBody).toBeTruthy();
-    expect(capturedBody!.page).toBe(2);
+    expect(capturedBody!.offset).toBe(50);
   });
 
   it('domains list passes --status flag', async () => {
