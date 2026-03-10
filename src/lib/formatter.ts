@@ -178,7 +178,7 @@ function formatPaginationContext(pagination: Record<string, unknown>): string {
 
   if (typeof offset === 'number' && typeof total === 'number') {
     const from = offset + 1;
-    const to = typeof count === 'number' ? offset + count : undefined;
+    const to = typeof count === 'number' ? Math.min(offset + count, total) : undefined;
     const range = typeof to === 'number' ? `${from}–${to}` : `${from}+`;
     return `Showing ${range} of ${total}`;
   }
