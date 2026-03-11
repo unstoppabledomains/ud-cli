@@ -69,15 +69,20 @@ function formatTable(data: unknown, options: FormatOptions): string {
       return formatDetail(obj, detailConfig);
     }
     // Item-level detail: only for single-item responses
-    const { rows } = extractTableData(obj, options);
-    if (rows.length === 1) {
-      return formatDetail(rows[0], detailConfig);
+    const { rows: detailRawRows, columns: detailColumns } = extractTableData(obj, options);
+    const detailRows = filterEmptyRows(detailRawRows, detailColumns);
+    if (detailRows.length === 1) {
+      return formatDetail(detailRows[0], detailConfig);
+    }
+    if (detailRows.length === 0) {
+      return chalk.dim('No results.');
     }
     // Multiple items — fall through to normal table
   }
 
   // Find the primary data array in the response
-  const { rows, columns } = extractTableData(obj, options);
+  const { rows: rawRows, columns } = extractTableData(obj, options);
+  const rows = filterEmptyRows(rawRows, columns);
 
   if (rows.length === 0) {
     return chalk.dim('No results.');
@@ -99,7 +104,8 @@ function formatTable(data: unknown, options: FormatOptions): string {
 
 function formatCsv(data: unknown, options: FormatOptions): string {
   const obj = data as Record<string, unknown>;
-  const { rows, columns } = extractTableData(obj, options);
+  const { rows: rawRows, columns } = extractTableData(obj, options);
+  const rows = filterEmptyRows(rawRows, columns);
 
   if (rows.length === 0) return '';
 
@@ -150,17 +156,7 @@ function formatPaginationHint(
 
   if (!pagination.hasMore) return parts.join('\n');
 
-  // Compute next page/offset for the actionable hint
-  if (pattern === 'paginated-page') {
-    const nextPage = typeof pagination.nextPage === 'number'
-      ? pagination.nextPage
-      : typeof pagination.page === 'number' ? pagination.page + 1 : undefined;
-    if (nextPage !== undefined) {
-      parts.push(chalk.dim(`Next page: --page ${nextPage}`));
-      return parts.join('\n');
-    }
-  }
-
+  // Compute next offset for the actionable hint
   if (pattern === 'paginated-offset') {
     const nextOffset = typeof pagination.nextOffset === 'number'
       ? pagination.nextOffset
@@ -176,17 +172,19 @@ function formatPaginationHint(
 }
 
 function formatPaginationContext(pagination: Record<string, unknown>): string {
-  const page = pagination.page as number | undefined;
-  const totalPages = pagination.totalPages as number | undefined;
   const total = pagination.total as number | undefined;
+  const count = pagination.count as number | undefined;
+  const offset = pagination.offset as number | undefined;
 
-  if (typeof page === 'number' && typeof totalPages === 'number') {
-    const suffix = typeof total === 'number' ? ` (${total} total)` : '';
-    return `Page ${page} of ${totalPages}${suffix}`;
+  if (typeof offset === 'number' && typeof total === 'number') {
+    const from = offset + 1;
+    const to = typeof count === 'number' ? Math.min(offset + count, total) : undefined;
+    const range = typeof to === 'number' ? `${from}–${to}` : `${from}+`;
+    return `Showing ${range} of ${total}`;
   }
 
-  if (typeof page === 'number' && typeof total === 'number') {
-    return `Page ${page} (${total} total)`;
+  if (typeof total === 'number') {
+    return `${total} total`;
   }
 
   return '';
@@ -259,8 +257,10 @@ const TABLE_CONFIGS: Record<string, string[]> = {
   ud_domain_tags_remove: ['domain', 'success', 'tagsRemoved', 'error'],
   ud_domain_flags_update: ['domain', 'success', 'updatedFlags', 'error'],
   ud_domain_generate_lander: ['domain', 'success', 'jobId', 'error'],
-  ud_domain_lander_status: ['domain', 'status', 'hostingType'],
+  ud_domain_lander_status: ['domain', 'status'],
   ud_domain_remove_lander: ['domain', 'success', 'operationId', 'error'],
+  ud_domain_upload_lander: ['domain', 'success', 'status', 'error'],
+  ud_domain_download_lander: ['domain', 'success', 'format', 'file', 'error'],
   ud_domain_push: ['success', 'message'],
 };
 
@@ -616,6 +616,19 @@ function extractTableData(
   return { rows, columns };
 }
 
+/**
+ * Remove rows where every displayed column is null, undefined, or empty string.
+ * Prevents rendering tables with headers but no meaningful data.
+ */
+function filterEmptyRows(rows: Record<string, unknown>[], columns: string[]): Record<string, unknown>[] {
+  return rows.filter((row) =>
+    columns.some((col) => {
+      const val = getNestedValue(row, col);
+      return val !== null && val !== undefined && val !== '';
+    }),
+  );
+}
+
 function autoDetectColumns(row: Record<string, unknown>, maxCols: number): string[] {
   const cols: string[] = [];
   for (const [key, value] of Object.entries(row)) {
@@ -679,8 +692,11 @@ const VALUE_OVERRIDES: Record<string, string> = {
   completed: 'Completed',
   expired: 'Expired',
   failed: 'Failed',
+  generating: 'Generating',
+  hosted: 'Hosted',
   inactive: 'Inactive',
   listed: 'Listed',
+  none: 'None',
   pending: 'Pending',
   processing: 'Processing',
   registered: 'Registered',
@@ -715,7 +731,7 @@ const HEADER_OVERRIDES: Record<string, string> = {
   'marketplace.status': 'Status',
   'operationId': 'Operation ID',
   'pricing.formatted': 'Price',
-  'subName': 'Record',
+  'subName': 'Subdomain',
   'targetUrl': 'Target URL',
   'tld': 'TLD',
   'ttl': 'TTL',

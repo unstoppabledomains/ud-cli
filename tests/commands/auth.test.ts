@@ -328,8 +328,182 @@ describe('signup', () => {
     await prog.parseAsync(['node', 'ud', 'auth', 'signup']);
 
     expect(errorSpy).toHaveBeenCalledWith(
-      expect.stringContaining('interactive terminal'),
+      expect.stringContaining('required for headless mode'),
     );
     expect(process.exitCode).toBe(1);
+  });
+
+  describe('headless signup with --email and --password', () => {
+    it('starts signup and outputs session token in non-TTY', async () => {
+      mockStdinTTY(false);
+
+      mockFetchRoute('api/oauth/signup', () =>
+        jsonResponse({
+          signup_session_token: 'session_headless',
+          expires_in: 900,
+        }),
+      );
+
+      const prog = await createSignupProgram();
+      await prog.parseAsync([
+        'node', 'ud', 'auth', 'signup',
+        '--email', 'user@example.com',
+        '--password', 'SecurePass1!',
+      ]);
+
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Check your email'),
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('ud auth signup --token session_headless --code <CODE>'),
+      );
+      expect(process.exitCode).toBeUndefined();
+    });
+
+    it('rejects invalid email via --email', async () => {
+      mockStdinTTY(false);
+
+      const prog = await createSignupProgram();
+      await prog.parseAsync([
+        'node', 'ud', 'auth', 'signup',
+        '--email', 'not-an-email',
+        '--password', 'SecurePass1!',
+      ]);
+
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Invalid email'),
+      );
+      expect(process.exitCode).toBe(1);
+    });
+
+    it('errors when --email provided without --password in non-TTY', async () => {
+      mockStdinTTY(false);
+
+      const prog = await createSignupProgram();
+      await prog.parseAsync([
+        'node', 'ud', 'auth', 'signup',
+        '--email', 'user@example.com',
+      ]);
+
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Missing --password'),
+      );
+      expect(process.exitCode).toBe(1);
+    });
+
+    it('errors when --password provided without --email in non-TTY', async () => {
+      mockStdinTTY(false);
+
+      const prog = await createSignupProgram();
+      await prog.parseAsync([
+        'node', 'ud', 'auth', 'signup',
+        '--password', 'SecurePass1!',
+      ]);
+
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Missing --email'),
+      );
+      expect(process.exitCode).toBe(1);
+    });
+
+    it('warns when --code is passed without --token', async () => {
+      mockStdinTTY(false);
+
+      mockFetchRoute('api/oauth/signup', () =>
+        jsonResponse({
+          signup_session_token: 'session_warn',
+          expires_in: 900,
+        }),
+      );
+
+      const prog = await createSignupProgram();
+      await prog.parseAsync([
+        'node', 'ud', 'auth', 'signup',
+        '--email', 'user@example.com',
+        '--password', 'SecurePass1!',
+        '--code', 'AB12CD',
+      ]);
+
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('--code is ignored without --token'),
+      );
+    });
+
+    it('rejects weak password via --password', async () => {
+      mockStdinTTY(false);
+
+      const prog = await createSignupProgram();
+      await prog.parseAsync([
+        'node', 'ud', 'auth', 'signup',
+        '--email', 'user@example.com',
+        '--password', 'weak',
+      ]);
+
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Password does not meet requirements'),
+      );
+      expect(process.exitCode).toBe(1);
+    });
+  });
+
+  describe('headless verify with --token and --code', () => {
+    it('verifies and logs in with session token and code', async () => {
+      mockStdinTTY(false);
+
+      mockFetchRoute('api/oauth/signup/verify', () =>
+        jsonResponse({
+          access_token: 'at_verify',
+          token_type: 'Bearer',
+          expires_in: 3600,
+          refresh_token: 'rt_verify',
+          scope: 'domains:search',
+        }),
+      );
+
+      const prog = await createSignupProgram();
+      await prog.parseAsync([
+        'node', 'ud', 'auth', 'signup',
+        '--token', 'session_abc',
+        '--code', 'AB12CD',
+      ]);
+
+      const tokens = await memStore.getTokens('production');
+      expect(tokens).not.toBeNull();
+      expect(tokens!.accessToken).toBe('at_verify');
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Account created and logged in'),
+      );
+    });
+
+    it('errors when --token is provided without --code', async () => {
+      mockStdinTTY(false);
+
+      const prog = await createSignupProgram();
+      await prog.parseAsync([
+        'node', 'ud', 'auth', 'signup',
+        '--token', 'session_abc',
+      ]);
+
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('--code is required'),
+      );
+      expect(process.exitCode).toBe(1);
+    });
+
+    it('rejects invalid verification code format', async () => {
+      mockStdinTTY(false);
+
+      const prog = await createSignupProgram();
+      await prog.parseAsync([
+        'node', 'ud', 'auth', 'signup',
+        '--token', 'session_abc',
+        '--code', 'TOOLONG1',
+      ]);
+
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Invalid verification code format'),
+      );
+      expect(process.exitCode).toBe(1);
+    });
   });
 });

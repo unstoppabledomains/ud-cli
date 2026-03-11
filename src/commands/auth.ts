@@ -36,9 +36,13 @@ export function registerAuthCommands(program: Command): void {
   auth
     .command('signup')
     .description('Create a new Unstoppable Domains account')
-    .action(async () => {
+    .option('-e, --email <email>', 'Email address')
+    .option('-p, --password <password>', 'Password (visible in shell history; use with care)')
+    .option('-c, --code <code>', 'Verification code')
+    .option('-t, --token <token>', 'Session token from signup (for verification step)')
+    .action(async (options: { email?: string; password?: string; code?: string; token?: string }) => {
       const env = getActiveEnv();
-      await signupFlow(env);
+      await signupFlow(env, options);
     });
 
   auth
@@ -128,50 +132,100 @@ async function loginOAuth(env: string): Promise<void> {
   }
 }
 
-async function signupFlow(env: string): Promise<void> {
-  if (!process.stdin.isTTY) {
-    console.error(chalk.red('Signup requires an interactive terminal.'));
+interface SignupOptions {
+  email?: string;
+  password?: string;
+  code?: string;
+  token?: string;
+}
+
+async function signupFlow(env: string, options: SignupOptions = {}): Promise<void> {
+  // Verify-only mode: --token + --code skips account creation
+  if (options.token) {
+    if (!options.code) {
+      console.error(chalk.red('--code is required when using --token.'));
+      process.exitCode = 1;
+      return;
+    }
+    await verifyAndLogin(env, options.token, options.code);
+    return;
+  }
+
+  // Warn if --code is passed without --token (it has no effect during signup)
+  if (options.code && !options.token) {
+    console.error(chalk.yellow('Warning: --code is ignored without --token. Use --token and --code together to verify.'));
+  }
+
+  const headless = !!(options.email && options.password);
+
+  if (!headless && !process.stdin.isTTY) {
+    const missing = !options.email && !options.password
+      ? '--email and --password are required for headless mode.'
+      : !options.email
+        ? 'Missing --email; both --email and --password are required for headless mode.'
+        : 'Missing --password; both --email and --password are required for headless mode.';
+    console.error(chalk.red(missing));
     process.exitCode = 1;
     return;
   }
 
-  console.log(chalk.blue(`Creating a new account on ${env}...\n`));
-
   // 1. Email
-  const email = await promptInput('Email: ', { validate: EMAIL_PATTERN });
-  if (!email) {
-    console.error(chalk.red('A valid email address is required.'));
-    process.exitCode = 1;
-    return;
+  let email: string;
+  if (options.email) {
+    if (!EMAIL_PATTERN.test(options.email)) {
+      console.error(chalk.red('Invalid email address format.'));
+      process.exitCode = 1;
+      return;
+    }
+    email = options.email;
+  } else {
+    console.log(chalk.blue(`Creating a new account on ${env}...\n`));
+    const prompted = await promptInput('Email: ', { validate: EMAIL_PATTERN });
+    if (!prompted) {
+      console.error(chalk.red('A valid email address is required.'));
+      process.exitCode = 1;
+      return;
+    }
+    email = prompted;
   }
 
   // 2. Password
-  console.log(chalk.dim('Password must be at least 8 characters with uppercase, lowercase, number, and special character.'));
-  const password = await promptPassword('Password: ');
-  if (!password) {
-    process.exitCode ??= 1;
-    return;
+  let password: string;
+  if (options.password) {
+    if (!PASSWORD_PATTERN.test(options.password)) {
+      console.error(chalk.red('Password does not meet requirements (8+ chars, uppercase, lowercase, number, special character).'));
+      process.exitCode = 1;
+      return;
+    }
+    password = options.password;
+  } else {
+    console.log(chalk.dim('Password must be at least 8 characters with uppercase, lowercase, number, and special character.'));
+    const prompted = await promptPassword('Password: ');
+    if (!prompted) {
+      process.exitCode ??= 1;
+      return;
+    }
+    if (!PASSWORD_PATTERN.test(prompted)) {
+      console.error(chalk.red('Password does not meet requirements.'));
+      process.exitCode = 1;
+      return;
+    }
+
+    // Confirm password (interactive only)
+    const confirm = await promptPassword('Confirm password: ');
+    if (!confirm) {
+      process.exitCode ??= 1;
+      return;
+    }
+    if (prompted !== confirm) {
+      console.error(chalk.red('Passwords do not match.'));
+      process.exitCode = 1;
+      return;
+    }
+    password = prompted;
   }
 
-  if (!PASSWORD_PATTERN.test(password)) {
-    console.error(chalk.red('Password does not meet requirements.'));
-    process.exitCode = 1;
-    return;
-  }
-
-  // 3. Confirm password
-  const confirm = await promptPassword('Confirm password: ');
-  if (!confirm) {
-    process.exitCode ??= 1;
-    return;
-  }
-  if (password !== confirm) {
-    console.error(chalk.red('Passwords do not match.'));
-    process.exitCode = 1;
-    return;
-  }
-
-  // 4. Start signup
+  // 3. Start signup
   const spinner = await createSpinner('Creating account...');
   spinner.start();
 
@@ -187,7 +241,14 @@ async function signupFlow(env: string): Promise<void> {
     return;
   }
 
-  // 5. Verification code
+  // 4. Verification code
+  if (headless) {
+    // Headless: hint to stderr, actionable command to stdout
+    console.error(`\nCheck your email for a 6-character verification code, then run:\n`);
+    console.log(`ud auth signup --token ${sessionToken} --code <CODE>`);
+    return;
+  }
+
   console.log(`\n${chalk.cyan('Check your email')} for a 6-character verification code.`);
   const code = await promptInput('Verification code: ', { validate: /^[A-Z0-9]{6}$/i });
   if (!code) {
@@ -196,7 +257,16 @@ async function signupFlow(env: string): Promise<void> {
     return;
   }
 
-  // 6. Verify
+  await verifyAndLogin(env, sessionToken, code);
+}
+
+async function verifyAndLogin(env: string, sessionToken: string, code: string): Promise<void> {
+  if (!/^[A-Z0-9]{6}$/i.test(code)) {
+    console.error(chalk.red('Invalid verification code format. Expected 6 alphanumeric characters.'));
+    process.exitCode = 1;
+    return;
+  }
+
   const verifySpinner = await createSpinner('Verifying...');
   verifySpinner.start();
 
