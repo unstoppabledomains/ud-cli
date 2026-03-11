@@ -170,6 +170,19 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "page": {
+                    "type": "number",
+                    "minimum": 1,
+                    "description": "Page number, 1-indexed (default: 1)",
+                    "example": 1
+                  },
+                  "pageSize": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 100,
+                    "description": "Number of domains per page, 1-100 (default: 50)",
+                    "example": 50
+                  },
                   "searchTerm": {
                     "type": "string",
                     "description": "Optional search term to filter domains by name"
@@ -248,19 +261,6 @@
                       "desc"
                     ],
                     "description": "Sort direction: \"asc\" (ascending, default) or \"desc\" (descending)"
-                  },
-                  "offset": {
-                    "type": "number",
-                    "minimum": 0,
-                    "description": "Number of items to skip for pagination (default: 0)",
-                    "example": 0
-                  },
-                  "limit": {
-                    "type": "number",
-                    "minimum": 1,
-                    "maximum": 100,
-                    "description": "Maximum number of items to return (1-100, default: 50)",
-                    "example": 50
                   }
                 }
               }
@@ -1448,18 +1448,9 @@
                     ],
                     "description": "Filter by group: \"active\" (pending) or \"sold\" (completed)"
                   },
-                  "offset": {
+                  "page": {
                     "type": "number",
-                    "minimum": 0,
-                    "description": "Number of items to skip for pagination (default: 0)",
-                    "example": 0
-                  },
-                  "limit": {
-                    "type": "number",
-                    "minimum": 1,
-                    "maximum": 100,
-                    "description": "Maximum number of items to return (1-100, default: 50)",
-                    "example": 50
+                    "description": "Page number (1-indexed)"
                   }
                 }
               }
@@ -1582,18 +1573,18 @@
                     "description": "Skip conversations with no messages (default: true)",
                     "default": true
                   },
-                  "offset": {
-                    "type": "number",
-                    "minimum": 0,
-                    "description": "Number of items to skip for pagination (default: 0)",
-                    "example": 0
+                  "skip": {
+                    "type": "integer",
+                    "description": "Number of conversations to skip (pagination offset, default: 0)",
+                    "default": 0,
+                    "minimum": 0
                   },
-                  "limit": {
-                    "type": "number",
+                  "take": {
+                    "type": "integer",
+                    "description": "Number of conversations to return (1-100, default: 20)",
+                    "default": 20,
                     "minimum": 1,
-                    "maximum": 100,
-                    "description": "Maximum number of items to return (1-100, default: 20)",
-                    "example": 20
+                    "maximum": 100
                   }
                 }
               }
@@ -3650,6 +3641,595 @@
           }
         }
       }
+    },
+    "/mcp/v1/actions/ud_backorder_create": {
+      "post": {
+        "operationId": "backorderCreate",
+        "tags": [
+          "Backorders"
+        ],
+        "summary": "Create domain backorders",
+        "description": "Create backorders for one or more expiring DNS domains. The system monitors the domain and automatically registers it when it drops.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "domains"
+                ],
+                "properties": {
+                  "domains": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 50,
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "name",
+                        "contactId",
+                        "availableAfterTimestamp"
+                      ],
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "description": "Domain name to backorder"
+                        },
+                        "contactId": {
+                          "type": "string",
+                          "description": "ICANN contact ID for domain registration"
+                        },
+                        "availableAfterTimestamp": {
+                          "type": "number",
+                          "description": "Unix timestamp (ms) when the domain becomes available for registration"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Backorder creation results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "success": {
+                            "type": "boolean"
+                          },
+                          "backorderId": {
+                            "type": "number"
+                          },
+                          "price": {
+                            "type": "number"
+                          },
+                          "serviceFee": {
+                            "type": "number"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "error": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "successCount": {
+                      "type": "number"
+                    },
+                    "failureCount": {
+                      "type": "number"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          }
+        }
+      }
+    },
+    "/mcp/v1/actions/ud_backorder_cancel": {
+      "post": {
+        "operationId": "backorderCancel",
+        "tags": [
+          "Backorders"
+        ],
+        "summary": "Cancel domain backorders",
+        "description": "Cancel one or more pending domain backorders. Refunds the Account Balance hold (minus non-refundable service fee) and removes the scheduled registration job.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "backorderIds"
+                ],
+                "properties": {
+                  "backorderIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "number"
+                    },
+                    "minItems": 1,
+                    "maxItems": 50,
+                    "description": "Array of backorder IDs to cancel"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Backorder cancellation results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "backorderId": {
+                            "type": "number"
+                          },
+                          "domain": {
+                            "type": "string"
+                          },
+                          "success": {
+                            "type": "boolean"
+                          },
+                          "refundAmount": {
+                            "type": "number"
+                          },
+                          "error": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "successCount": {
+                      "type": "number"
+                    },
+                    "failureCount": {
+                      "type": "number"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          }
+        }
+      }
+    },
+    "/mcp/v1/actions/ud_backorders_list": {
+      "post": {
+        "operationId": "backordersList",
+        "tags": [
+          "Backorders"
+        ],
+        "summary": "List user's backorders",
+        "description": "List the authenticated user's domain backorders with optional status filtering, domain search, and pagination. Status normalization is applied automatically.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "pending",
+                        "cancelled",
+                        "in-progress",
+                        "registration-pending",
+                        "completed-success",
+                        "completed-not-available",
+                        "completed-payment-failed",
+                        "completed-user-contact-invalid",
+                        "failed"
+                      ]
+                    },
+                    "description": "Filter by backorder status"
+                  },
+                  "query": {
+                    "type": "string",
+                    "maxLength": 253,
+                    "description": "Search by domain name (partial match)"
+                  },
+                  "offset": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Pagination offset (default: 0)"
+                  },
+                  "limit": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 100,
+                    "description": "Items per page (1-100, default: 20)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "List of backorders with pagination",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "backorders": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "backorderId": {
+                            "type": "number"
+                          },
+                          "domain": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "price": {
+                            "type": "number"
+                          },
+                          "serviceFee": {
+                            "type": "number"
+                          },
+                          "availableAfter": {
+                            "type": "number"
+                          },
+                          "createdAt": {
+                            "type": "number"
+                          },
+                          "updatedAt": {
+                            "type": "number"
+                          }
+                        }
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "number"
+                        },
+                        "count": {
+                          "type": "number"
+                        },
+                        "offset": {
+                          "type": "number"
+                        },
+                        "limit": {
+                          "type": "number"
+                        },
+                        "hasMore": {
+                          "type": "boolean"
+                        },
+                        "nextOffset": {
+                          "type": "number",
+                          "nullable": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          }
+        }
+      }
+    },
+    "/mcp/v1/actions/ud_expireds_list": {
+      "post": {
+        "operationId": "expiredsList",
+        "tags": [
+          "Backorders"
+        ],
+        "summary": "Browse the expireds/pending-delete domain marketplace",
+        "description": "List domains that are approaching expiration or have recently dropped and are available for backorder registration. Supports filtering by status, TLD, label length, backorder count, and watchlist count.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "query": {
+                    "type": "string",
+                    "maxLength": 253,
+                    "description": "Search by domain name (exact match if contains dot) or label substring"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "COMING_SOON",
+                      "AVAILABLE_BACKORDER"
+                    ],
+                    "description": "Filter by drop status: \"COMING_SOON\" (not yet dropped) or \"AVAILABLE_BACKORDER\" (already dropped)"
+                  },
+                  "tlds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Filter by TLD extensions (e.g., [\"com\", \"net\"])"
+                  },
+                  "sortBy": {
+                    "type": "string",
+                    "enum": [
+                      "name",
+                      "deletionAt",
+                      "labelLength",
+                      "watchlistCount",
+                      "backorderCount"
+                    ],
+                    "description": "Sort field (default: \"deletionAt\")"
+                  },
+                  "sortDirection": {
+                    "type": "string",
+                    "enum": [
+                      "ASC",
+                      "DESC"
+                    ],
+                    "description": "Sort direction (default: \"ASC\")"
+                  },
+                  "lengthRange": {
+                    "type": "array",
+                    "items": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "description": "Filter by label length range [min, max]. Use max=0 for no upper bound."
+                  },
+                  "bidsRange": {
+                    "type": "array",
+                    "items": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "description": "Filter by backorder count range [min, max]. Use max=0 for no upper bound."
+                  },
+                  "watchlistRange": {
+                    "type": "array",
+                    "items": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "description": "Filter by watchlist count range [min, max]. Use max=0 for no upper bound."
+                  },
+                  "offset": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Number of items to skip for pagination (default: 0)"
+                  },
+                  "limit": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 500,
+                    "description": "Maximum number of items to return (1-500, default: 50)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "List of expiring/dropped domains",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "domains": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "description": "Full domain name"
+                          },
+                          "deletionTimestamp": {
+                            "type": "number",
+                            "description": "Unix timestamp in milliseconds when the domain drops/dropped"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "COMING_SOON",
+                              "AVAILABLE_BACKORDER"
+                            ]
+                          },
+                          "labelLength": {
+                            "type": "number",
+                            "description": "Length of the domain label"
+                          },
+                          "watchlistCount": {
+                            "type": "number",
+                            "description": "Number of users watching this domain"
+                          },
+                          "backorderCount": {
+                            "type": "number",
+                            "description": "Number of active backorders"
+                          }
+                        }
+                      }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "number"
+                        },
+                        "count": {
+                          "type": "number"
+                        },
+                        "offset": {
+                          "type": "number"
+                        },
+                        "limit": {
+                          "type": "number"
+                        },
+                        "hasMore": {
+                          "type": "boolean"
+                        },
+                        "nextOffset": {
+                          "type": "number"
+                        }
+                      }
+                    },
+                    "truncated": {
+                      "type": "boolean",
+                      "description": "Whether the response was truncated to fit within size limits"
+                    },
+                    "truncationMessage": {
+                      "type": "string",
+                      "description": "Message indicating how many results were truncated"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          }
+        }
+      }
+    },
+    "/mcp/v1/actions/ud_authenticated_url_get": {
+      "post": {
+        "operationId": "authenticatedUrlGet",
+        "tags": [
+          "Session"
+        ],
+        "summary": "Generate an authenticated URL for browser sign-in",
+        "description": "Creates a one-time URL that automatically signs the user in and redirects to the specified page. Use this whenever the user needs to complete an action in the browser (e.g., adding a payment method, managing account settings). The URL expires after 60 seconds and is single-use.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "path"
+                ],
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "pattern": "^/",
+                    "minLength": 1,
+                    "description": "Page path to open in the browser, e.g. \"/account/payments/card\""
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authenticated URL generated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string",
+                      "description": "One-time authenticated URL (valid for 60 seconds)"
+                    },
+                    "expiresIn": {
+                      "type": "number",
+                      "description": "Seconds until the URL expires"
+                    },
+                    "instructions": {
+                      "type": "string",
+                      "description": "Guidance for the user"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -4646,32 +5226,32 @@
           "pagination": {
             "type": "object",
             "properties": {
+              "page": {
+                "type": "number",
+                "description": "Current page number"
+              },
+              "pageSize": {
+                "type": "number",
+                "description": "Items per page"
+              },
+              "totalPages": {
+                "type": "number",
+                "description": "Total number of pages"
+              },
               "total": {
                 "type": "number",
-                "description": "Total number of matching items"
-              },
-              "count": {
-                "type": "number",
-                "description": "Number of items returned in this response"
-              },
-              "offset": {
-                "type": "number",
-                "description": "Current offset"
-              },
-              "limit": {
-                "type": "number",
-                "description": "Maximum items per response"
+                "description": "Total number of domains"
               },
               "hasMore": {
                 "type": "boolean",
-                "description": "Whether more results are available"
+                "description": "Whether more pages exist"
               },
-              "nextOffset": {
+              "nextPage": {
                 "type": [
                   "number",
                   "null"
                 ],
-                "description": "Offset for next page, null if no more pages"
+                "description": "Next page number if more results exist, null otherwise"
               }
             }
           },
@@ -5108,7 +5688,7 @@
           },
           "transferStatus": {
             "type": "string",
-            "description": "Domain transfer status:\n\u2022 \"none\" - No active transfer\n\u2022 \"pending\" - Transfer in progress"
+            "description": "Domain transfer status:\n• \"none\" - No active transfer\n• \"pending\" - Transfer in progress"
           },
           "isExternallyOwned": {
             "type": "boolean",
@@ -5154,7 +5734,7 @@
               },
               "status": {
                 "type": "string",
-                "description": "Listing status:\n\u2022 \"open\" - Live on marketplace, ready for purchase (user-custodied domains)\n\u2022 \"open-not-signed\" - Live on marketplace, ready for purchase (UD-custodied domains, no user action needed)\n\u2022 \"open-on-request\" - Accepting offers only, no fixed price\n\u2022 \"draft\" - Not yet published\n\u2022 \"waiting-for-approval\" - Pending wallet signature from owner\n\u2022 \"pending-admin-approval\" - Under review (high-value listings)\n\u2022 \"pending\" - Sale in progress\n\u2022 \"canceled\" - Listing was canceled\nNote: Both \"open\" and \"open-not-signed\" mean the listing is active and purchasable."
+                "description": "Listing status:\n• \"open\" - Live on marketplace, ready for purchase (user-custodied domains)\n• \"open-not-signed\" - Live on marketplace, ready for purchase (UD-custodied domains, no user action needed)\n• \"open-on-request\" - Accepting offers only, no fixed price\n• \"draft\" - Not yet published\n• \"waiting-for-approval\" - Pending wallet signature from owner\n• \"pending-admin-approval\" - Under review (high-value listings)\n• \"pending\" - Sale in progress\n• \"canceled\" - Listing was canceled\nNote: Both \"open\" and \"open-not-signed\" mean the listing is active and purchasable."
               },
               "createdAt": {
                 "type": "string",
@@ -5179,7 +5759,7 @@
             "properties": {
               "status": {
                 "type": "string",
-                "description": "Auto-renewal subscription status:\n\u2022 \"active\" - Subscription active, will auto-renew\n\u2022 \"pending\" - Payment collected, waiting for domain registration\n\u2022 \"update_required\" - Payment method needs updating (card expired/declined)\n\u2022 \"expired\" - Subscription expired, domain renewal overdue\n\u2022 \"cancelled\" - Subscription cancelled, will not auto-renew"
+                "description": "Auto-renewal subscription status:\n• \"active\" - Subscription active, will auto-renew\n• \"pending\" - Payment collected, waiting for domain registration\n• \"update_required\" - Payment method needs updating (card expired/declined)\n• \"expired\" - Subscription expired, domain renewal overdue\n• \"cancelled\" - Subscription cancelled, will not auto-renew"
               },
               "expiresAt": {
                 "type": [
@@ -5363,32 +5943,20 @@
           "pagination": {
             "type": "object",
             "properties": {
+              "page": {
+                "type": "number"
+              },
+              "pageSize": {
+                "type": "number"
+              },
+              "totalPages": {
+                "type": "number"
+              },
               "total": {
-                "type": "number",
-                "description": "Total number of matching items"
-              },
-              "count": {
-                "type": "number",
-                "description": "Number of items returned in this response"
-              },
-              "offset": {
-                "type": "number",
-                "description": "Current offset"
-              },
-              "limit": {
-                "type": "number",
-                "description": "Maximum items per response"
+                "type": "number"
               },
               "hasMore": {
-                "type": "boolean",
-                "description": "Whether more results are available"
-              },
-              "nextOffset": {
-                "type": [
-                  "number",
-                  "null"
-                ],
-                "description": "Offset for next page, null if no more pages"
+                "type": "boolean"
               }
             }
           },
@@ -5514,37 +6082,13 @@
             "type": "number",
             "description": "Total number of conversations matching filters"
           },
-          "pagination": {
-            "type": "object",
-            "properties": {
-              "total": {
-                "type": "number",
-                "description": "Total number of matching items"
-              },
-              "count": {
-                "type": "number",
-                "description": "Number of items returned in this response"
-              },
-              "offset": {
-                "type": "number",
-                "description": "Current offset"
-              },
-              "limit": {
-                "type": "number",
-                "description": "Maximum items per response"
-              },
-              "hasMore": {
-                "type": "boolean",
-                "description": "Whether more results are available"
-              },
-              "nextOffset": {
-                "type": [
-                  "number",
-                  "null"
-                ],
-                "description": "Offset for next page, null if no more pages"
-              }
-            }
+          "skip": {
+            "type": "number",
+            "description": "Number of items skipped"
+          },
+          "take": {
+            "type": "number",
+            "description": "Number of items returned"
           }
         }
       },

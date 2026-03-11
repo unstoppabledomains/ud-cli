@@ -529,6 +529,50 @@ const HOOKS: Record<string, CommandHooks> = {
   ud_dns_nameservers_set_default: { showOperationHint: true },
   ud_dns_hosting_add: { showOperationHint: true },
   ud_dns_hosting_remove: { showOperationHint: true },
+  // Authenticated URL
+  ud_authenticated_url_get: { magicLinkFields: ['url'] },
+  // Backorders
+  ud_backorders_list: {
+    postActionHint: chalk.dim('\nTip: Cancel a backorder: ud domains backorders cancel --backorder-ids <id>'),
+  },
+  ud_backorder_cancel: {
+    requireConfirm: {
+      message: 'This will cancel the specified backorder(s) and issue refunds. Are you sure?',
+    },
+    showFailureHints: true,
+    postActionHint: chalk.dim('\nTip: View remaining backorders: ud domains backorders list'),
+  },
+  ud_backorder_create: {
+    preAction: async (ctx) => {
+      const domains = ctx.body.domains as Record<string, unknown>[] | undefined;
+      if (!domains || domains.length === 0) {
+        return {
+          abort: true,
+          message: 'Missing required fields: --name, --contact-id, and --available-after-timestamp are all required.\n'
+            + chalk.dim('Tip: Find the timestamp for a domain: ud marketplace expiring list --query <domain>'),
+        };
+      }
+      const missing: string[] = [];
+      for (const entry of domains) {
+        if (!entry.name) missing.push('--name');
+        if (entry.contactId == null) missing.push('--contact-id');
+        if (entry.availableAfterTimestamp == null) missing.push('--available-after-timestamp');
+        if (missing.length > 0) break;
+      }
+      if (missing.length > 0) {
+        return {
+          abort: true,
+          message: `Missing required field(s): ${missing.join(', ')}\n`
+            + chalk.dim('Tip: Find the timestamp for a domain: ud marketplace expiring list --query <domain>'),
+        };
+      }
+    },
+    postActionHint: chalk.dim('\nTip: View your backorders: ud domains backorders list'),
+  },
+  // Expiring domains
+  ud_expireds_list: {
+    postActionHint: chalk.dim('\nTip: Place a backorder: ud domains backorders create --name <domain> --contact-id <id> --available-after-timestamp <ts>'),
+  },
 };
 
 /**

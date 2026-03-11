@@ -156,13 +156,23 @@ function formatPaginationHint(
 
   if (!pagination.hasMore) return parts.join('\n');
 
-  // Compute next offset for the actionable hint
+  // Compute next offset/page for the actionable hint
   if (pattern === 'paginated-offset') {
     const nextOffset = typeof pagination.nextOffset === 'number'
       ? pagination.nextOffset
       : undefined;
     if (nextOffset !== undefined) {
       parts.push(chalk.dim(`Next page: --offset ${nextOffset}`));
+      return parts.join('\n');
+    }
+  }
+
+  if (pattern === 'paginated-page') {
+    const nextPage = typeof pagination.nextPage === 'number'
+      ? pagination.nextPage
+      : undefined;
+    if (nextPage !== undefined) {
+      parts.push(chalk.dim(`Next page: --page ${nextPage}`));
       return parts.join('\n');
     }
   }
@@ -176,6 +186,15 @@ function formatPaginationContext(pagination: Record<string, unknown>): string {
   const count = pagination.count as number | undefined;
   const offset = pagination.offset as number | undefined;
 
+  // Page-based: "Page 2 of 5 (150 total)"
+  const page = pagination.page as number | undefined;
+  const totalPages = pagination.totalPages as number | undefined;
+  if (typeof page === 'number' && typeof totalPages === 'number') {
+    const suffix = typeof total === 'number' ? ` (${total} total)` : '';
+    return `Page ${page} of ${totalPages}${suffix}`;
+  }
+
+  // Offset-based: "Showing 1–20 of 150"
   if (typeof offset === 'number' && typeof total === 'number') {
     const from = offset + 1;
     const to = typeof count === 'number' ? Math.min(offset + count, total) : undefined;
@@ -262,6 +281,16 @@ const TABLE_CONFIGS: Record<string, string[]> = {
   ud_domain_upload_lander: ['domain', 'success', 'status', 'error'],
   ud_domain_download_lander: ['domain', 'success', 'format', 'file', 'error'],
   ud_domain_push: ['success', 'message'],
+
+  // Authenticated URL
+  ud_authenticated_url_get: ['url', 'expiresIn'],
+
+  // --- Backorders ---
+  ud_backorders_list: ['backorderId', 'domain', 'status', 'price', 'serviceFee', 'availableAfter'],
+  ud_backorder_cancel: ['backorderId', 'domain', 'success', 'refundAmount', 'error'],
+  ud_backorder_create: ['name', 'success', 'backorderId', 'price', 'status', 'error'],
+  // Expiring domains
+  ud_expireds_list: ['name', 'status', 'deletionTimestamp', 'labelLength', 'watchlistCount', 'backorderCount'],
 };
 
 /**
@@ -570,7 +599,7 @@ function extractTableData(
 ): { rows: Record<string, unknown>[]; columns: string[] } {
   const isTable = options.format === 'table';
   // Find the primary array — common keys: results, domains, tlds, records, items, contacts, offers, leads
-  const arrayKeys = ['results', 'domains', 'tlds', 'records', 'items', 'contacts', 'offers', 'leads', 'messages', 'listings', 'savedCards', 'configs', 'pushedDomains', 'failedDomains', 'addedProducts'];
+  const arrayKeys = ['results', 'domains', 'tlds', 'records', 'items', 'contacts', 'offers', 'leads', 'messages', 'listings', 'savedCards', 'configs', 'pushedDomains', 'failedDomains', 'addedProducts', 'backorders'];
   let rows: Record<string, unknown>[] = [];
 
   for (const key of arrayKeys) {
@@ -702,6 +731,8 @@ const VALUE_OVERRIDES: Record<string, string> = {
   registered: 'Registered',
   rejected: 'Rejected',
   unlisted: 'Unlisted',
+  COMING_SOON: 'Coming Soon',
+  AVAILABLE_BACKORDER: 'Available',
 };
 
 /** Explicit header overrides for column keys where the auto-generated name is awkward. */
@@ -726,6 +757,14 @@ const HEADER_OVERRIDES: Record<string, string> = {
   'senderUserId': 'Sender',
   'removedCount': 'Removed',
   'orderId': 'Order ID',
+  'backorderId': 'Backorder ID',
+  'serviceFee': 'Service Fee',
+  'refundAmount': 'Refund',
+  'availableAfter': 'Available After',
+  'deletionTimestamp': 'Deletion Date',
+  'labelLength': 'Length',
+  'watchlistCount': 'Watchlist',
+  'backorderCount': 'Backorders',
   'conversationId': 'Conversation ID',
   'domainName': 'Domain',
   'marketplace.status': 'Status',

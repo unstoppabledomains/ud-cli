@@ -466,9 +466,9 @@ describe('spec-parser', () => {
       expect(add.responsePattern).toBe('bulk');
     });
 
-    it('ud_portfolio_list uses offset-based pagination', () => {
+    it('ud_portfolio_list uses page-based pagination', () => {
       const list = specs.find((s) => s.toolName === 'ud_portfolio_list')!;
-      expect(list.responsePattern).toBe('paginated-offset');
+      expect(list.responsePattern).toBe('paginated-page');
     });
   });
 });

@@ -38,6 +38,16 @@ export const COMMAND_ROUTES: CommandRoute[] = [
     description: 'List available TLDs',
   },
 
+  // --- Utilities ---
+  {
+    toolName: 'ud_authenticated_url_get',
+    path: ['open'],
+    positionalArgs: [
+      { name: 'path', description: 'Page path to open, e.g. /account/payments/card', required: true, variadic: false },
+    ],
+    description: 'Open an authenticated page in the browser',
+  },
+
   // --- Portfolio ---
   {
     toolName: 'ud_portfolio_list',
@@ -285,6 +295,30 @@ export const COMMAND_ROUTES: CommandRoute[] = [
   {
     toolName: 'ud_contact_create',
     path: ['domains', 'contacts', 'create'],
+    positionalArgs: [],
+  },
+
+  // --- Backorders ---
+  {
+    toolName: 'ud_backorders_list',
+    path: ['domains', 'backorders', 'list'],
+    positionalArgs: [],
+  },
+  {
+    toolName: 'ud_backorder_cancel',
+    path: ['domains', 'backorders', 'cancel'],
+    positionalArgs: [],
+  },
+  {
+    toolName: 'ud_backorder_create',
+    path: ['domains', 'backorders', 'create'],
+    positionalArgs: [],
+  },
+
+  // --- Expiring Domains ---
+  {
+    toolName: 'ud_expireds_list',
+    path: ['marketplace', 'expiring', 'list'],
     positionalArgs: [],
   },
 
