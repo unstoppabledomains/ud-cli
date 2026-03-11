@@ -194,7 +194,7 @@ function detectResponsePattern(spec: OpenAPISpec, operation: OperationObject): R
     const pag = resolveSchema(spec, props.pagination);
     const pagProps = pag.properties ?? {};
     if (pagProps.offset || pagProps.nextOffset) return 'paginated-offset';
-    if (pagProps.page || pagProps.nextPage) return 'paginated-page';
+    if (pagProps.nextPage || pagProps.totalPages) return 'paginated-page';
   }
 
   return 'simple';

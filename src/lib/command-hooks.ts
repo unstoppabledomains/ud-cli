@@ -529,6 +529,8 @@ const HOOKS: Record<string, CommandHooks> = {
   ud_dns_nameservers_set_default: { showOperationHint: true },
   ud_dns_hosting_add: { showOperationHint: true },
   ud_dns_hosting_remove: { showOperationHint: true },
+  // Authenticated URL
+  ud_authenticated_url_get: { magicLinkFields: ['url'] },
   // Backorders
   ud_backorders_list: {
     postActionHint: chalk.dim('\nTip: Cancel a backorder: ud domains backorders cancel --backorder-ids <id>'),
@@ -551,10 +553,12 @@ const HOOKS: Record<string, CommandHooks> = {
         };
       }
       const missing: string[] = [];
-      const first = domains[0];
-      if (!first.name) missing.push('--name');
-      if (!first.contactId) missing.push('--contact-id');
-      if (!first.availableAfterTimestamp) missing.push('--available-after-timestamp');
+      for (const entry of domains) {
+        if (!entry.name) missing.push('--name');
+        if (entry.contactId == null) missing.push('--contact-id');
+        if (entry.availableAfterTimestamp == null) missing.push('--available-after-timestamp');
+        if (missing.length > 0) break;
+      }
       if (missing.length > 0) {
         return {
           abort: true,
@@ -567,7 +571,7 @@ const HOOKS: Record<string, CommandHooks> = {
   },
   // Expiring domains
   ud_expireds_list: {
-    postActionHint: chalk.dim('\nTip: Place a backorder: ud domains backorders create --data \'{"domains":[{"name":"<domain>"}]}\''),
+    postActionHint: chalk.dim('\nTip: Place a backorder: ud domains backorders create --name <domain> --contact-id <id> --available-after-timestamp <ts>'),
   },
 };
 
