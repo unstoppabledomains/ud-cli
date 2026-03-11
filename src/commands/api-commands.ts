@@ -40,12 +40,14 @@ const GROUP_DESCRIPTIONS: Record<string, string> = {
   'domains.hosting.redirects': 'Manage redirects, proxies, and seller storefronts',
   'domains.hosting.landers': 'Manage AI-generated landing pages',
   'domains.contacts': 'Manage WHOIS contacts',
+  'domains.backorders': 'Place and manage domain backorders',
   // Subgroups under cart
   'cart.add': 'Add domains to your cart',
   // Subgroups under marketplace
   'marketplace.listings': 'Create and manage marketplace listings',
   'marketplace.offers': 'View and respond to domain offers',
   'marketplace.leads': 'Manage domain leads and messages',
+  'marketplace.expiring': 'Browse expiring and pending-delete domains',
 };
 
 function getRootOpts(cmd: Command): Record<string, unknown> {

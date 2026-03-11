@@ -529,6 +529,24 @@ const HOOKS: Record<string, CommandHooks> = {
   ud_dns_nameservers_set_default: { showOperationHint: true },
   ud_dns_hosting_add: { showOperationHint: true },
   ud_dns_hosting_remove: { showOperationHint: true },
+  // Backorders
+  ud_backorders_list: {
+    postActionHint: chalk.dim('\nTip: Cancel a backorder: ud domains backorders cancel --backorder-ids <id>'),
+  },
+  ud_backorder_cancel: {
+    requireConfirm: {
+      message: 'This will cancel the specified backorder(s) and issue refunds. Are you sure?',
+    },
+    showFailureHints: true,
+    postActionHint: chalk.dim('\nTip: View remaining backorders: ud domains backorders list'),
+  },
+  ud_backorder_create: {
+    postActionHint: chalk.dim('\nTip: View your backorders: ud domains backorders list'),
+  },
+  // Expiring domains
+  ud_expireds_list: {
+    postActionHint: chalk.dim('\nTip: Place a backorder: ud domains backorders create --data \'{"domains":[{"name":"<domain>"}]}\''),
+  },
 };
 
 /**

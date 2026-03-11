@@ -88,7 +88,7 @@ describe('command-registry', () => {
       const __dirname = resolve(fileURLToPath(import.meta.url), '..');
       const specPath = resolve(__dirname, '../../src/generated/openapi-spec.json');
       const spec = JSON.parse(readFileSync(specPath, 'utf-8'));
-      specToolNames = Object.keys(spec.paths).map((p: string) => p.split('/actions/')[1]);
+      specToolNames = Object.keys(spec.paths).map((p: string) => p.split('/actions/')[1]).filter(Boolean);
     });
 
     it('every spec endpoint has a route', () => {
