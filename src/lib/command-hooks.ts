@@ -541,6 +541,28 @@ const HOOKS: Record<string, CommandHooks> = {
     postActionHint: chalk.dim('\nTip: View remaining backorders: ud domains backorders list'),
   },
   ud_backorder_create: {
+    preAction: async (ctx) => {
+      const domains = ctx.body.domains as Record<string, unknown>[] | undefined;
+      if (!domains || domains.length === 0) {
+        return {
+          abort: true,
+          message: 'Missing required fields: --name, --contact-id, and --available-after-timestamp are all required.\n'
+            + chalk.dim('Tip: Find the timestamp for a domain: ud marketplace expiring list --query <domain>'),
+        };
+      }
+      const missing: string[] = [];
+      const first = domains[0];
+      if (!first.name) missing.push('--name');
+      if (!first.contactId) missing.push('--contact-id');
+      if (!first.availableAfterTimestamp) missing.push('--available-after-timestamp');
+      if (missing.length > 0) {
+        return {
+          abort: true,
+          message: `Missing required field(s): ${missing.join(', ')}\n`
+            + chalk.dim('Tip: Find the timestamp for a domain: ud marketplace expiring list --query <domain>'),
+        };
+      }
+    },
     postActionHint: chalk.dim('\nTip: View your backorders: ud domains backorders list'),
   },
   // Expiring domains
