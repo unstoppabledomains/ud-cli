@@ -446,14 +446,13 @@ const HOOKS: Record<string, CommandHooks> = {
   // Landers
   ud_domain_generate_lander: {
     postActionHint: (result: unknown) => {
-      const checkHint = formatLanderCheckHint(result);
-      if (!result || typeof result !== 'object') return checkHint;
+      if (!result || typeof result !== 'object') return formatLanderCheckHint(result);
       const obj = result as Record<string, unknown>;
       const purchaseHint = obj.purchaseHint as string | undefined;
       if (purchaseHint) {
-        return chalk.yellow(`\n${purchaseHint}`) + checkHint;
+        return chalk.yellow(`\n${purchaseHint}`) + formatLanderCheckHint(result);
       }
-      return checkHint;
+      return formatLanderCheckHint(result);
     },
   },
   ud_domain_upload_lander: {

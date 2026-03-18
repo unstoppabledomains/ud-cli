@@ -293,6 +293,7 @@ const TABLE_CONFIGS: Record<string, string[]> = {
   ud_expireds_list: ['name', 'status', 'deletionTimestamp', 'labelLength', 'watchlistCount', 'backorderCount'],
 
   // AI Credits
+  // NOTE: Only used when --fields is specified; default output uses DETAIL_CONFIG (source: 'response').
   ud_ai_credits_get: ['size', 'priceFormatted', 'productCode', 'pricePerCredit'],
   ud_cart_add_ai_credits: ['productCode', 'credits', 'priceFormatted'],
 };
