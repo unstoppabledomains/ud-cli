@@ -202,8 +202,10 @@ function detectResponsePattern(spec: OpenAPISpec, operation: OperationObject): R
 
 // --- Response field extraction ---
 
-/** Keys that typically hold the primary data array in API responses. */
-const DATA_ARRAY_KEYS = ['results', 'domains', 'tlds', 'records', 'items', 'contacts', 'offers', 'leads', 'messages', 'listings', 'savedCards', 'configs', 'pushedDomains', 'failedDomains', 'addedProducts', 'backorders'];
+/** Keys that typically hold the primary data array in API responses.
+ * 'tiers' added for AiCreditsResponse (ud_ai_credits_get).
+ * Caution: adding keys here affects all response shapes that happen to contain them. */
+const DATA_ARRAY_KEYS = ['results', 'domains', 'tlds', 'records', 'items', 'contacts', 'offers', 'leads', 'messages', 'listings', 'savedCards', 'configs', 'pushedDomains', 'failedDomains', 'addedProducts', 'backorders', 'tiers'];
 
 /**
  * Extract dotted field paths from the response schema.
