@@ -275,7 +275,7 @@ const TABLE_CONFIGS: Record<string, string[]> = {
   ud_domain_tags_add: ['domain', 'success', 'tagsApplied', 'error'],
   ud_domain_tags_remove: ['domain', 'success', 'tagsRemoved', 'error'],
   ud_domain_flags_update: ['domain', 'success', 'updatedFlags', 'error'],
-  ud_domain_generate_lander: ['domain', 'success', 'jobId', 'error'],
+  ud_domain_generate_lander: ['domain', 'success', 'jobId', 'quotaRemaining', 'error'],
   ud_domain_lander_status: ['domain', 'status'],
   ud_domain_remove_lander: ['domain', 'success', 'operationId', 'error'],
   ud_domain_upload_lander: ['domain', 'success', 'status', 'error'],
@@ -291,6 +291,10 @@ const TABLE_CONFIGS: Record<string, string[]> = {
   ud_backorder_create: ['name', 'success', 'backorderId', 'price', 'status', 'error'],
   // Expiring domains
   ud_expireds_list: ['name', 'status', 'deletionTimestamp', 'labelLength', 'watchlistCount', 'backorderCount'],
+
+  // AI Credits
+  ud_ai_credits_get: ['size', 'priceFormatted', 'productCode', 'pricePerCredit'],
+  ud_cart_add_ai_credits: ['productCode', 'credits', 'priceFormatted'],
 };
 
 /**
@@ -524,11 +528,26 @@ const DETAIL_CONFIGS: Record<string, DetailConfig> = {
           { label: 'Account Balance', path: 'accountBalance.amountFormatted' },
           { label: 'Promo Credits', path: 'promoCredits.amountFormatted' },
           { label: 'Total Credits', path: 'summary.totalCreditsFormatted' },
+          { label: 'AI Credits', path: 'aiCredits.balance' },
         ],
       },
     ],
     subTables: [
       { title: 'Saved Cards', arrayPath: 'savedCards', columns: ['id', 'brand', 'last4', 'expMonth', 'expYear', 'isDefault'] },
+    ],
+  },
+  ud_ai_credits_get: {
+    source: 'response',
+    sections: [
+      {
+        title: 'Balance',
+        fields: [
+          { label: 'AI Credits', path: 'balance' },
+        ],
+      },
+    ],
+    subTables: [
+      { title: 'Available Packs', arrayPath: 'tiers', columns: ['size', 'priceFormatted', 'pricePerCredit', 'productCode'] },
     ],
   },
 };
@@ -599,7 +618,7 @@ function extractTableData(
 ): { rows: Record<string, unknown>[]; columns: string[] } {
   const isTable = options.format === 'table';
   // Find the primary array — common keys: results, domains, tlds, records, items, contacts, offers, leads
-  const arrayKeys = ['results', 'domains', 'tlds', 'records', 'items', 'contacts', 'offers', 'leads', 'messages', 'listings', 'savedCards', 'configs', 'pushedDomains', 'failedDomains', 'addedProducts', 'backorders'];
+  const arrayKeys = ['results', 'domains', 'tlds', 'records', 'items', 'contacts', 'offers', 'leads', 'messages', 'listings', 'savedCards', 'configs', 'pushedDomains', 'failedDomains', 'addedProducts', 'backorders', 'tiers'];
   let rows: Record<string, unknown>[] = [];
 
   for (const key of arrayKeys) {

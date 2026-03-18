@@ -42,7 +42,8 @@ const GROUP_DESCRIPTIONS: Record<string, string> = {
   'domains.contacts': 'Manage WHOIS contacts',
   'domains.backorders': 'Place and manage domain backorders',
   // Subgroups under cart
-  'cart.add': 'Add domains to your cart',
+  'cart.ai-credits': 'View AI credit balance and available packs',
+  'cart.add': 'Add domains or AI credits to your cart',
   // Subgroups under marketplace
   'marketplace.listings': 'Create and manage marketplace listings',
   'marketplace.offers': 'View and respond to domain offers',

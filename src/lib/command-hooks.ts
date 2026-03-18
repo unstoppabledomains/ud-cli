@@ -413,6 +413,18 @@ const HOOKS: Record<string, CommandHooks> = {
   ud_cart_add_domain_afternic: { postActionHint: VIEW_CART_HINT },
   ud_cart_add_domain_sedo: { postActionHint: VIEW_CART_HINT },
   ud_cart_add_domain_renewal: { postActionHint: VIEW_CART_HINT },
+  ud_cart_add_ai_credits: { postActionHint: VIEW_CART_HINT },
+  ud_ai_credits_get: {
+    postActionHint: (result: unknown) => {
+      if (!result || typeof result !== 'object') return '';
+      const obj = result as Record<string, unknown>;
+      const parts: string[] = [];
+      const hint = obj.hint as string | undefined;
+      if (hint) parts.push(chalk.dim(`\n${hint}`));
+      parts.push(chalk.dim('\nTip: Add credits to cart: ud cart add ai-credits --tier-size 25'));
+      return parts.join('');
+    },
+  },
   // Portfolio & domain management
   ud_portfolio_list: { postActionHint: formatPortfolioNextHint },
   ud_domain_get: { postActionHint: formatDomainDetailHint },
@@ -432,7 +444,18 @@ const HOOKS: Record<string, CommandHooks> = {
   ud_offers_list: { postActionHint: formatOfferRespondHint },
   ud_offer_respond: { postActionHint: OFFERS_LIST_HINT },
   // Landers
-  ud_domain_generate_lander: { postActionHint: formatLanderCheckHint },
+  ud_domain_generate_lander: {
+    postActionHint: (result: unknown) => {
+      const checkHint = formatLanderCheckHint(result);
+      if (!result || typeof result !== 'object') return checkHint;
+      const obj = result as Record<string, unknown>;
+      const purchaseHint = obj.purchaseHint as string | undefined;
+      if (purchaseHint) {
+        return chalk.yellow(`\n${purchaseHint}`) + checkHint;
+      }
+      return checkHint;
+    },
+  },
   ud_domain_upload_lander: {
     additionalOptions: [
       { flags: '--html-file <path>', description: 'Path to HTML file to upload as landing page' },

@@ -3010,6 +3010,97 @@
         }
       }
     },
+    "/mcp/v1/actions/ud_ai_credits_get": {
+      "post": {
+        "operationId": "aiCreditsGet",
+        "summary": "Get AI credit balance and available packs",
+        "description": "Check your AI credit balance and view available credit packs for purchase. AI credits are used to generate AI-powered landing pages (1 credit per domain).",
+        "tags": [
+          "AI Credits"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {}
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "AI credit balance and available tiers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiCreditsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          }
+        }
+      }
+    },
+    "/mcp/v1/actions/ud_cart_add_ai_credits": {
+      "post": {
+        "operationId": "cartAddAiCredits",
+        "summary": "Add AI credit pack to cart",
+        "description": "Add an AI credit pack to your shopping cart. Provide either a productCode or tierSize.",
+        "tags": [
+          "Cart"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "productCode": {
+                    "type": "string",
+                    "description": "AI credits pack product code (e.g., \"ai-credits-pack-25\")"
+                  },
+                  "tierSize": {
+                    "type": "integer",
+                    "description": "Number of credits in the pack (e.g., 25, 50, 100)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "AI credits added to cart",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddAiCreditsToCartResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          }
+        }
+      }
+    },
     "/mcp/v1/actions/ud_domain_generate_lander": {
       "post": {
         "operationId": "generateLander",
@@ -3095,6 +3186,14 @@
                     },
                     "failureCount": {
                       "type": "number"
+                    },
+                    "quotaRemaining": {
+                      "type": "number",
+                      "description": "Estimated AI credits remaining after this request"
+                    },
+                    "purchaseHint": {
+                      "type": "string",
+                      "description": "Present when credits are low with purchase instructions"
                     }
                   }
                 }
@@ -4970,6 +5069,15 @@
               }
             }
           },
+          "aiCredits": {
+            "type": "object",
+            "properties": {
+              "balance": {
+                "type": "number",
+                "description": "AI credits remaining (1 credit = 1 landing page)"
+              }
+            }
+          },
           "summary": {
             "type": "object",
             "properties": {
@@ -4996,6 +5104,68 @@
                 "type": "boolean"
               }
             }
+          }
+        }
+      },
+      "AiCreditsResponse": {
+        "type": "object",
+        "properties": {
+          "balance": {
+            "type": "number",
+            "description": "Current AI credit balance"
+          },
+          "tiers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "size": {
+                  "type": "number",
+                  "description": "Number of credits in the pack"
+                },
+                "priceInCents": {
+                  "type": "number",
+                  "description": "Price in cents"
+                },
+                "priceFormatted": {
+                  "type": "string",
+                  "description": "Price as formatted string"
+                },
+                "productCode": {
+                  "type": "string",
+                  "description": "Product code for purchasing"
+                },
+                "pricePerCredit": {
+                  "type": "string",
+                  "description": "Cost per credit as formatted string"
+                }
+              }
+            }
+          },
+          "hint": {
+            "type": "string",
+            "description": "Usage guidance"
+          }
+        }
+      },
+      "AddAiCreditsToCartResponse": {
+        "type": "object",
+        "properties": {
+          "productCode": {
+            "type": "string",
+            "description": "Product code added to cart"
+          },
+          "credits": {
+            "type": "number",
+            "description": "Number of credits in the pack"
+          },
+          "price": {
+            "type": "number",
+            "description": "Price in cents"
+          },
+          "priceFormatted": {
+            "type": "string",
+            "description": "Price as formatted string"
           }
         }
       },

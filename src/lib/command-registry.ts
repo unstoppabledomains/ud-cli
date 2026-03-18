@@ -286,6 +286,20 @@ export const COMMAND_ROUTES: CommandRoute[] = [
     ],
   },
 
+  // --- AI Credits ---
+  {
+    toolName: 'ud_ai_credits_get',
+    path: ['cart', 'ai-credits', 'show'],
+    positionalArgs: [],
+    description: 'Check AI credit balance and available packs',
+  },
+  {
+    toolName: 'ud_cart_add_ai_credits',
+    path: ['cart', 'add', 'ai-credits'],
+    positionalArgs: [],
+    description: 'Add AI credit pack to cart',
+  },
+
   // --- Contacts ---
   {
     toolName: 'ud_contacts_list',
