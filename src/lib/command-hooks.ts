@@ -4,8 +4,7 @@
  */
 
 import chalk from 'chalk';
-import { readFile, mkdir, writeFile } from 'node:fs/promises';
-import { join, basename } from 'node:path';
+import { join } from 'node:path';
 import { openInBrowser } from './magic-link.js';
 
 /** Context passed to preAction hooks for dependency injection. */
@@ -454,93 +453,6 @@ const HOOKS: Record<string, CommandHooks> = {
       }
       return formatLanderCheckHint(result);
     },
-  },
-  ud_domain_upload_lander: {
-    additionalOptions: [
-      { flags: '--html-file <path>', description: 'Path to HTML file to upload as landing page' },
-      { flags: '--zip-file <path>', description: 'Path to ZIP file to upload as landing page (base64-encoded automatically)' },
-    ],
-    transformBody: async (body, opts) => {
-      const htmlFile = opts.htmlFile as string | undefined;
-      const zipFile = opts.zipFile as string | undefined;
-
-      if (htmlFile && zipFile) {
-        throw new Error('Cannot specify both --html-file and --zip-file. Use one or the other.');
-      }
-
-      if (!htmlFile && !zipFile) return body;
-
-      const domains = body.domains as Array<Record<string, unknown>> | undefined;
-      if (!Array.isArray(domains)) return body;
-
-      if (htmlFile) {
-        const content = await readFile(htmlFile, 'utf-8');
-        for (const d of domains) {
-          if (!d.htmlContent) d.htmlContent = content;
-        }
-      }
-
-      if (zipFile) {
-        const content = (await readFile(zipFile)).toString('base64');
-        for (const d of domains) {
-          if (!d.zipContent) d.zipContent = content;
-        }
-      }
-
-      return body;
-    },
-    postActionHint: formatLanderCheckHint,
-  },
-  ud_domain_download_lander: {
-    additionalOptions: [
-      { flags: '--output-dir <path>', description: 'Directory to save downloaded files (default: current directory)' },
-    ],
-    postAction: async (result: unknown, opts: Record<string, unknown>) => {
-      if (!result || typeof result !== 'object') return result;
-      const obj = result as Record<string, unknown>;
-      const results = obj.results as Array<Record<string, unknown>> | undefined;
-      if (!Array.isArray(results)) return result;
-
-      const outputDir = (opts.outputDir as string) || process.cwd();
-      await mkdir(outputDir, { recursive: true });
-
-      const summary: Array<Record<string, unknown>> = [];
-
-      for (const item of results) {
-        if (!item.success) {
-          summary.push({ domain: item.domain, success: false, error: item.error });
-          continue;
-        }
-
-        // Sanitize domain to prevent path traversal from server response
-        const rawDomain = item.domain;
-        if (typeof rawDomain !== 'string' || !rawDomain) {
-          summary.push({ domain: rawDomain, success: false, error: 'Missing domain name' });
-          continue;
-        }
-        const domain = basename(rawDomain);
-        let filename: string;
-        let content: Buffer | string;
-
-        if (item.format === 'zip' && item.zipContent) {
-          filename = `${domain}.zip`;
-          content = Buffer.from(item.zipContent as string, 'base64');
-        } else if (item.htmlContent) {
-          filename = `${domain}.html`;
-          content = item.htmlContent as string;
-        } else {
-          summary.push({ domain, success: false, error: 'No content returned' });
-          continue;
-        }
-
-        const filePath = join(outputDir, filename);
-        await writeFile(filePath, content);
-        summary.push({ domain, success: true, format: item.format, file: filePath });
-      }
-
-      return { ...obj, results: summary };
-    },
-    postActionHint: formatLanderCheckHint,
   },
   // Search & DNS ops
   ud_domains_search: { showCartHint: true },
