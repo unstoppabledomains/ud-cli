@@ -4,7 +4,6 @@
  */
 
 import chalk from 'chalk';
-import { join } from 'node:path';
 import { openInBrowser } from './magic-link.js';
 
 /** Context passed to preAction hooks for dependency injection. */
