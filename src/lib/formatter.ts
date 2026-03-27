@@ -278,8 +278,6 @@ const TABLE_CONFIGS: Record<string, string[]> = {
   ud_domain_generate_lander: ['domain', 'success', 'jobId', 'quotaRemaining', 'error'],
   ud_domain_lander_status: ['domain', 'status'],
   ud_domain_remove_lander: ['domain', 'success', 'operationId', 'error'],
-  ud_domain_upload_lander: ['domain', 'success', 'status', 'error'],
-  ud_domain_download_lander: ['domain', 'success', 'format', 'file', 'error'],
   ud_domain_push: ['success', 'message'],
 
   // Authenticated URL

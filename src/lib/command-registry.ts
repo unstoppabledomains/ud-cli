@@ -202,22 +202,6 @@ export const COMMAND_ROUTES: CommandRoute[] = [
     ],
     description: 'Remove AI landing page from domains',
   },
-  {
-    toolName: 'ud_domain_upload_lander',
-    path: ['domains', 'hosting', 'landers', 'upload'],
-    positionalArgs: [
-      { name: 'domains', description: 'Domain name(s)', required: true, variadic: true },
-    ],
-    description: 'Upload custom landing page for domains',
-  },
-  {
-    toolName: 'ud_domain_download_lander',
-    path: ['domains', 'hosting', 'landers', 'download'],
-    positionalArgs: [
-      { name: 'domains', description: 'Domain name(s)', required: true, variadic: true },
-    ],
-    description: 'Download landing page content for domains',
-  },
 
   // --- Cart ---
   {
